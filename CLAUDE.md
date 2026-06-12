@@ -26,6 +26,10 @@ you paste into a new AI chat to prep for interviews.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
 - View renderers: `renderDashboard / renderPipeline / renderTable (+renderRoleCards) / renderCalendar / renderInsights`.
+  The Upcoming view has a `calMode` ("list" | "timeline") toggle (`calToggle()`); `renderTimeline()`
+  draws per-job swimlanes — a unique HSL color per job, dots for each round/applied/offer/task placed
+  by date %, solid line up to today + dashed into the future, a shared month axis and "today" line,
+  with the current stage shown via its stage-colored pill. CSS-positioned (no SVG), clipped to width.
 - `CHARTS` — hand-rolled SVG (funnel bars + donut). No chart library on purpose.
 - `OFFER SCORECARD` — weighted decision matrix across competing offers (status `offer`).
   `openScorecard()` modal; `scorecardBody()`; `scResult()` (weighted 1–5 avg over rated criteria);

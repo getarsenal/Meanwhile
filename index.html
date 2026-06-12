@@ -187,6 +187,47 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .legend-row .dot{width:11px;height:11px;border-radius:4px;flex:0 0 11px}
 .legend-row .v{margin-left:auto;font-weight:800;color:var(--muted)}
 
+/* ---------- Timeline (Upcoming › swimlanes) ---------- */
+.cal-toggle{display:inline-flex;gap:4px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:16px}
+.cal-toggle .seg{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:none;background:none;color:var(--muted);font-weight:700;font-size:12.5px;cursor:pointer}
+.cal-toggle .seg svg{width:15px;height:15px}
+.cal-toggle .seg.on{background:var(--grad);color:#fff;box-shadow:0 6px 16px -8px var(--accent)}
+.timeline{overflow:hidden}
+.tl-legend{display:flex;flex-wrap:wrap;gap:13px;font-size:11.5px;color:var(--muted);margin:0 2px 14px;align-items:center}
+.tl-legend span{display:inline-flex;align-items:center;gap:5px}
+.tl-legend i.lg{width:11px;height:11px;border-radius:50%;display:inline-block}
+.tl-legend i.lg.done{background:#9aa6c2}
+.tl-legend i.lg.upcoming{background:transparent;border:2px solid #9aa6c2}
+.tl-legend i.lg.applied{background:var(--muted)}
+.tl-legend i.lg.cancelled{background:var(--faint);opacity:.5}
+.tl-legend i.lg.offer{border:none;color:var(--warn);width:auto;height:auto;font-size:12px}
+.tl-nowkey:before{content:"";width:0;height:13px;border-left:1.5px dashed var(--accent2);margin-right:4px}
+.tl-axis{position:relative;height:18px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.tl-tick{position:absolute;top:1px;transform:translateX(-50%);font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+.tl-tick:after{content:"";position:absolute;left:50%;top:16px;width:1px;height:5px;background:var(--line)}
+.tl-body{position:relative}
+.tl-now{position:absolute;top:0;bottom:0;width:0;border-left:1.5px dashed var(--accent2);opacity:.45;z-index:0}
+.tl-row{position:relative;padding:9px 0;border-bottom:1px solid var(--line);z-index:1}
+.tl-row:last-child{border-bottom:none}
+.tl-row.closed{opacity:.5}
+.tl-head{display:flex;align-items:center;gap:8px;margin-bottom:11px;min-width:0}
+.tl-swatch{width:11px;height:11px;border-radius:3px;flex:0 0 11px}
+.tl-co{font-weight:800;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tl-role{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tl-track{position:relative;height:18px;margin-bottom:18px}
+.tl-line{position:absolute;top:50%;transform:translateY(-50%);height:2.5px;border-radius:2px}
+.tl-line.dashed{height:0;background:none}
+.tl-dot{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;transform:translate(-50%,-50%);cursor:pointer;background:var(--c);box-shadow:0 0 0 3px var(--bg);z-index:2;display:grid;place-items:center;line-height:1}
+.tl-dot.upcoming,.tl-dot.pending{background:var(--bg);border:2.5px solid var(--c)}
+.tl-dot.pending{opacity:.65}
+.tl-dot.applied{width:10px;height:10px}
+.tl-dot.cancelled{background:var(--faint);opacity:.45;width:10px;height:10px;box-shadow:0 0 0 3px var(--bg)}
+.tl-dot.task{width:9px;height:9px;background:var(--bg);border:2px solid var(--accent2)}
+.tl-dot.offer{background:none;box-shadow:none;color:var(--warn);width:auto;height:auto;font-size:15px}
+.tl-dot:hover{filter:brightness(1.18)}
+.tl-lbl{position:absolute;top:calc(50% + 12px);transform:translateX(-50%);font-size:10px;color:var(--faint);white-space:nowrap;pointer-events:none;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:720px){ .tl-lbl{display:none} .tl-track{margin-bottom:4px} .tl-role{display:none} }
+
 /* ---------- Modal / Drawer ---------- */
 .overlay{position:fixed;inset:0;background:rgba(5,8,15,.66);backdrop-filter:blur(6px);z-index:100;opacity:0;pointer-events:none;transition:.2s}
 .overlay.show{opacity:1;pointer-events:auto}
@@ -371,6 +412,7 @@ let searchQ = "";
 let tableSort = {key:"updatedAt", dir:-1};
 let openId = null;
 let drawerTab = "overview";
+let calMode = "list";   // "list" | "timeline" — Upcoming view sub-mode
 
 /* ============================ STORAGE ============================ */
 function load(){
@@ -759,7 +801,14 @@ function renderRoleCards(list){
 }
 
 /* ---------------- CALENDAR / UPCOMING ---------------- */
+function calToggle(){
+  return `<div class="cal-toggle">
+    <button class="seg ${calMode==='list'?'on':''}" data-calmode="list">${I.cal} List</button>
+    <button class="seg ${calMode==='timeline'?'on':''}" data-calmode="timeline">${I.spark} Timeline</button>
+  </div>`;
+}
 function renderCalendar(){
+  if(calMode==="timeline") return calToggle()+renderTimeline();
   const events=[];
   state.opportunities.forEach(o=>{
     (o.rounds||[]).forEach(r=>{ if(r.date && r.status!=="cancelled"){ events.push({o,rid:r.id,date:r.date,time:r.time,label:r.name||r.type,type:"Interview",link:r.link,done:r.status==="done"}); } });
@@ -770,7 +819,7 @@ function renderCalendar(){
   const future=events.filter(e=>daysUntil(e.date)>=0 || (daysUntil(e.date)===-0));
   const upcoming=events.filter(e=>{const d=daysUntil(e.date); return d!=null&&d>=0;});
   const past=events.filter(e=>{const d=daysUntil(e.date); return d!=null&&d<0;}).reverse();
-  if(!events.length) return `<div class="empty"><div class="big">${I.cal}</div><h3>Nothing on the calendar</h3><p>Add interview rounds or a "next step" date to any role and it'll show up here.</p></div>`;
+  if(!events.length) return calToggle()+`<div class="empty"><div class="big">${I.cal}</div><h3>Nothing on the calendar</h3><p>Add interview rounds or a "next step" date to any role and it'll show up here.</p></div>`;
 
   const row=(e)=>{
     const d=daysUntil(e.date); const cls=d<0?"":d<=2?"soon":"";
@@ -785,11 +834,89 @@ function renderCalendar(){
       <span class="chip" style="color:${d<0?'var(--faint)':d<=2?'var(--warn)':'var(--accent2)'}">${d===0?"Today":relDays(d)}</span>
     </div>`;
   };
-  let html="";
+  let html=calToggle();
   html+=`<div class="section-head"><h3>Upcoming</h3><div class="line"></div><span class="tag">${upcoming.length}</span></div>`;
   html+= upcoming.length? upcoming.map(row).join("") : `<div style="color:var(--faint);font-size:13px;padding:6px 4px">Nothing scheduled ahead.</div>`;
   if(past.length){ html+=`<div class="section-head"><h3 style="color:var(--faint)">Past</h3><div class="line"></div></div>`; html+=`<div style="opacity:.6">`+past.slice(0,20).map(row).join("")+`</div>`; }
   return html;
+}
+
+/* ---------------- TIMELINE (per-job swimlanes) ---------------- */
+function tlMs(d){ if(!d) return null; const t=new Date(d.length<=10? d+'T00:00': d).getTime(); return isNaN(t)?null:t; }
+function tlNodes(o){
+  const ns=[];
+  if(o.appliedDate){ const t=tlMs(o.appliedDate); if(t!=null) ns.push({t,kind:'applied',label:'Applied',date:o.appliedDate}); }
+  (o.rounds||[]).forEach(r=>{ const t=tlMs(r.date); if(t!=null) ns.push({t,kind:'round',status:r.status||'',label:r.name||r.type||'Round',date:r.date,rid:r.id}); });
+  if(o.offer&&o.offer.deadline){ const t=tlMs(o.offer.deadline); if(t!=null) ns.push({t,kind:'offer',label:'Offer decision',date:o.offer.deadline}); }
+  if(o.nextActionDate){ const t=tlMs(o.nextActionDate); if(t!=null) ns.push({t,kind:'task',label:o.nextActionLabel||'Next step',date:o.nextActionDate}); }
+  ns.sort((a,b)=>a.t-b.t);
+  return ns;
+}
+function renderTimeline(){
+  const rows=state.opportunities.map(o=>({o,ns:tlNodes(o)})).filter(x=>x.ns.length);
+  if(!rows.length) return `<div class="empty"><div class="big">${I.cal}</div><h3>Nothing to chart yet</h3><p>Add an applied date or interview rounds to your roles and they'll appear as timelines here.</p></div>`;
+  rows.sort((a,b)=> a.ns[0].t - b.ns[0].t);
+
+  const today=new Date().setHours(0,0,0,0);
+  let min=Infinity, max=-Infinity;
+  rows.forEach(x=>x.ns.forEach(n=>{ if(n.t<min)min=n.t; if(n.t>max)max=n.t; }));
+  min=Math.min(min,today); max=Math.max(max,today);
+  if(min===max){ min-=7*864e5; max+=7*864e5; }
+  const PAD=3, span=max-min;
+  const X=t=> PAD + (t-min)/span*(100-2*PAD);
+  const todayX=X(today);
+
+  const n=rows.length;
+  rows.forEach((row,i)=> row.color=`hsl(${Math.round(i*360/n)},66%,63%)`);  // unique, evenly-spread hue per job
+
+  // month axis ticks
+  let ticks="", cur=new Date(new Date(min).getFullYear(), new Date(min).getMonth(), 1);
+  if(cur.getTime()<min) cur=new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  while(cur.getTime()<=max){
+    ticks+=`<div class="tl-tick" style="left:${X(cur.getTime())}%"><span>${cur.toLocaleDateString(undefined,{month:'short'})}${cur.getMonth()===0?" '"+String(cur.getFullYear()).slice(2):""}</span></div>`;
+    cur=new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+
+  const rowHTML=rows.map(row=>{
+    const o=row.o, c=row.color, st=stage(o.status), closed=!st.active;
+    const x1=X(row.ns[0].t), x2=X(row.ns[row.ns.length-1].t), solidEnd=Math.min(x2,todayX);
+    let lines="";
+    if(solidEnd>x1) lines+=`<div class="tl-line" style="left:${x1}%;width:${solidEnd-x1}%;background:${c}"></div>`;
+    if(x2>todayX){ const ds=Math.max(x1,todayX); lines+=`<div class="tl-line dashed" style="left:${ds}%;width:${x2-ds}%;border-top:2px dashed ${c}"></div>`; }
+    const dots=row.ns.map(nd=>{
+      const px=X(nd.t), future=nd.t>today;
+      let cls="tl-dot";
+      if(nd.kind==='offer') cls+=" offer";
+      else if(nd.kind==='task') cls+=" task";
+      else if(nd.kind==='applied') cls+=" applied";
+      else cls += nd.status==='done'?" done" : nd.status==='cancelled'?" cancelled" : future?" upcoming":" pending";
+      return `<span class="${cls}" style="left:${px}%;--c:${c}" data-open="${o.id}" title="${esc(nd.label)} · ${esc(fmtDate(nd.date))}">${nd.kind==='offer'?'◆':''}</span>`
+        + `<span class="tl-lbl" style="left:${px}%">${esc(nd.label)}</span>`;
+    }).join("");
+    return `<div class="tl-row${closed?' closed':''}">
+      <div class="tl-head">
+        <span class="tl-swatch" style="background:${c}"></span>
+        <span class="tl-co" data-open="${o.id}">${esc(o.company)}</span>
+        ${o.role?`<span class="tl-role">${esc(o.role)}</span>`:""}
+        <span class="pill" style="margin-left:auto;background:${st.color}22;color:${st.color}"><span class="dot" style="background:${st.color}"></span>${esc(st.name)}</span>
+      </div>
+      <div class="tl-track">${lines}${dots}</div>
+    </div>`;
+  }).join("");
+
+  const legend=`<div class="tl-legend">
+    <span><i class="lg done"></i>done</span>
+    <span><i class="lg upcoming"></i>upcoming</span>
+    <span><i class="lg applied"></i>applied</span>
+    <span><i class="lg cancelled"></i>cancelled</span>
+    <span><i class="lg offer">◆</i>offer</span>
+    <span class="tl-nowkey">today</span>
+  </div>`;
+
+  return `<div class="timeline">${legend}
+    <div class="tl-axis">${ticks}</div>
+    <div class="tl-body"><div class="tl-now" style="left:${todayX}%"></div>${rowHTML}</div>
+  </div>`;
 }
 
 /* ---------------- INSIGHTS ---------------- */
@@ -1400,7 +1527,7 @@ function personForm(p){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode]");
   if(!t) return;
 
   // nav
@@ -1408,6 +1535,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.act==="clear-filter"){ activeFilter=null; render(); return; }
   // table sort
   if(t.dataset.sort){ const k=t.dataset.sort; if(tableSort.key===k) tableSort.dir*=-1; else tableSort={key:k,dir:1}; render(); return; }
+  // calendar list/timeline toggle
+  if(t.dataset.calmode){ calMode=t.dataset.calmode; render(); return; }
   // tabs
   if(t.dataset.tab){ drawerTab=t.dataset.tab; renderDrawer(); return; }
   // rating star pick

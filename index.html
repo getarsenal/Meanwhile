@@ -91,6 +91,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .btn.sm{padding:7px 12px;font-size:13px;border-radius:10px}
 .btn.danger{color:var(--bad)}
 .btn.danger:hover{background:rgba(208,107,107,.12)}
+@media(max-width:620px){ .hide-sm{display:none} .topbar .btn{padding:10px 12px} }
 
 .content{padding:24px 26px 90px;flex:1}
 .content.pad0{padding:0 0 90px}
@@ -403,7 +404,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
         <input id="search" placeholder="Search company, role, person…" autocomplete="off"/>
       </div>
-      <button class="btn primary" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add role</button>
+      <button class="btn ghost" data-act="smart-paste" title="Paste an invite, email, JD or profile — AI fills the entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M5.6 5.6l2 2M16.4 16.4l2 2M3 12h3M18 12h3M5.6 18.4l2-2M16.4 7.6l2-2"/><circle cx="12" cy="12" r="3.2"/></svg><span class="hide-sm">Smart add</span></button>
+      <button class="btn primary" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg><span class="hide-sm">Add role</span></button>
       <button class="x-btn" data-act="settings" id="settingsBtn" title="Settings & sync" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="syncDot" style="display:none;position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--good);border:2px solid var(--bg)"></span></button>
     </div>
     <div class="content" id="content"></div>
@@ -1488,6 +1490,7 @@ function openSettings(){
 
   <div class="section-head"><h3>Pipeline & data</h3><div class="line"></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn ghost sm" data-act="ai-settings">${I.ai} Smart add engine</button>
     <button class="btn ghost sm" data-act="edit-stages">${I.board} Edit stages</button>
     <button class="btn ghost sm" data-act="edit-resume">${I.user} My résumé</button>
     <button class="btn ghost sm" data-act="export">${I.copy} Export backup</button>
@@ -1644,6 +1647,216 @@ function personForm(p){
   </form>`;
 }
 
+/* ============================ SMART PASTE (AI ingest) ============================ */
+// Paste a calendar invite / recruiter email / job post / LinkedIn profile → a suggested entry.
+// Engine is pluggable: Supabase proxy (key server-side) → direct provider key (browser) →
+// copy-paste fallback (any chatbot, no key). Config is device-local, never synced, never in repo.
+const AI_KEY="callback_ai_cfg_v1";
+let aiCfg=(function(){ try{ return JSON.parse(localStorage.getItem(AI_KEY))||{}; }catch(e){ return {}; } })();
+function saveAICfg(){ try{ localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }catch(e){} }
+function aiProxyUrl(){ if(aiCfg.proxyUrl) return aiCfg.proxyUrl.trim();
+  if(sync.url) return sync.url.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"")+"/functions/v1/ai"; return ""; }
+// effective engine after checking requirements; falls back to copy-paste
+function aiEngine(){
+  const e=aiCfg.engine||"paste";
+  if(e==="off") return "off";
+  if(e==="proxy") return aiProxyUrl()?"proxy":"paste";
+  if(e==="anthropic") return aiCfg.key?"anthropic":"paste";
+  if(e==="google") return aiCfg.key?"google":"paste";
+  return "paste";
+}
+const AI_SCHEMA=`Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
+{
+ "company": "",            // employer name; "" if unknown
+ "role": "",               // job title; "" if unknown
+ "kind": "interview",      // one of: interview, task, offer, contact, application, other
+ "round": null,            // or { "name":"", "type":"", "date":"YYYY-MM-DD", "time":"HH:MM", "interviewers":"", "link":"" }
+ "person": null,           // or { "name":"", "title":"", "linkedin":"", "email":"", "notes":"" }
+ "source": "",             // how it came about (recruiter, referral, job board…)
+ "location": "",
+ "workMode": "",           // Remote, Hybrid, or Onsite
+ "compNote": "",           // any pay info mentioned
+ "nextActionLabel": "",    // a suggested next step
+ "nextActionDate": "",     // YYYY-MM-DD
+ "notes": ""               // 1–3 sentences of anything else useful
+}`;
+function aiPrompt(text){
+  return `You extract structured job-search data. Today is ${todayYMD()}. The pasted content below may be a calendar invite, a recruiter or interview email, a job posting, or a LinkedIn / contact profile. Pull the details into the exact JSON schema. Resolve relative dates (e.g. "next Tuesday", "tomorrow 3pm") to absolute YYYY-MM-DD / 24h HH:MM using today's date. Use "" (or null for round/person) for anything not stated — never invent. If it is about a person/contact rather than a role, fill "person" and leave "round" null.
+
+${AI_SCHEMA}
+
+--- PASTED CONTENT ---
+${text}
+--- END ---`;
+}
+function aiParse(s){
+  if(!s) throw new Error("Empty response");
+  let t=String(s).trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  const a=t.indexOf("{"), b=t.lastIndexOf("}");
+  if(a>=0&&b>a) t=t.slice(a,b+1);
+  return JSON.parse(t);
+}
+async function aiCall(prompt){
+  const eng=aiEngine();
+  if(eng==="proxy"){
+    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify({prompt})});
+    if(!res.ok) throw new Error("Proxy "+res.status+" "+(await res.text()).slice(0,140));
+    const j=await res.json(); return j.text||j.output||(typeof j==="string"?j:JSON.stringify(j));
+  }
+  if(eng==="anthropic"){
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:aiCfg.model||"claude-haiku-4-5",max_tokens:1024,messages:[{role:"user",content:prompt}]})});
+    if(!res.ok) throw new Error("Claude "+res.status+" "+(await res.text()).slice(0,180));
+    const j=await res.json(); return (j.content||[]).map(b=>b.text||"").join("");
+  }
+  if(eng==="google"){
+    const model=aiCfg.model||"gemini-2.0-flash";
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiCfg.key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json"}})});
+    if(!res.ok) throw new Error("Gemini "+res.status+" "+(await res.text()).slice(0,180));
+    const j=await res.json(); return ((((j.candidates||[])[0]||{}).content||{}).parts||[{}])[0].text||"";
+  }
+  throw new Error("paste-mode");
+}
+
+let spData=null, spText="";
+function openSmartPaste(){ spData=null; openEditor(smartPasteBody()); }
+function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",google:"Gemini ✓"}[aiEngine()]; }
+function smartPasteBody(){
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Smart add</h2><div style="font-size:12.5px;color:var(--faint)">Engine: ${aiEngineLabel()} · <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">change</span></div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <div style="font-size:12.5px;color:var(--muted);margin:8px 0 12px">Paste a <b>calendar invite</b>, <b>recruiter / interview email</b>, <b>job posting</b>, or a <b>LinkedIn / contact profile</b>. I'll turn it into an entry you review before saving.</div>
+  <textarea id="spInput" style="min-height:160px" placeholder="Paste here…">${esc(spText)}</textarea>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
+    <button class="btn ghost" data-act="cancel-editor">Cancel</button>
+  </div>`;
+}
+function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card"); if(card){ card.innerHTML=html; const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
+async function runExtract(){
+  const ta=$("#spInput"); spText=ta?ta.value.trim():"";
+  if(!spText){ toast("Paste something first"); return; }
+  if(aiEngine()==="paste" || aiEngine()==="off"){ return spShowFallback(); }
+  const btn=editorEl&&editorEl.querySelector('[data-act="ai-extract"]'); if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
+  try{
+    const out=await aiCall(aiPrompt(spText));
+    spData=aiParse(out);
+    spReview();
+  }catch(err){
+    toast("⚠ "+err.message);
+    if(btn){ btn.innerHTML=`${I.ai} Extract`; btn.disabled=false; }
+    spShowFallback(); // offer the manual route on any failure
+  }
+}
+function spShowFallback(){
+  spSetBody(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px;font-weight:850">Paste-to-extract</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0 0 12px">
+    <li>Copy this prompt &amp; open any AI chat.<br><button class="btn ghost sm" data-act="ai-fallback-copy" style="margin-top:6px">${I.copy} Copy prompt</button></li>
+    <li>Paste it, then copy the AI's JSON reply.</li>
+    <li>Paste the reply below &amp; build the entry.</li>
+  </ol>
+  <textarea id="spPaste" style="min-height:120px" placeholder='Paste the AI&apos;s JSON reply here…'></textarea>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn primary" style="flex:1" data-act="ai-fallback-build">${I.check} Build entry</button>
+    <button class="btn ghost" data-act="ai-back">← Back</button>
+  </div>
+  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Tip: connect a key in <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">settings</span> to skip this and extract in one tap.</div>`);
+}
+function spBuildFromPaste(){ const ta=$("#spPaste"); try{ spData=aiParse(ta?ta.value:""); spReview(); }catch(e){ toast("⚠ Couldn't read that JSON — check you pasted the whole reply"); } }
+function spReview(){
+  const d=spData||{};
+  const company=(d.company||"").trim();
+  const match=company?state.opportunities.find(o=>(o.company||"").trim().toLowerCase()===company.toLowerCase()):null;
+  const r=d.round||{}, p=d.person||{};
+  const stageOpts=allStages().map(s=>`<option value="${s.id}" ${ (d.kind==="offer"&&s.id==="offer")||(!d.kind&&false)?"selected":""}>${esc(s.name)}</option>`).join("");
+  spSetBody(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><h2 style="margin:0;font-size:18px;font-weight:850">Review &amp; save</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${match?`<div class="form-row"><label>Add to</label><select id="spTarget"><option value="existing">Existing role — ${esc(match.company)}</option><option value="new">A new role</option></select></div>`:`<input type="hidden" id="spTarget" value="new"/>`}
+  <div class="form-2">
+    <div class="form-row"><label>Company</label><input id="spCompany" value="${esc(d.company||"")}"/></div>
+    <div class="form-row"><label>Role</label><input id="spRole" value="${esc(d.role||"")}"/></div>
+  </div>
+  <div class="form-row"><label>Stage</label><select id="spStatus">${stageOpts}</select></div>
+  ${(r.name||r.type||r.date||r.link||r.interviewers)?`<label style="margin-top:6px">📅 Interview round detected</label><div class="note-block">${esc([r.name,r.type].filter(Boolean).join(" · "))}${r.date?`<br>${esc(fmtDateTime(r.date,r.time)||r.date)}`:""}${r.interviewers?`<br>with ${esc(r.interviewers)}`:""}${r.link?`<br>${esc(r.link)}`:""}</div>`:""}
+  ${(p.name)?`<label style="margin-top:6px">👤 Contact detected</label><div class="note-block">${esc(p.name)}${p.title?` · ${esc(p.title)}`:""}${p.email?`<br>${esc(p.email)}`:""}${p.linkedin?`<br>${esc(p.linkedin)}`:""}</div>`:""}
+  ${d.notes?`<label style="margin-top:6px">Notes</label><div class="note-block">${esc(d.notes)}</div>`:""}
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <button class="btn primary" style="flex:1" data-act="ai-save">${I.check} Save</button>
+    <button class="btn ghost" data-act="ai-back">← Back</button>
+  </div>`);
+  // preselect stage by detected kind
+  const sel=$("#spStatus"); if(sel){ const k=d.kind; const want=k==="offer"?"offer":r.date||r.name?"recruiter":"applied"; if([...sel.options].some(o=>o.value===want)) sel.value=want; }
+}
+function spApply(){
+  const d=spData||{};
+  const company=($("#spCompany")?$("#spCompany").value:d.company||"").trim();
+  const role=$("#spRole")?$("#spRole").value.trim():(d.role||"");
+  const status=$("#spStatus")?$("#spStatus").value:"applied";
+  const target=$("#spTarget")?$("#spTarget").value:"new";
+  const r=d.round||{}, p=d.person||{};
+  let o = (target==="existing"&&company)? state.opportunities.find(x=>(x.company||"").trim().toLowerCase()===company.toLowerCase()) : null;
+  if(!o){
+    o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},
+       company:company||"(unknown)",role:role,status:status,
+       source:d.source||"",location:d.location||"",workMode:d.workMode||"",
+       compNotes:d.compNote||"",notes:d.notes||"",
+       nextActionLabel:d.nextActionLabel||"",nextActionDate:d.nextActionDate||""};
+    state.opportunities.push(o); openId=o.id;
+  } else {
+    if(role) o.role=role; if(status) o.status=status;
+    if(!o.source&&d.source) o.source=d.source;
+    if(!o.location&&d.location) o.location=d.location;
+    if(d.notes) o.notes=(o.notes?o.notes+"\n":"")+d.notes;
+    if(d.nextActionLabel){ o.nextActionLabel=d.nextActionLabel; o.nextActionDate=d.nextActionDate||o.nextActionDate; }
+    o.updatedAt=Date.now(); openId=o.id;
+  }
+  if(r&&(r.date||r.name||r.type||r.interviewers||r.link)){
+    o.rounds=o.rounds||[]; o.rounds.push({id:uid(),name:r.name||"",type:r.type||"",date:r.date||"",time:r.time||"",interviewers:r.interviewers||"",link:r.link||"",prep:"",debrief:"",rating:0,status:""});
+  }
+  if(p&&p.name){
+    o.people=o.people||[]; o.people.push({id:uid(),name:p.name,title:p.title||"",linkedin:p.linkedin||"",email:p.email||"",notes:p.notes||""});
+  }
+  save(); closeEditor(); render(); openDetail(o.id); toast("Added ✓");
+}
+
+function openAISettings(){
+  const eng=aiCfg.engine||"paste";
+  const opt=(v,l)=>`<option value="${v}" ${eng===v?"selected":""}>${l}</option>`;
+  const needsKey=eng==="anthropic"||eng==="google";
+  const body=`<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Smart add engine</h2><div style="font-size:12.5px;color:var(--faint)">How paste-to-entry is powered</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <div class="form-row"><label>Engine</label><select id="aiEngine">
+    ${opt("paste","Copy-paste — no key, works with any AI")}
+    ${opt("proxy","Cloud proxy — key held on your Supabase (one-tap)")}
+    ${opt("anthropic","Claude key in this browser (one-tap, private)")}
+    ${opt("google","Gemini key in this browser (one-tap, free tier)")}
+    ${opt("off","Off")}
+  </select></div>
+  <div id="aiKeyRow" style="display:${needsKey?"block":"none"}">
+    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stored on this device only, never synced</span></label><input id="aiKey" value="${esc(aiCfg.key||"")}" placeholder="${eng==="google"?"AIza…":"sk-ant-…"}"/></div>
+    <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${eng==="google"?"gemini-2.0-flash":"claude-haiku-4-5"}"/></div>
+  </div>
+  <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
+    <div class="form-row"><label>Proxy URL <span style="color:var(--faint);font-weight:500">— defaults to your Supabase function</span></label><input id="aiProxy" value="${esc(aiCfg.proxyUrl||"")}" placeholder="${esc(aiProxyUrl()||"https://xxxx.supabase.co/functions/v1/ai")}"/></div>
+  </div>
+  <div class="note-block" style="margin-top:6px;font-size:12px">${eng==="anthropic"||eng==="google"?"Your key lives only in this browser's storage (like the sync key). Anyone with this unlocked device could read it — fine for your own phone, not a shared computer. Set a spend cap with your provider.":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo) so your key stays server-side and never touches the browser.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back."}</div>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn primary" style="flex:1" data-act="ai-cfg-save">${I.check} Save</button>
+    <button class="btn ghost" data-act="cancel-editor">Cancel</button>
+  </div>`;
+  openEditor(body);
+}
+function saveAISettings(){
+  aiCfg.engine=$("#aiEngine")?$("#aiEngine").value:"paste";
+  if($("#aiKey")) aiCfg.key=$("#aiKey").value.trim();
+  if($("#aiModel")) aiCfg.model=$("#aiModel").value.trim();
+  if($("#aiProxy")) aiCfg.proxyUrl=$("#aiProxy").value.trim();
+  saveAICfg(); closeEditor(); openSmartPaste();
+}
+
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
@@ -1684,6 +1897,15 @@ document.addEventListener("click",e=>{
   if(act==="settings"){ openSettings(); return; }
   if(act==="edit-stages"){ openStageEditor(); return; }
   // offer scorecard
+  // smart paste / AI ingest
+  if(act==="smart-paste"){ openSmartPaste(); return; }
+  if(act==="ai-extract"){ runExtract(); return; }
+  if(act==="ai-fallback-copy"){ const ta=$("#spInput"); copy(aiPrompt((ta?ta.value:spText)||spText),"Prompt copied — paste into any AI"); return; }
+  if(act==="ai-fallback-build"){ spBuildFromPaste(); return; }
+  if(act==="ai-back"){ spSetBody(smartPasteBody()); return; }
+  if(act==="ai-save"){ spApply(); return; }
+  if(act==="ai-settings"){ openAISettings(); return; }
+  if(act==="ai-cfg-save"){ saveAISettings(); return; }
   if(act==="open-scorecard"){ openScorecard(); return; }
   if(act==="sc-addcrit"){ getScorecard().criteria.push({id:"c_"+uid(),name:"New factor",weight:10}); save(); scReRender(); return; }
   if(act==="sc-reset"){ if(confirm("Reset criteria & weights to the defaults? Your per-offer scores are kept.")){ getScorecard().criteria=defaultCriteria(); save(); scReRender(); } return; }
@@ -1734,6 +1956,9 @@ $("#overlay").addEventListener("click",closeDrawer);
 document.addEventListener("change",e=>{
   if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
+  if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
+    if(k) k.style.display=(v==="anthropic"||v==="google")?"block":"none";
+    if(p) p.style.display=(v==="proxy")?"block":"none"; }
 });
 
 // scorecard criteria name/weight — update live without rebuilding inputs (keeps text focus)

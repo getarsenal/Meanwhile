@@ -16,6 +16,8 @@ you paste into a new AI chat to prep for interviews.
 ## Files
 - `index.html` — the entire app (UI + CSS + JS inline). This is 99% of the work.
 - `privacy.html` — privacy policy for the App Store submission (hostable page).
+- `supabase/functions/ai/index.ts` — optional Edge Function proxy for Smart add (holds the
+  model key server-side). `supabase/README.md` has the deploy runbook. No keys in the repo.
 - `capacitor.config.json` — config for wrapping as an iOS app (appId `com.scheidelholdings.callback`).
 - `APP_STORE.md` — runbook for shipping to the Apple App Store via Capacitor.
 - `README.md` — user-facing readme.
@@ -37,6 +39,13 @@ you paste into a new AI chat to prep for interviews.
   once ≥2 offers exist. State lives in `state.scorecard` (lazily created via `getScorecard()`).
 - `DRAWER: DETAIL` — per-role drawer with tabs: `tabOverview / tabRounds / tabPeople / tabBrief`.
 - AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt`, plus `resumeText()`.
+- `SMART PASTE (AI ingest)` — paste an invite/email/JD/profile → AI fills a reviewable suggested
+  entry. Pluggable engine via `aiEngine()`: `proxy` (Supabase Edge Function, key server-side) →
+  `anthropic`/`google` (direct browser call, user key) → `paste` (copy-paste fallback, any chatbot).
+  `aiPrompt()` builds the extraction prompt against a fixed JSON schema; `aiParse()` is a defensive
+  JSON extractor; `spReview()/spApply()` map the result to a new opportunity or merge into a matched
+  one (adding round/people). Config in localStorage `callback_ai_cfg_v1` (device-local, never synced,
+  never in repo). `openAISettings()` configures the engine. Entry: topbar "Smart add" + Settings.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — JD/résumé attachments as base64 (`fileToData`, `downloadData`, `pickFileInto`).
 - `CALENDAR` — `.ics` + Google Calendar links (`downloadICS`, `googleCalUrl`, `findRound`).

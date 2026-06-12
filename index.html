@@ -410,7 +410,7 @@ function updateSyncUI(msg){
   if(lbl){ const map={off:"Not connected",idle:"Synced ✓",saving:"Saving…",pulling:"Checking cloud…",error:"⚠ "+(msg||"Sync error")}; lbl.textContent=map[syncState]||""; lbl.style.color = syncState==="error"?"var(--bad)":syncState==="idle"?"var(--good)":"var(--muted)"; }
 }
 async function rpc(fn, body){
-  const base = sync.url.replace(/\/+$/,"");
+  const base = sync.url.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"");
   const res = await fetch(`${base}/rest/v1/rpc/${fn}`,{
     method:"POST",
     headers:{ "Content-Type":"application/json", "apikey":sync.key, "Authorization":"Bearer "+sync.key },

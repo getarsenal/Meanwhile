@@ -196,6 +196,37 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .cal-toggle .seg{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:none;background:none;color:var(--muted);font-weight:700;font-size:12.5px;cursor:pointer}
 .cal-toggle .seg svg{width:15px;height:15px}
 .cal-toggle .seg.on{background:var(--accent);color:#fff}
+/* month grid */
+.cal-head{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.cal-title{font-size:16px;font-weight:800;letter-spacing:-.01em;min-width:148px}
+.cal-nav{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--panel2);color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.cal-nav:hover{background:var(--line);color:var(--txt)}
+.cal-nav svg{width:16px;height:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{text-align:center;font-size:10.5px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;padding:2px 0 6px}
+.cal-cell{min-height:88px;border:1px solid var(--line);border-radius:10px;padding:6px 6px 5px;background:var(--panel);display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.cal-cell.has{cursor:pointer}
+.cal-cell.empty{background:transparent;border-color:transparent}
+.cal-cell.has:hover{border-color:var(--line2)}
+.cal-cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.cal-cell.sel{border-color:var(--accent3);box-shadow:inset 0 0 0 1px var(--accent3)}
+.cal-dnum{font-size:12px;font-weight:700;color:var(--muted)}
+.cal-cell.today .cal-dnum{color:var(--accent3)}
+.cal-evs{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-ev{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.55}
+.cal-more{font-size:9.5px;color:var(--faint);font-weight:700;padding-left:2px}
+.cal-dots{display:none;gap:3px;flex-wrap:wrap;margin-top:1px}
+.cal-dot{width:5px;height:5px;border-radius:50%}
+.cal-detail{margin-top:20px}
+.cal-detail-h{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 2px 11px}
+@media(max-width:720px){
+  .cal-grid{gap:4px}
+  .cal-cell{min-height:46px;padding:4px;border-radius:8px;gap:2px}
+  .cal-evs{display:none}
+  .cal-dots{display:flex}
+  .cal-dnum{font-size:11px;text-align:center}
+  .cal-cell.today{box-shadow:inset 0 0 0 1.5px var(--accent)}
+}
 .timeline{overflow:hidden}
 .tl-legend{display:flex;flex-wrap:wrap;gap:13px;font-size:11.5px;color:var(--muted);margin:0 2px 14px;align-items:center}
 .tl-legend span{display:inline-flex;align-items:center;gap:5px}
@@ -421,7 +452,9 @@ let searchQ = "";
 let tableSort = {key:"updatedAt", dir:-1};
 let openId = null;
 let drawerTab = "overview";
-let calMode = "list";   // "list" | "timeline" — Upcoming view sub-mode
+let calMode = "month";  // "month" | "list" | "timeline" — Upcoming view sub-mode
+let calCursor = null;   // Date (1st of displayed month); null = current month
+let calSel = null;      // "YYYY-MM-DD" selected day in month grid
 
 /* ============================ STORAGE ============================ */
 function load(){
@@ -810,14 +843,7 @@ function renderRoleCards(list){
 }
 
 /* ---------------- CALENDAR / UPCOMING ---------------- */
-function calToggle(){
-  return `<div class="cal-toggle">
-    <button class="seg ${calMode==='list'?'on':''}" data-calmode="list">${I.cal} List</button>
-    <button class="seg ${calMode==='timeline'?'on':''}" data-calmode="timeline">${I.spark} Timeline</button>
-  </div>`;
-}
-function renderCalendar(){
-  if(calMode==="timeline") return calToggle()+renderTimeline();
+function calEvents(){
   const events=[];
   state.opportunities.forEach(o=>{
     (o.rounds||[]).forEach(r=>{ if(r.date && r.status!=="cancelled"){ events.push({o,rid:r.id,date:r.date,time:r.time,label:r.name||r.type,type:"Interview",link:r.link,done:r.status==="done"}); } });
@@ -825,7 +851,16 @@ function renderCalendar(){
     if(o.offer&&o.offer.deadline) events.push({o,date:o.offer.deadline,time:"",label:"Offer decision deadline",type:"Deadline"});
   });
   events.sort((a,b)=> (a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
-  const future=events.filter(e=>daysUntil(e.date)>=0 || (daysUntil(e.date)===-0));
+  return events;
+}
+function calToggle(){
+  const seg=(id,label,icon)=>`<button class="seg ${calMode===id?'on':''}" data-calmode="${id}">${icon} ${label}</button>`;
+  return `<div class="cal-toggle">${seg("month","Month",I.cal)}${seg("list","List",I.table)}${seg("timeline","Timeline",I.spark)}</div>`;
+}
+function renderCalendar(){
+  if(calMode==="timeline") return calToggle()+renderTimeline();
+  if(calMode==="month")    return calToggle()+renderMonth();
+  const events=calEvents();
   const upcoming=events.filter(e=>{const d=daysUntil(e.date); return d!=null&&d>=0;});
   const past=events.filter(e=>{const d=daysUntil(e.date); return d!=null&&d<0;}).reverse();
   if(!events.length) return calToggle()+`<div class="empty"><div class="big">${I.cal}</div><h3>Nothing on the calendar</h3><p>Add interview rounds or a "next step" date to any role and it'll show up here.</p></div>`;
@@ -848,6 +883,64 @@ function renderCalendar(){
   html+= upcoming.length? upcoming.map(row).join("") : `<div style="color:var(--faint);font-size:13px;padding:6px 4px">Nothing scheduled ahead.</div>`;
   if(past.length){ html+=`<div class="section-head"><h3 style="color:var(--faint)">Past</h3><div class="line"></div></div>`; html+=`<div style="opacity:.6">`+past.slice(0,20).map(row).join("")+`</div>`; }
   return html;
+}
+
+/* ---------------- MONTH GRID ---------------- */
+function ymd(y,m,d){ return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+function todayYMD(){ const n=new Date(); return ymd(n.getFullYear(),n.getMonth(),n.getDate()); }
+const chevL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 18-6-6 6-6"/></svg>';
+const chevR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg>';
+function renderMonth(){
+  const events=calEvents();
+  const byDay={}; events.forEach(e=>{ (byDay[e.date]=byDay[e.date]||[]).push(e); });
+  const cur = calCursor || (()=>{ const d=new Date(); return new Date(d.getFullYear(),d.getMonth(),1); })();
+  const y=cur.getFullYear(), m=cur.getMonth();
+  const startDow=new Date(y,m,1).getDay(), daysIn=new Date(y,m+1,0).getDate();
+  const tStr=todayYMD();
+
+  const dow=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  const totalCells=Math.ceil((startDow+daysIn)/7)*7;
+  let cells="";
+  for(let i=0;i<totalCells;i++){
+    const dn=i-startDow+1;
+    if(dn<1||dn>daysIn){ cells+=`<div class="cal-cell empty"></div>`; continue; }
+    const ds=ymd(y,m,dn), list=(byDay[ds]||[]);
+    const chips=list.slice(0,3).map(e=>{ const c=stage(e.o.status).color; return `<div class="cal-ev" style="background:${c}22;color:${c}" title="${esc(e.o.company)} · ${esc(e.label)}">${esc(e.o.company)}</div>`; }).join("");
+    const more=list.length>3?`<div class="cal-more">+${list.length-3} more</div>`:"";
+    const dots=list.slice(0,5).map(e=>`<span class="cal-dot" style="background:${stage(e.o.status).color}"></span>`).join("");
+    cells+=`<div class="cal-cell${ds===tStr?' today':''}${ds===calSel?' sel':''}${list.length?' has':''}" data-calday="${ds}">
+      <div class="cal-dnum">${dn}</div>
+      <div class="cal-evs">${chips}${more}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+
+  const header=`<div class="cal-head">
+    <button class="cal-nav" data-calnav="-1" title="Previous month">${chevL}</button>
+    <div class="cal-title">${cur.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</div>
+    <button class="cal-nav" data-calnav="1" title="Next month">${chevR}</button>
+    <button class="btn ghost sm" data-calnav="0" style="margin-left:6px">Today</button>
+  </div>`;
+
+  // detail panel for the selected day (or today)
+  const dDate = calSel || tStr;
+  const dList = (byDay[dDate]||[]).slice().sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
+  const longDate = new Date(dDate+'T00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  let detail="";
+  if(dList.length){
+    detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div>`+dList.map(e=>{
+      const d=daysUntil(e.date), c=stage(e.o.status).color;
+      return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:11px">
+        <span class="pill" style="background:${c}22;color:${c}"><span class="dot" style="background:${c}"></span>${e.type}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">${esc(e.label)}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""}${e.rid&&d>=0?` · <span data-ics="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span>`:""}</div>
+        </div></div>`;
+    }).join("")+`</div>`;
+  } else {
+    detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div><div style="color:var(--faint);font-size:13px;padding:4px 2px">Nothing scheduled.${calSel?"":" Tap a day to see its events."}</div></div>`;
+  }
+
+  return `<div class="calendar">${header}<div class="cal-grid">${dow}${cells}</div>${detail}</div>`;
 }
 
 /* ---------------- TIMELINE (per-job swimlanes) ---------------- */
@@ -1548,7 +1641,7 @@ function personForm(p){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -1556,8 +1649,14 @@ document.addEventListener("click",e=>{
   if(t.dataset.act==="clear-filter"){ activeFilter=null; render(); return; }
   // table sort
   if(t.dataset.sort){ const k=t.dataset.sort; if(tableSort.key===k) tableSort.dir*=-1; else tableSort={key:k,dir:1}; render(); return; }
-  // calendar list/timeline toggle
+  // calendar month/list/timeline toggle
   if(t.dataset.calmode){ calMode=t.dataset.calmode; render(); return; }
+  // month grid navigation + day selection
+  if(t.dataset.calnav!=null){ const d=+t.dataset.calnav;
+    if(d===0){ calCursor=null; calSel=null; }
+    else { const c=calCursor||(()=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),1);})(); calCursor=new Date(c.getFullYear(),c.getMonth()+d,1); }
+    render(); return; }
+  if(t.dataset.calday){ calSel = (calSel===t.dataset.calday)? null : t.dataset.calday; render(); return; }
   // tabs
   if(t.dataset.tab){ drawerTab=t.dataset.tab; renderDrawer(); return; }
   // rating star pick

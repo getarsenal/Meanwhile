@@ -2432,7 +2432,8 @@ function aiIntegrationBox(){
     <div class="ai-head">${I.ai} AI Integration <span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent3)">${aiEngineLabel()}</span></div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px"><b>Bring your own AI.</b> Plug in a key and CallBack calls that provider directly to power Smart add, briefs, thank-you notes &amp; résumé parsing. No key? It falls back to copy-paste with any chatbot.</div>
     ${aiEngineFields()}
-    <div style="margin-top:12px"><button class="btn primary sm" data-act="ai-engine-save">${I.check} Save AI settings</button></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" data-act="ai-engine-save">${I.check} Save AI settings</button><button class="btn ghost sm" data-act="ai-test">⚡ Test connection</button></div>
+    <div id="aiTestStatus" style="font-size:12px;font-weight:600;margin-top:9px;line-height:1.5"></div>
   </div>`;
 }
 function openAISettings(){
@@ -2676,6 +2677,13 @@ document.addEventListener("click",e=>{
   if(act==="ai-settings"){ openAISettings(); return; }
   if(act==="ai-cfg-save"){ saveAISettings(); closeEditor(); toast("AI engine saved ✓"); return; }
   if(act==="ai-engine-save"){ saveAISettings(); openSettings(); toast("AI engine saved ✓"); return; }
+  if(act==="ai-test"){ saveAISettings(); const st=$("#aiTestStatus"); const eng=aiEngine();
+    if(eng==="paste"||eng==="off"){ if(st){ st.style.color="var(--warn)"; st.textContent="Pick a provider above and paste its API key first, then Test."; } return; }
+    if(st){ st.style.color="var(--muted)"; st.textContent="Testing "+aiEngineLabel().replace(" ✓","")+"…"; }
+    aiCall("Reply with exactly: ok", null, {json:false})
+      .then(()=>{ if(st){ st.style.color="var(--good)"; st.textContent="✓ Connected — "+aiEngineLabel().replace(" ✓","")+" is working. You're all set."; } })
+      .catch(e=>{ if(st){ st.style.color="var(--bad)"; st.textContent="⚠ "+e.message; } });
+    return; }
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="prep-bank"){ openPrepBank(); return; }
   if(act==="prep-back"){ openPrepBank(); return; }

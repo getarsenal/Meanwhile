@@ -34,11 +34,19 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   try {
-    const { prompt } = await req.json().catch(() => ({}));
+    const { prompt, doc, maxTokens } = await req.json().catch(() => ({}));
     if (!prompt || typeof prompt !== "string") return json({ error: "missing prompt" }, 400);
 
     const key = Deno.env.get("ANTHROPIC_API_KEY");
     if (!key) return json({ error: "ANTHROPIC_API_KEY secret is not set" }, 500);
+
+    // optional document (e.g. a PDF résumé) the model reads natively
+    const content = doc && doc.data
+      ? [
+          { type: "document", source: { type: "base64", media_type: doc.mime || "application/pdf", data: doc.data } },
+          { type: "text", text: prompt },
+        ]
+      : prompt;
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -49,8 +57,8 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: prompt }],
+        max_tokens: typeof maxTokens === "number" ? maxTokens : 1024,
+        messages: [{ role: "user", content }],
       }),
     });
 

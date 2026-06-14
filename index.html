@@ -415,6 +415,12 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .brief-body{font-size:13px;line-height:1.62;color:var(--muted);white-space:pre-wrap;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
 .brief-meta{font-size:10px;color:var(--faint);margin-top:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
 .brief-empty{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
+
+/* ---------- Résumé studio ---------- */
+.rs-import{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
+.rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.rs-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.rs-card-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -1758,21 +1764,24 @@ function aiParse(s){
   if(a>=0&&b>a) t=t.slice(a,b+1);
   return JSON.parse(t);
 }
-async function aiCall(prompt){
-  const eng=aiEngine();
+// prompt + optional doc {data:base64-no-prefix, mime} (e.g. a PDF the model reads natively)
+async function aiCall(prompt, doc){
+  const eng=aiEngine(); const maxTok=doc?2048:1024;
   if(eng==="proxy"){
-    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify({prompt})});
+    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify(doc?{prompt,doc,maxTokens:maxTok}:{prompt})});
     if(!res.ok) throw new Error("Proxy "+res.status+" "+(await res.text()).slice(0,140));
     const j=await res.json(); return j.text||j.output||(typeof j==="string"?j:JSON.stringify(j));
   }
   if(eng==="anthropic"){
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:aiCfg.model||"claude-haiku-4-5",max_tokens:1024,messages:[{role:"user",content:prompt}]})});
+    const content = doc ? [{type:"document",source:{type:"base64",media_type:doc.mime||"application/pdf",data:doc.data}},{type:"text",text:prompt}] : prompt;
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:aiCfg.model||"claude-haiku-4-5",max_tokens:maxTok,messages:[{role:"user",content}]})});
     if(!res.ok) throw new Error("Claude "+res.status+" "+(await res.text()).slice(0,180));
     const j=await res.json(); return (j.content||[]).map(b=>b.text||"").join("");
   }
   if(eng==="google"){
     const model=aiCfg.model||"gemini-2.0-flash";
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiCfg.key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json"}})});
+    const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiCfg.key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts}],generationConfig:{responseMimeType:"application/json"}})});
     if(!res.ok) throw new Error("Gemini "+res.status+" "+(await res.text()).slice(0,180));
     const j=await res.json(); return ((((j.candidates||[])[0]||{}).content||{}).parts||[{}])[0].text||"";
   }
@@ -2087,7 +2096,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2111,6 +2120,8 @@ document.addEventListener("click",e=>{
   // open detail
   if(t.dataset.open){ openDetail(t.dataset.open); return; }
   if(t.dataset.researchCo){ const o=state.opportunities.find(x=>x.id===t.dataset.researchCo); if(o) runResearch(o); return; }
+  if(t.dataset.rsDelexp!==undefined){ rsSync(); resumeDraft.experience.splice(+t.dataset.rsDelexp,1); spSetBody(resumeStudioBody()); return; }
+  if(t.dataset.rsDeledu!==undefined){ rsSync(); resumeDraft.education.splice(+t.dataset.rsDeledu,1); spSetBody(resumeStudioBody()); return; }
 
   const act=t.dataset.act;
   if(act==="add"){ openEditor(opForm(null)); return; }
@@ -2155,11 +2166,17 @@ document.addEventListener("click",e=>{
   if(t.dataset.tile){ applyTile(t.dataset.tile); return; }
   // résumé
   if(act==="edit-resume"){ openResume(); return; }
-  if(act==="resume-upload"){ pickResumeFile(); return; }
   if(act==="resume-download"){ downloadData(state.resume&&state.resume.file); return; }
-  if(act==="resume-removefile"){ if(state.resume){ delete state.resume.file; save(); openResume(); } return; }
-  if(act==="resume-save"){ saveResume(); return; }
-  if(act==="resume-pdf"){ printResume(); return; }
+  // résumé studio
+  if(act==="rs-upload"){ rsUpload(); return; }
+  if(act==="rs-ai"){ const ta=$("#rs-import"); rsAIParse(ta?ta.value.trim():"", null); return; }
+  if(act==="rs-addexp"){ rsSync(); resumeDraft.experience.push({role:"",company:"",start:"",end:"",location:"",bullets:[]}); spSetBody(resumeStudioBody()); return; }
+  if(act==="rs-addedu"){ rsSync(); resumeDraft.education.push({school:"",degree:"",detail:"",start:"",end:""}); spSetBody(resumeStudioBody()); return; }
+  if(act==="rs-save"){ rsSave(); return; }
+  if(act==="rs-pdf"){ rsPrint(false); return; }
+  if(act==="rs-preview"){ rsPrint(true); return; }
+  if(act==="rs-manual-copy"){ copy(resumeParsePrompt()+"\n\nRÉSUMÉ:\n"+rsManualText,"Prompt copied — paste into any AI"); return; }
+  if(act==="rs-manual-build"){ const ta=$("#rs-manual-paste"); try{ rsApplyParsed(aiParse(ta?ta.value:"")); toast("Built ✓"); }catch(e){ toast("⚠ Couldn't read that JSON"); } return; }
   // file fields (JD attach)
   if(t.dataset.pickfile){ pickFileInto(t.dataset.pickfile, t.dataset.accept||""); return; }
   if(t.dataset.clearfile){ const fld=t.dataset.clearfile; const h=document.querySelector(`[name="${fld}"]`); if(h)h.value=""; const lbl=document.querySelector(`[data-filename="${fld}"]`); if(lbl)lbl.innerHTML=""; return; }
@@ -2338,45 +2355,203 @@ async function pickFileInto(field, accept){
 }
 
 /* ============================ RÉSUMÉ (global) ============================ */
-function resumeText(){ return (state.resume && state.resume.text && state.resume.text.trim()) ? state.resume.text.trim() : "[PASTE YOUR RESUME / SUMMARY HERE]"; }
-function openResume(){
-  const r=state.resume||{};
-  openEditor(`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.user}</div>
-      <h2 style="margin:0;font-size:18px;font-weight:850">My résumé</h2>
-      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
-    </div>
-    <p style="font-size:12.5px;color:var(--muted);margin:0 0 16px">Keep your latest résumé here. The <b>summary text</b> auto-fills your AI brief prompts so you never paste it manually. Attach the file to download it anytime, on any synced device.</p>
-    <div class="form-row"><label>Résumé file</label>
-      <div id="resumeFileRow">${r.file?`<div class="sub-item" style="display:flex;align-items:center;gap:8px;margin:0"><span style="flex:1">📄 ${esc(r.file.name)} <span style="color:var(--faint)">${fileSizeStr(r.file.size)}</span></span><button class="btn sm ghost" data-act="resume-download">↓ Download</button><button class="x-btn danger" data-act="resume-removefile">${I.trash}</button></div>`:`<button class="btn ghost sm" data-act="resume-upload">↑ Upload résumé (PDF/DOC)</button>`}</div>
-    </div>
-    <div class="form-row"><label>Résumé summary text <span style="color:var(--faint);font-weight:500">— used in AI prompts</span></label>
-      <textarea id="resumeText" style="min-height:160px" placeholder="Paste your résumé as text, or a tight summary of your experience, skills and wins…">${esc(r.text||"")}</textarea></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn primary sm" data-act="resume-save">${I.check} Save</button>
-      <button class="btn ghost sm" data-act="resume-pdf">⎙ Save text as PDF</button>
-    </div>`);
+/* ============================ RÉSUMÉ STUDIO ============================ */
+// Upload your résumé (PDF read natively by the AI, or text), edit it as structured sections
+// in-app, and export a clean PDF via the browser print pipeline (no libraries). The structured
+// data lives on state.resume.data (synced); resumeText() derives the plain text used by AI briefs.
+function resumeText(){
+  const d=state.resume&&state.resume.data;
+  if(d && (d.name||d.summary||(d.experience&&d.experience.length))) return resumeDerivedText(d);
+  return (state.resume && state.resume.text && state.resume.text.trim()) ? state.resume.text.trim() : "[PASTE YOUR RESUME / SUMMARY HERE]";
 }
-function pickResumeFile(){
-  const inp=document.createElement("input"); inp.type="file"; inp.accept=".pdf,.doc,.docx,.txt,.rtf,.pages";
+function resumeDerivedText(d){
+  const L=[]; if(d.name) L.push(d.name); if(d.title) L.push(d.title);
+  const c=d.contact||{}; const cl=[c.email,c.phone,c.location,c.linkedin,c.website].filter(Boolean).join(" · "); if(cl) L.push(cl);
+  if(d.summary){ L.push("","SUMMARY",d.summary); }
+  if((d.experience||[]).length){ L.push("","EXPERIENCE"); d.experience.forEach(x=>{ const head=[x.role,x.company].filter(Boolean).join(" — "); const dt=[x.start,x.end].filter(Boolean).join("–"); L.push(head+(dt?"  ("+dt+")":"")+(x.location?"  · "+x.location:"")); (x.bullets||[]).forEach(b=>L.push("• "+b)); }); }
+  if((d.education||[]).length){ L.push("","EDUCATION"); d.education.forEach(x=>{ const dt=[x.start,x.end].filter(Boolean).join("–"); L.push([x.degree,x.school].filter(Boolean).join(", ")+(dt?"  ("+dt+")":"")+(x.detail?" — "+x.detail:"")); }); }
+  if((d.skills||[]).length){ L.push("","SKILLS",d.skills.join(", ")); }
+  return L.join("\n");
+}
+function normalizeResume(d){
+  d=d||{}; d.contact=d.contact||{};
+  d.experience=Array.isArray(d.experience)?d.experience.map(x=>({role:x.role||"",company:x.company||"",location:x.location||"",start:x.start||"",end:x.end||"",bullets:Array.isArray(x.bullets)?x.bullets.filter(Boolean):(x.bullets?[String(x.bullets)]:[])})):[];
+  d.education=Array.isArray(d.education)?d.education.map(x=>({school:x.school||"",degree:x.degree||"",detail:x.detail||"",start:x.start||"",end:x.end||""})):[];
+  d.skills=Array.isArray(d.skills)?d.skills.filter(Boolean):(typeof d.skills==="string"?d.skills.split(/[,\n]/).map(s=>s.trim()).filter(Boolean):[]);
+  d.name=d.name||""; d.title=d.title||""; d.summary=d.summary||""; d.template=d.template||"modern";
+  return d;
+}
+let resumeDraft=null, rsManualText="";
+function openResume(){
+  resumeDraft = normalizeResume(JSON.parse(JSON.stringify((state.resume&&state.resume.data)||{})));
+  openEditor(resumeStudioBody());
+}
+function resumeStudioBody(){
+  const d=resumeDraft, c=d.contact||{}, r=state.resume||{};
+  const exp=(d.experience||[]).map((x,i)=>`<div class="rs-card"><div class="rs-card-h"><span>Role ${i+1}</span><button class="x-btn danger" data-rs-delexp="${i}" title="Remove">${I.trash}</button></div>
+    <div class="form-2"><div class="form-row"><label>Title</label><input id="rs-exp-${i}-role" value="${esc(x.role)}" placeholder="Senior PM"/></div><div class="form-row"><label>Company</label><input id="rs-exp-${i}-company" value="${esc(x.company)}" placeholder="Acme"/></div></div>
+    <div class="form-2"><div class="form-row"><label>Start</label><input id="rs-exp-${i}-start" value="${esc(x.start)}" placeholder="2022"/></div><div class="form-row"><label>End</label><input id="rs-exp-${i}-end" value="${esc(x.end)}" placeholder="Present"/></div></div>
+    <div class="form-row"><label>Location <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="rs-exp-${i}-location" value="${esc(x.location)}" placeholder="Remote"/></div>
+    <div class="form-row"><label>Bullets <span style="color:var(--faint);font-weight:500">— one achievement per line</span></label><textarea id="rs-exp-${i}-bullets" style="min-height:88px">${esc((x.bullets||[]).join("\n"))}</textarea></div>
+  </div>`).join("");
+  const edu=(d.education||[]).map((x,i)=>`<div class="rs-card"><div class="rs-card-h"><span>Education ${i+1}</span><button class="x-btn danger" data-rs-deledu="${i}" title="Remove">${I.trash}</button></div>
+    <div class="form-2"><div class="form-row"><label>School</label><input id="rs-edu-${i}-school" value="${esc(x.school)}" placeholder="MIT"/></div><div class="form-row"><label>Degree</label><input id="rs-edu-${i}-degree" value="${esc(x.degree)}" placeholder="BS, Computer Science"/></div></div>
+    <div class="form-2"><div class="form-row"><label>Start</label><input id="rs-edu-${i}-start" value="${esc(x.start)}" placeholder="2014"/></div><div class="form-row"><label>End</label><input id="rs-edu-${i}-end" value="${esc(x.end)}" placeholder="2018"/></div></div>
+    <div class="form-row"><label>Detail <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="rs-edu-${i}-detail" value="${esc(x.detail)}" placeholder="Honors, GPA, focus…"/></div>
+  </div>`).join("");
+  const tpls=[["modern","Modern"],["classic","Classic"],["compact","Compact"]];
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.user}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Résumé studio</h2><div style="font-size:12px;color:var(--faint)">Edit in app · export a clean PDF · auto-fills your AI briefs</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <div class="rs-import">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Start from your current résumé — upload a <b>PDF</b> (read directly by AI) or paste the text. Engine: ${aiEngineLabel()} · <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">change</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn ghost sm" data-act="rs-upload">↑ Upload PDF / text</button>
+      <button class="btn ghost sm" data-act="rs-ai">${I.ai} Structure pasted text</button>
+      ${r.file?`<button class="btn ghost sm" data-act="resume-download">↓ Original (${esc(r.file.name)})</button>`:""}
+    </div>
+    <textarea id="rs-import" style="min-height:64px" placeholder="…or paste your résumé text here, then tap 'Structure pasted text'"></textarea>
+  </div>
+
+  <div class="rs-sec">Header</div>
+  <div class="form-2"><div class="form-row"><label>Full name</label><input id="rs-name" value="${esc(d.name)}" placeholder="Connor Scheidel"/></div><div class="form-row"><label>Headline / title</label><input id="rs-title" value="${esc(d.title)}" placeholder="Product Manager"/></div></div>
+  <div class="form-2"><div class="form-row"><label>Email</label><input id="rs-email" value="${esc(c.email)}"/></div><div class="form-row"><label>Phone</label><input id="rs-phone" value="${esc(c.phone)}"/></div></div>
+  <div class="form-2"><div class="form-row"><label>Location</label><input id="rs-location" value="${esc(c.location)}" placeholder="Austin, TX"/></div><div class="form-row"><label>LinkedIn / site</label><input id="rs-linkedin" value="${esc(c.linkedin)}" placeholder="linkedin.com/in/…"/></div></div>
+  <input type="hidden" id="rs-website" value="${esc(c.website||"")}"/>
+  <div class="form-row"><label>Summary</label><textarea id="rs-summary" style="min-height:80px" placeholder="2-3 lines on who you are and your strongest wins…">${esc(d.summary)}</textarea></div>
+
+  <div class="rs-sec">Experience</div>${exp||`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No roles yet.</div>`}
+  <button class="btn ghost sm" data-act="rs-addexp" style="margin-bottom:6px">＋ Add role</button>
+
+  <div class="rs-sec">Education</div>${edu||`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">None yet.</div>`}
+  <button class="btn ghost sm" data-act="rs-addedu" style="margin-bottom:6px">＋ Add education</button>
+
+  <div class="rs-sec">Skills</div>
+  <div class="form-row"><textarea id="rs-skills" style="min-height:58px" placeholder="Comma or line separated">${esc((d.skills||[]).join(", "))}</textarea></div>
+
+  <div class="rs-sec">Export</div>
+  <div class="form-row"><label>Template</label><select id="rs-template">${tpls.map(([v,l])=>`<option value="${v}" ${d.template===v?"selected":""}>${l}</option>`).join("")}</select></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+    <button class="btn primary sm" data-act="rs-save">${I.check} Save</button>
+    <button class="btn ghost sm" data-act="rs-pdf">⎙ Download PDF</button>
+    <button class="btn ghost sm" data-act="rs-preview">👁 Preview</button>
+  </div>`;
+}
+function rsSync(){
+  if(!resumeDraft) return; const d=resumeDraft;
+  const g=id=>{ const e=document.getElementById(id); return e?e.value:undefined; };
+  let v;
+  if((v=g("rs-name"))!==undefined) d.name=v.trim();
+  if((v=g("rs-title"))!==undefined) d.title=v.trim();
+  d.contact=d.contact||{};
+  ["email","phone","location","linkedin","website"].forEach(k=>{ const x=g("rs-"+k); if(x!==undefined) d.contact[k]=x.trim(); });
+  if((v=g("rs-summary"))!==undefined) d.summary=v.trim();
+  (d.experience||[]).forEach((x,i)=>{ ["role","company","start","end","location"].forEach(k=>{ const val=g(`rs-exp-${i}-${k}`); if(val!==undefined) x[k]=val.trim(); }); const b=g(`rs-exp-${i}-bullets`); if(b!==undefined) x.bullets=b.split("\n").map(s=>s.replace(/^[-••\s]+/,"").trim()).filter(Boolean); });
+  (d.education||[]).forEach((x,i)=>{ ["school","degree","detail","start","end"].forEach(k=>{ const val=g(`rs-edu-${i}-${k}`); if(val!==undefined) x[k]=val.trim(); }); });
+  if((v=g("rs-skills"))!==undefined) d.skills=v.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
+  const tpl=document.getElementById("rs-template"); if(tpl) d.template=tpl.value;
+}
+function rsSave(){ rsSync(); state.resume=state.resume||{}; state.resume.data=resumeDraft; state.resume.text=resumeDerivedText(resumeDraft)||state.resume.text||""; save(); closeEditor(); toast("Résumé saved ✓"); }
+function resumeParsePrompt(){
+  return `Extract this résumé into structured JSON. Return ONLY a JSON object (no markdown):
+{ "name":"", "title":"", "contact":{"email":"","phone":"","location":"","linkedin":"","website":""},
+  "summary":"",
+  "experience":[{"role":"","company":"","location":"","start":"","end":"","bullets":[""]}],
+  "education":[{"school":"","degree":"","detail":"","start":"","end":""}],
+  "skills":[""] }
+Use "" or [] for anything absent. Keep each bullet to one concise achievement and preserve the candidate's wording. Dates as written (e.g. "2021", "Jun 2023", "Present").`;
+}
+function rsApplyParsed(parsed){ resumeDraft=normalizeResume(parsed); if(editorEl) spSetBody(resumeStudioBody()); else openResume(); }
+async function rsAIParse(text, doc){
+  const eng=aiEngine();
+  if(eng==="off"){ toast("Turn on an AI engine in Settings"); return; }
+  if(eng==="paste"){ if(!text){ toast("Paste-mode can't read a PDF — paste résumé text, or set a key in Settings"); return; } rsParseManual(text); return; }
+  if(!text && !doc){ toast("Upload a file or paste your résumé text"); return; }
+  toast("Structuring with AI…");
+  try{
+    const out=await aiCall(resumeParsePrompt()+(text?("\n\nRÉSUMÉ:\n"+text):""), doc||null);
+    rsApplyParsed(aiParse(out)); toast("Résumé structured ✓");
+  }catch(e){ toast("⚠ "+e.message); }
+}
+function rsUpload(){
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".pdf,.txt,.md,.markdown,.json,.doc,.docx,.rtf";
   inp.onchange=async()=>{ const file=inp.files[0]; if(!file) return;
-    if(file.size>4*1024*1024){ toast("⚠ File too big (max ~4MB)"); return; }
-    state.resume=state.resume||{}; state.resume.file=await fileToData(file); save(); openResume(); toast("Résumé attached"); };
+    if(file.size>5*1024*1024){ toast("⚠ File too big (max ~5MB)"); return; }
+    const fd=await fileToData(file); state.resume=state.resume||{}; state.resume.file=fd; save();
+    const name=file.name.toLowerCase();
+    const isText=/\.(txt|md|markdown|json)$/.test(name)||/^text\//.test(file.type);
+    const isPDF=name.endsWith(".pdf")||file.type==="application/pdf";
+    if(isText){ const txt=await file.text(); rsAIParse(txt,null); }
+    else if(isPDF){ const b64=(fd.data.split(",")[1])||""; rsAIParse(null,{data:b64,mime:"application/pdf"}); }
+    else { toast("Stored the file. For DOCX, paste the text or export to PDF to auto-structure."); if(editorEl) spSetBody(resumeStudioBody()); }
+  };
   inp.click();
 }
-function saveResume(){
-  state.resume=state.resume||{};
-  const ta=document.querySelector('#resumeText'); if(ta) state.resume.text=ta.value.trim();
-  save(); closeEditor(); toast("Résumé saved");
+function rsParseManual(text){
+  rsManualText=text||"";
+  openEditor(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px;font-weight:850">Structure résumé</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0 0 12px">
+    <li>Copy this prompt &amp; open any AI chat.<br><button class="btn ghost sm" data-act="rs-manual-copy" style="margin-top:6px">${I.copy} Copy prompt</button></li>
+    <li>Paste it, then copy the AI's JSON reply.</li>
+    <li>Paste the reply below &amp; build.</li>
+  </ol>
+  <textarea id="rs-manual-paste" style="min-height:120px" placeholder="Paste the AI's JSON reply…"></textarea>
+  <div style="display:flex;gap:10px;margin-top:12px"><button class="btn primary" style="flex:1" data-act="rs-manual-build">${I.check} Build résumé</button><button class="btn ghost" data-act="cancel-editor">Cancel</button></div>`);
 }
-function printResume(){
-  const txt=(document.querySelector('#resumeText')?document.querySelector('#resumeText').value:(state.resume&&state.resume.text))||"";
-  if(!txt.trim()){ toast("Add some résumé text first"); return; }
+function rsHTML(d){
+  d=normalizeResume(JSON.parse(JSON.stringify(d||{})));
+  const tpl=d.template||"modern"; const c=d.contact||{};
+  const sep=tpl==="classic"?"  •  ":"  ·  ";
+  const contact=[c.email,c.phone,c.location,c.linkedin,c.website].filter(Boolean).map(esc).join(sep);
+  const exp=(d.experience||[]).map(x=>{
+    const meta=[ [x.start,x.end].filter(Boolean).join(" – "), x.location ].filter(Boolean).map(esc).join("  ·  ");
+    const bl=(x.bullets||[]).length?`<ul>${x.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>`:"";
+    return `<div class="item"><div class="x-h"><span class="x-r">${esc(x.role||"")}</span>${x.company?`<span class="x-c">${esc(x.company)}</span>`:""}</div>${meta?`<div class="meta">${meta}</div>`:""}${bl}</div>`;
+  }).join("");
+  const edu=(d.education||[]).map(x=>{
+    const meta=[ [x.start,x.end].filter(Boolean).join(" – "), x.detail ].filter(Boolean).map(esc).join("  ·  ");
+    return `<div class="item"><div class="x-h"><span class="x-r">${esc(x.degree||"")}</span>${x.school?`<span class="x-c">${esc(x.school)}</span>`:""}</div>${meta?`<div class="meta">${meta}</div>`:""}</div>`;
+  }).join("");
+  const skills=(d.skills||[]).length?`<div class="sec"><h2>Skills</h2><div class="skills">${d.skills.map(esc).join("  ·  ")}</div></div>`:"";
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(d.name||"Résumé")}</title><style>${rsCSS(tpl)}</style></head>
+  <body><div class="page">
+    <header><h1>${esc(d.name||"")}</h1>${d.title?`<div class="title">${esc(d.title)}</div>`:""}${contact?`<div class="contact">${contact}</div>`:""}</header>
+    ${d.summary?`<div class="sec"><h2>Summary</h2><p class="summary">${esc(d.summary)}</p></div>`:""}
+    ${exp?`<div class="sec"><h2>Experience</h2>${exp}</div>`:""}
+    ${edu?`<div class="sec"><h2>Education</h2>${edu}</div>`:""}
+    ${skills}
+  </div></body></html>`;
+}
+function rsCSS(tpl){
+  const base=`*{box-sizing:border-box}body{margin:0;color:#1a1a1a;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:760px;margin:0 auto;padding:48px 52px}
+  h1{margin:0;font-size:27px;letter-spacing:-.01em}
+  .title{font-size:14px;margin-top:3px}
+  .contact{font-size:11.5px;color:#555;margin-top:7px}
+  .sec{margin-top:22px}
+  .sec h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;margin:0 0 10px}
+  .item{margin-bottom:14px}
+  .x-h{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .x-r{font-weight:700;font-size:14px}
+  .x-c{font-size:13px;color:#333}
+  .meta{font-size:11.5px;color:#666;margin-top:2px}
+  ul{margin:7px 0 0;padding-left:18px}
+  li{font-size:12.5px;line-height:1.5;margin-bottom:3px}
+  .summary{font-size:12.5px;line-height:1.55;margin:0}
+  .skills{font-size:12.5px;line-height:1.6}
+  @media print{.page{padding:24px 30px;max-width:none}@page{margin:14mm}}`;
+  if(tpl==="classic") return base+`body{font-family:Georgia,"Times New Roman",serif}header{text-align:center}h1{font-size:30px}.sec h2{border-bottom:1.5px solid #222;padding-bottom:4px;font-weight:700}`;
+  if(tpl==="compact") return base+`body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}.page{padding:34px 40px}h1{font-size:23px}.sec{margin-top:16px}.item{margin-bottom:10px}.sec h2{color:#000;border-left:3px solid #000;padding-left:7px}`;
+  return base+`body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}h1{color:#15171c}.sec h2{color:#5e6ad2;border-bottom:2px solid #e6e7f4;padding-bottom:5px}.x-c{color:#5e6ad2}`;
+}
+function rsPrint(preview){
+  rsSync(); const html=rsHTML(resumeDraft);
   const w=window.open("","_blank");
-  if(!w){ toast("Allow pop-ups to save as PDF"); return; }
-  w.document.write(`<html><head><title>Résumé</title><style>body{font:13px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;margin:40px auto;padding:0 24px;color:#111;white-space:pre-wrap}@media print{body{margin:0}}</style></head><body>${esc(txt)}</body></html>`);
-  w.document.close(); setTimeout(()=>{ w.focus(); w.print(); }, 250);
+  if(!w){ toast("Allow pop-ups to export the PDF"); return; }
+  w.document.write(html); w.document.close();
+  if(!preview) setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 350);
 }
 
 /* ============================ CALENDAR (.ics / Google) ============================ */

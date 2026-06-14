@@ -44,6 +44,14 @@ you paste into a new AI chat to prep for interviews.
   `scorecardPrompt()` (AI decision brief); `scorecardTeaser()` surfaces it on Dashboard/Insights
   once ≥2 offers exist. State lives in `state.scorecard` (lazily created via `getScorecard()`).
 - `DRAWER: DETAIL` — per-role drawer with tabs: `tabOverview / tabRounds / tabPeople / tabBrief`.
+- `RÉSUMÉ STUDIO` — `openResume()` opens a structured editor (header/summary/experience/education/
+  skills) over `state.resume.data`; `rsSync()` reads the DOM into `resumeDraft`, `rsSave()` persists
+  + sets `state.resume.text` (so AI briefs use it). Import: `rsUpload()` reads text files directly
+  and sends **PDFs straight to the AI** (`aiCall(prompt, doc)` — Claude/Gemini/proxy read PDFs
+  natively; the edge function forwards a document block); `rsAIParse()`/`resumeParsePrompt()` →
+  structured JSON, with `rsParseManual()` copy-paste fallback. Export: `rsHTML()`/`rsCSS()` render a
+  clean printable doc (Modern/Classic/Compact templates) and `rsPrint()` uses the browser print
+  pipeline → Save as PDF (no libraries). `resumeText()` derives from the structured data when present.
 - AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt`, plus `resumeText()`.
 - `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.
   `resolveCompany()` hits Clearbit autocomplete (free, no key, CORS-ok) for a real logo + canonical

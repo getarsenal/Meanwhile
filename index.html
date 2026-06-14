@@ -190,7 +190,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 @keyframes sppop{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
 @media (display-mode:standalone){ #splash{display:grid} }
 /* brand mark in the mobile top bar (the desktop sidebar logo is hidden there) */
-.topbar-brand{display:none;width:30px;height:30px;border-radius:9px;flex:0 0 auto;cursor:pointer}
+.topbar-brand{display:none;width:38px;height:38px;border-radius:11px;flex:0 0 auto;cursor:pointer;transition:transform .12s}
+.topbar-brand:active{transform:scale(.9)}
 .empty h3{color:var(--txt);margin:0 0 6px;font-size:18px}
 
 /* ---------- Kanban ---------- */
@@ -772,10 +773,15 @@ function renderNav(){
 }
 
 /* ============================ RENDER ROUTER ============================ */
+function getProfile(){ state.profile=state.profile||{}; return state.profile; }
+function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
   renderNav();
   const v=VIEWS.find(x=>x.id===view);
-  $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${esc(v.name)}`;
+  const name=(getProfile().name||"").trim();
+  // On Home, lead with a personal greeting when a name is set
+  if(view==="dashboard" && name) $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${greeting()}, ${esc(name.split(" ")[0])}`;
+  else $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${esc(v.name)}`;
   // No subtitle verbiage — the nav + content carry the context. Only the filter chip shows here.
   if(activeFilter && (view==="cards"||view==="pipeline"))
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
@@ -1005,7 +1011,7 @@ function renderMovesHub(ops){
 function emptyState(){
   return `<div class="empty welcome">
     <div class="big brand"><img src="icon.png" alt="CallBack" width="84" height="84"/></div>
-    <h3>Welcome to CallBack</h3>
+    <h3>${getProfile().name?`Welcome, ${esc(getProfile().name.split(" ")[0])}`:"Welcome to CallBack"}</h3>
     <p style="max-width:440px">Your interview command center. Track every company, prep with AI, and never mix up who's who — all in one place.</p>
     <div class="welcome-feats">
       <div class="wf"><span>${I.ai}</span><div><b>Smart add</b><small>Paste a job link, email or invite → a ready-to-review entry</small></div></div>
@@ -1715,6 +1721,7 @@ function buildBrief(o){
   const L=[];
   L.push(`# Interview brief — ${o.company}${o.role?` (${o.role})`:""}`);
   L.push("");
+  if(getProfile().name) L.push(`- Candidate (me): ${getProfile().name}${getProfile().headline?` — ${getProfile().headline}`:""}`);
   L.push(`- Stage: ${stage(o.status).name}`);
   if(o.source) L.push(`- How I got here: ${o.source}${o.referrer?` (via ${o.referrer})`:""}`);
   if(o.workMode||o.location) L.push(`- Setup: ${[o.workMode,o.location].filter(Boolean).join(", ")}`);
@@ -1921,8 +1928,18 @@ function openSettings(){
   const body = `
   <div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.spark}</div>
-    <div><h2 style="margin:0;font-size:18px;font-weight:850">Settings</h2><div style="font-size:12.5px;color:var(--faint)">Sync, backup & data</div></div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Settings</h2><div style="font-size:12.5px;color:var(--faint)">Profile, sync, AI &amp; data</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+
+  <div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.user} Profile</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Your name personalizes the app — the greeting up top — and your AI drafts speak as you.</div>
+    <div class="form-2">
+      <div class="form-row"><label>Your name</label><input id="profileName" value="${esc(getProfile().name||"")}" placeholder="Connor" autocomplete="name"/></div>
+      <div class="form-row"><label>What you do <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="profileHeadline" value="${esc(getProfile().headline||"")}" placeholder="Product Manager"/></div>
+    </div>
+    <button class="btn primary sm" data-act="profile-save">${I.check} Save profile</button>
   </div>
 
   <div class="ai-box" style="margin-top:14px">
@@ -1970,7 +1987,13 @@ function openSettings(){
     <button class="btn ghost sm" data-act="scan-calendar">${I.cal} Scan calendar</button>
     <button class="btn ghost sm" data-act="enable-reminders">${I.bell} ${aiCfg.reminders?"Reminders on ✓":"Turn on reminders"}</button>
   </div>
-  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Calendar scan, reminders, Contacts, and sharing emails/profiles into Callback work in the App Store build. On the web they'll let you know.</div>`;
+  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Calendar scan, reminders, Contacts, and sharing emails/profiles into CallBack work in the App Store build. On the web they'll let you know.</div>
+
+  <div class="section-head"><h3>About</h3><div class="line"></div></div>
+  <div style="display:flex;align-items:center;gap:11px">
+    <img src="icon.png" alt="CallBack" width="34" height="34" style="border-radius:10px"/>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5"><b style="color:var(--txt)">CallBack</b> — your interview command center.<br><span style="font-size:11.5px;color:var(--faint)">Local-first · your data stays yours · <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></span></div>
+  </div>`;
   openEditor(body);
   updateSyncUI();
 }
@@ -2624,6 +2647,7 @@ document.addEventListener("click",e=>{
   if(act==="ai-settings"){ openAISettings(); return; }
   if(act==="ai-cfg-save"){ saveAISettings(); closeEditor(); toast("AI engine saved ✓"); return; }
   if(act==="ai-save"){ saveAISettings(); openSettings(); toast("AI engine saved ✓"); return; }
+  if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="prep-bank"){ openPrepBank(); return; }
   if(act==="prep-back"){ openPrepBank(); return; }
   if(act==="story-add"){ openStoryForm(null); return; }

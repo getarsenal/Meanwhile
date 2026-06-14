@@ -104,7 +104,10 @@ you paste into a new AI chat to prep for interviews.
 - `EVENT WIRING` — one delegated `document` click handler. **If you add a new `data-*` button, add its attribute to the `closest(...)` selector** in that handler or it won't fire.
 
 ## Data model
-`state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], scorecard?:{}, rev, meta }`
+`state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, rev, meta }`
+- `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name
+  drives the Home greeting (`render()`: "Good afternoon, {first}"), the welcome state, and AI briefs
+  (`buildBrief` adds a "Candidate (me)" line). Synced like the rest of state.
 - `stories[]` (PREP BANK): `{id,title,tags[],s,t,a,r}` STAR stories; `questions[]`: `{id,q,a,tags[]}`.
   `getStories()/getQuestions()` lazily create the arrays; `storyBankText()` feeds them into the AI
   prep prompts (`prepPrompt`, `appAnswersPrompt`). UI: `openPrepBank()` (Settings + AI Brief tab).

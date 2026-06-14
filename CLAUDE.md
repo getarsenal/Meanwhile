@@ -29,7 +29,11 @@ you paste into a new AI chat to prep for interviews.
 - `STORAGE` — `load()/migrate()/persist()/save()`. **`save()` bumps `state.rev` and triggers cloud push.** Use `persist()` (no push) only when writing data that came *from* the cloud.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
-- View renderers: `renderDashboard / renderPipeline / renderTable (+renderRoleCards) / renderCalendar / renderInsights`.
+- View renderers: `renderDashboard / renderPipeline / renderCards / renderCalendar / renderInsights`.
+  The `cards` view (bottom-nav "Cards") is the glanceable all-roles browser: a responsive
+  `.job-grid` of `jobCard()`s, each a summary card with a 2×2 stat grid — Stage, Next call,
+  Salary, Contacts (avatar stack via `jcContacts()`) — plus `sortRoles()`/`compRange()` helpers
+  and the `data-sort` chips. Works on desktop and mobile (1 col), no horizontal scroll.
   The Upcoming view has a `calMode` ("list" | "timeline") toggle (`calToggle()`); `renderTimeline()`
   draws per-job swimlanes — a unique HSL color per job, dots for each round/applied/offer/task placed
   by date %, solid line up to today + dashed into the future, a shared month axis and "today" line,

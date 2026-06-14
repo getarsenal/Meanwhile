@@ -45,6 +45,14 @@ you paste into a new AI chat to prep for interviews.
   once ≥2 offers exist. State lives in `state.scorecard` (lazily created via `getScorecard()`).
 - `DRAWER: DETAIL` — per-role drawer with tabs: `tabOverview / tabRounds / tabPeople / tabBrief`.
 - AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt`, plus `resumeText()`.
+- `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.
+  `resolveCompany()` hits Clearbit autocomplete (free, no key, CORS-ok) for a real logo + canonical
+  domain; `enrichLogo()/enrichLater()` cache `o.domain`/`o.logo` and fire after create/edit.
+  `favHTML()` now prefers the Clearbit logo → favicon → colored initials. `runResearch()` builds an
+  AI pre-call brief (`briefPrompt()` → `{tagline, brief}` JSON) via `aiEngine()` (one-tap with a
+  key/proxy; `openResearchManual()` copy-paste fallback otherwise), cached on `o.tagline`/`o.research`/
+  `o.researchAt`. Surfaced as a `.brief-box` in `tabOverview` (logo, tagline, brief, Research/Refresh
+  via `data-research-co`) and a `.jc-tagline` line on each job card.
 - `SMART PASTE (AI ingest)` — paste an invite/email/JD/profile → AI fills a reviewable suggested
   entry. Pluggable engine via `aiEngine()`: `proxy` (Supabase Edge Function, key server-side) →
   `anthropic`/`google` (direct browser call, user key) → `paste` (copy-paste fallback, any chatbot).
@@ -68,7 +76,8 @@ you paste into a new AI chat to prep for interviews.
 `state = { opportunities:[], stages?:[], resume?:{file,text}, rev, meta }`
 Each opportunity: `{ id, company, role, status, source, referrer, workMode, location,
 excitement(1-5), compMin/compMax/compNotes, appliedDate, jobUrl, jd, jdFile, nextActionLabel/Date,
-nextMeetingLink, tags[], product, vibes, notes, offer{}, rounds[], people[], createdAt, updatedAt }`.
+nextMeetingLink, tags[], product, vibes, notes, offer{}, rounds[], people[], createdAt, updatedAt,
+domain, logo, tagline, research, researchAt }` — the last five are auto-filled by COMPANY ENRICH.
 `rounds[]`: `{id,name,type,date,time,link,interviewers,prep,debrief,rating,status}`.
 `people[]`: `{id,name,title,linkedin,email,notes}`.
 `state.scorecard` (offer-comparison): `{ criteria:[{id,name,weight}], scores:{ [opId]:{ [critId]: 1-5 } } }`.

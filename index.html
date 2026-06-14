@@ -404,6 +404,17 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .jc-foot{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
 .jc-foot .stars{font-size:12px}
 .jc-dot{color:var(--faint)}
+.jc-tagline{font-size:11px;color:var(--accent3);margin-top:3px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Company brief (drawer) ---------- */
+.brief-box{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
+.brief-head{display:flex;align-items:center;gap:12px}
+.brief-co{font-weight:850;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brief-tag{color:var(--accent3);font-size:12.5px;font-weight:600;margin-top:2px;font-style:italic;line-height:1.35}
+.brief-dom{font-size:12px;margin-top:2px}
+.brief-body{font-size:13px;line-height:1.62;color:var(--muted);white-space:pre-wrap;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+.brief-meta{font-size:10px;color:var(--faint);margin-top:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
+.brief-empty{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -595,7 +606,16 @@ function relDays(n){ if(n==null) return ""; if(n===0) return "Today"; if(n===1) 
 
 function colorFor(str){ const colors=["#6d72c4","#5b86b3","#8a72bd","#4ea381","#5b9c97","#a874a0","#bf8a4f","#7c828f","#6d8bc4","#52a08f"]; let h=0; for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h); return colors[Math.abs(h)%colors.length]; }
 function initials(s){ return (s||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase(); }
-function favHTML(o,cls){ const c=colorFor(o.company||"?"); const dom=domainOf(o); const img=dom?`<img src="https://www.google.com/s2/favicons?domain=${esc(dom)}&sz=64" loading="lazy" onerror="this.remove()" alt=""/>`:""; return `<div class="fav ${cls||''}" style="background:${c}"><span style="position:absolute">${esc(initials(o.company))}</span>${img}</div>`; }
+function favHTML(o,cls){
+  const c=colorFor(o.company||"?"); const dom=domainOf(o);
+  const fav="https://www.google.com/s2/favicons?sz=128&domain="+encodeURIComponent(dom);
+  const primary = o.logo || (dom?"https://logo.clearbit.com/"+encodeURIComponent(dom):"");
+  // try the real logo, fall back to the favicon, then to colored initials (the absolute span behind)
+  const img = primary
+    ? `<img src="${esc(primary)}" loading="lazy" data-fb="${esc(fav)}" onerror="if(this.dataset.tried){this.remove()}else{this.dataset.tried=1;this.src=this.dataset.fb}" alt=""/>`
+    : (dom?`<img src="${esc(fav)}" loading="lazy" onerror="this.remove()" alt=""/>`:"");
+  return `<div class="fav ${cls||''}" style="background:${c}"><span style="position:absolute">${esc(initials(o.company))}</span>${img}</div>`;
+}
 function domainOf(o){ if(o.domain) return o.domain.replace(/^https?:\/\//,'').replace(/\/.*$/,''); if(o.jobUrl){ try{ return new URL(o.jobUrl).hostname.replace(/^www\./,''); }catch(e){} } return ""; }
 function stars(n){ n=+n||0; return "★".repeat(n)+"☆".repeat(5-n); }
 
@@ -853,7 +873,7 @@ function jobCard(o){
     ? `<div class="v sm" style="color:${e.du<=0?'var(--bad)':e.du<=2?'var(--warn)':'var(--accent2)'}">${esc(e.label)}</div><div class="jc-sub">${fmtDate(e.date)}${e.time?` · ${fmtDateTime(e.date,e.time).split('· ').pop()}`:''} · ${relDays(e.du)}</div>`
     : `<div class="v sm" style="color:var(--faint)">Nothing scheduled</div>`;
   return `<div class="job-card" data-open="${o.id}">
-    <div class="jc-head">${favHTML(o)}<div class="jc-id"><div class="jc-co">${esc(o.company)}</div><div class="jc-role">${esc(o.role||"—")}</div></div>${flag}</div>
+    <div class="jc-head">${favHTML(o)}<div class="jc-id"><div class="jc-co">${esc(o.company)}</div><div class="jc-role">${esc(o.role||"—")}</div>${o.tagline?`<div class="jc-tagline">${esc(o.tagline)}</div>`:""}</div>${flag}</div>
     <div class="jc-grid">
       <div class="jc-stat"><div class="k">Stage</div><div class="v"><span class="pill" style="background:${st.color}22;color:${st.color}"><span class="dot" style="background:${st.color}"></span>${esc(st.name)}</span></div></div>
       <div class="jc-stat"><div class="k">Next call</div>${nextV}</div>
@@ -1315,6 +1335,13 @@ function tabOverview(o){
       <div style="display:flex;align-items:center;gap:10px"><div style="font-size:13px;font-weight:800;color:${cls}">⏱ ${esc(e.label)} · ${relDays(e.du)}</div></div>
       <div style="font-size:12.5px;color:var(--muted);margin-top:4px">${fmtDateTime(e.date,e.time)} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">open meeting link →</a>`:""}</div></div>`;
   }
+  h+=`<div class="brief-box">
+    <div class="brief-head">${favHTML(o)}
+      <div style="flex:1;min-width:0"><div class="brief-co">${esc(o.company)}</div>${o.tagline?`<div class="brief-tag">${esc(o.tagline)}</div>`:o.domain?`<div class="brief-dom"><a href="https://${esc(o.domain)}" target="_blank" rel="noopener">${esc(o.domain)} ↗</a></div>`:""}</div>
+      <button class="btn ghost sm" data-research-co="${o.id}">${o.research?I.copy:I.ai} ${o.research?"Refresh":"Research"}</button>
+    </div>
+    ${o.research?`<div class="brief-body">${esc(o.research)}</div><div class="brief-meta">Pre-call brief${o.researchAt?` · ${daysSince(o.researchAt)===0?"today":(daysSince(o.researchAt)+"d ago")}`:""}${o.domain?` · ${esc(o.domain)}`:""}</div>`:`<div class="brief-empty">Pull the logo + a quick pre-call brief so you never mix up who's who.</div>`}
+  </div>`;
   h+=`<dl class="kv">
     <dt>Stage</dt><dd><span class="pill" style="background:${stage(o.status).color}22;color:${stage(o.status).color}"><span class="dot" style="background:${stage(o.status).color}"></span>${stage(o.status).name}</span></dd>
     <dt>Excitement</dt><dd><span style="color:var(--warn)">${o.excitement?"★".repeat(o.excitement)+"☆".repeat(5-o.excitement):"—"}</span></dd>
@@ -1852,7 +1879,7 @@ function spApply(){
   if(p&&p.name){
     o.people=o.people||[]; o.people.push({id:uid(),name:p.name,title:p.title||"",linkedin:p.linkedin||"",email:p.email||"",notes:p.notes||""});
   }
-  save(); closeEditor(); render(); openDetail(o.id); toast("Added ✓");
+  save(); closeEditor(); render(); openDetail(o.id); enrichLater(o); toast("Added ✓");
 }
 
 function openAISettings(){
@@ -1891,6 +1918,68 @@ function saveAISettings(){
   if($("#aiModel")) aiCfg.model=$("#aiModel").value.trim();
   if($("#aiProxy")) aiCfg.proxyUrl=$("#aiProxy").value.trim();
   saveAICfg(); closeEditor(); openSmartPaste();
+}
+
+/* ============================ COMPANY ENRICH (logo + pre-call brief) ============================ */
+// When you're juggling 3-5 live processes, instant visual ID matters. We pull a real company
+// logo + canonical domain (Clearbit autocomplete — free, no key) and an AI pre-call brief
+// (tagline + ~120-word snapshot). Results cache on the opportunity (o.logo/o.domain/o.tagline/
+// o.research) so they sync and never re-fetch. Logo works with zero config; brief uses aiEngine().
+async function resolveCompany(name){
+  if(!name) return null;
+  try{
+    const r=await fetch("https://autocomplete.clearbit.com/v1/companies/suggest?query="+encodeURIComponent(name));
+    if(!r.ok) return null;
+    const arr=await r.json();
+    if(Array.isArray(arr)&&arr.length){ const m=arr[0]; return {domain:m.domain||"", logo:m.logo||(m.domain?"https://logo.clearbit.com/"+m.domain:"")}; }
+  }catch(e){}
+  return null;
+}
+async function enrichLogo(o){
+  if(!o||!o.company) return false;
+  if(o.domain && o.logo) return false;        // already resolved
+  const m=await resolveCompany(o.company);
+  if(m && m.domain){ o.domain=o.domain||m.domain; o.logo=o.logo||m.logo; o.updatedAt=Date.now(); return true; }
+  return false;
+}
+// fire-and-forget after creating/editing a role: grab the logo, then quietly persist + refresh
+function enrichLater(o){
+  if(!o||!o.company||(o.domain&&o.logo)) return;
+  enrichLogo(o).then(ok=>{ if(ok){ save(); render(); if(openId===o.id && $("#drawer").classList.contains("show")) renderDrawer(); } }).catch(()=>{});
+}
+function briefPrompt(o){
+  return `Give a concise pre-interview brief for the company "${o.company}"${o.domain?` (${o.domain})`:""}${o.role?`, for a ${o.role} role`:""}.
+Return ONLY a JSON object (no markdown): { "tagline": "", "brief": "" }
+- "tagline": one short sentence, max ~9 words, capturing what the company does — for at-a-glance identification.
+- "brief": 90-140 words, plain text, covering what they do / product, rough size & stage, who they serve, anything notable recently, and 2-3 talking points or smart questions for the call. If unsure of a fact, hedge rather than invent.`;
+}
+async function runResearch(o){
+  if(!o) return;
+  if(aiEngine()==="paste"||aiEngine()==="off"){ openResearchManual(o); return; }
+  const btn=document.querySelector(`[data-research-co="${o.id}"]`); if(btn){ btn.textContent="Researching…"; btn.disabled=true; }
+  try{
+    await enrichLogo(o).catch(()=>{});
+    const d=aiParse(await aiCall(briefPrompt(o)));
+    o.tagline=(d.tagline||o.tagline||"").trim(); o.research=(d.brief||"").trim(); o.researchAt=Date.now(); o.updatedAt=Date.now();
+    save(); renderDrawer(); render(); toast("Brief ready ✓");
+  }catch(err){ toast("⚠ "+err.message); if(btn){ btn.innerHTML=`${I.ai} Research`; btn.disabled=false; } }
+}
+function applyResearchJSON(o,text){
+  const d=aiParse(text); o.tagline=(d.tagline||o.tagline||"").trim(); o.research=(d.brief||"").trim(); o.researchAt=Date.now(); o.updatedAt=Date.now();
+  enrichLogo(o).catch(()=>{}); save(); closeEditor(); renderDrawer(); render(); toast("Brief saved ✓");
+}
+let researchTargetId=null;
+function openResearchManual(o){
+  researchTargetId=o.id;
+  openEditor(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px;font-weight:850">Research ${esc(o.company)}</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0 0 12px">
+    <li>Copy this prompt &amp; open any AI chat.<br><button class="btn ghost sm" data-act="research-copy" style="margin-top:6px">${I.copy} Copy prompt</button></li>
+    <li>Paste it, then copy the AI's JSON reply.</li>
+    <li>Paste the reply below &amp; save.</li>
+  </ol>
+  <textarea id="researchPaste" style="min-height:120px" placeholder='Paste the AI&apos;s JSON reply here…'></textarea>
+  <div style="display:flex;gap:10px;margin-top:12px"><button class="btn primary" style="flex:1" data-act="research-save">${I.check} Save brief</button><button class="btn ghost" data-act="cancel-editor">Cancel</button></div>
+  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Tip: connect a key in <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">settings</span> to auto-research in one tap.</div>`);
 }
 
 /* ============================ NATIVE (Capacitor iOS) ============================ */
@@ -1998,7 +2087,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2021,6 +2110,7 @@ document.addEventListener("click",e=>{
 
   // open detail
   if(t.dataset.open){ openDetail(t.dataset.open); return; }
+  if(t.dataset.researchCo){ const o=state.opportunities.find(x=>x.id===t.dataset.researchCo); if(o) runResearch(o); return; }
 
   const act=t.dataset.act;
   if(act==="add"){ openEditor(opForm(null)); return; }
@@ -2045,6 +2135,9 @@ document.addEventListener("click",e=>{
   if(act==="ai-save"){ spApply(); return; }
   if(act==="ai-settings"){ openAISettings(); return; }
   if(act==="ai-cfg-save"){ saveAISettings(); return; }
+  // company brief
+  if(act==="research-copy"){ const o=state.opportunities.find(x=>x.id===researchTargetId); if(o) copy(briefPrompt(o),"Prompt copied — paste into any AI"); return; }
+  if(act==="research-save"){ const o=state.opportunities.find(x=>x.id===researchTargetId); const ta=$("#researchPaste"); if(o&&ta){ try{ applyResearchJSON(o,ta.value); }catch(err){ toast("⚠ Couldn't read that JSON"); } } return; }
   // native (iOS) actions — degrade to a hint on web
   if(act==="scan-calendar"){ scanCalendar(); return; }
   if(act==="enable-reminders"){ enableReminders(); return; }
@@ -2135,6 +2228,7 @@ function saveOpForm(form){
   }
   save(); closeEditor(); render();
   if(getOp()){ if(!$("#drawer").classList.contains("show")) openDetail(openId); else renderDrawer(); }
+  enrichLater(getOp());
   toast("Saved");
 }
 function saveRoundForm(form){

@@ -1394,6 +1394,7 @@ function tabRounds(o){
       ${r.debrief?`<div class="note-block" style="margin-top:8px"><b style="color:var(--good)">Debrief:</b> ${esc(r.debrief)}</div>`:""}
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">
         <button class="btn sm ghost" data-edit-round="${r.id}">${I.edit} Edit</button>
+        <button class="btn sm ghost" data-gen-ty="${r.id}" style="color:var(--accent3)">${I.ai} Thank-you note</button>
         ${r.date?`<button class="btn sm ghost" data-ics="${r.id}" style="color:var(--accent2)">${I.cal} Add to calendar</button><button class="btn sm ghost" data-gcal="${r.id}">Google ↗</button>`:""}
       </div>
     </div>`;
@@ -1427,14 +1428,17 @@ function tabPeople(o){
 /* ---------------- AI BRIEF ---------------- */
 function tabBrief(o){
   const brief=buildBrief(o);
-  let h=`<div class="ai-box"><div class="ai-head">${I.ai} Interview brief — paste into any AI</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Everything an AI needs to help you prep, write your intro, and draft smart questions. One tap to copy.</div>
-    <div class="ai-pre" id="briefText">${esc(brief)}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn primary sm" data-copy="brief">${I.copy} Copy brief</button>
-      <button class="btn ghost sm" data-copy="prep">${I.copy} Copy "prep me" prompt</button>
-      <button class="btn ghost sm" data-copy="intro">${I.copy} Copy "write my intro" prompt</button>
-    </div></div>`;
+  let h=`<div class="ai-box"><div class="ai-head">${I.ai} AI prep — ${aiEngine()==="paste"||aiEngine()==="off"?"copies a prompt for any AI":"one tap, generated for you"}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Get coached on likely questions, smart questions to ask, and a tailored intro — built from this role + your résumé.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn primary sm" data-gen="prep">${I.ai} Prep me</button>
+      <button class="btn ghost sm" data-gen="questions">${I.ai} Questions to ask</button>
+      <button class="btn ghost sm" data-gen="intro">${I.ai} Write my intro</button>
+    </div>
+    <details><summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px">View / copy the raw brief</summary>
+      <div class="ai-pre" id="briefText">${esc(brief)}</div>
+      <button class="btn ghost sm" data-copy="brief" style="margin-top:8px">${I.copy} Copy brief</button>
+    </details></div>`;
   return h;
 }
 function buildBrief(o){
@@ -1468,6 +1472,35 @@ function introPrompt(o){
 }
 function researchPrompt(o,p){
   return `Help me prep to meet an interviewer. Research this person and give me: a short summary of their background and career path, what they likely care about / focus on in interviews, any common ground I might build rapport on, and 4 thoughtful questions I could ask them.\n\nPerson: ${p.name}${p.title?` — ${p.title}`:""} at ${o.company}\nLinkedIn: ${p.linkedin||"(none provided — search for them)"}\n${p.notes?`What I already know: ${p.notes}\n`:""}Role I'm interviewing for: ${o.role||"(role)"}. Use web search if you can.`;
+}
+function questionsPrompt(o){
+  const next=nextEvent(o);
+  return buildBrief(o)+`\n\n---\nUsing the brief above, give me 8 sharp, specific questions to ask${next?` in my "${next.label}" round`:""} at ${o.company} — the kind that show genuine research into their product, role and team, and help me judge whether this is the right fit. Group them: 3 on the role/team, 3 on the product/strategy, 2 on growth/culture. No generic filler.`;
+}
+function thankyouPrompt(o,r){
+  const who=(r&&r.interviewers)||((o.people||[]).map(p=>p.name).join(", "));
+  return `Write a concise, genuine thank-you email to send after my ${r?`"${r.name||r.type||"interview"}" round`:"interview"} at ${o.company}${o.role?` for the ${o.role} role`:""}.${who?` I met with ${who}.`:""}\nWarm and specific, not generic — reference the conversation at a high level and reaffirm my interest and fit. About 120 words. Start with a one-line subject ("Subject: …").${r&&r.debrief?`\n\nHow it went / what we covered: ${r.debrief}`:""}\n\nA little about me for voice:\n${resumeText()}`;
+}
+// One-tap generate: run a prompt through the engine and show the result; paste-mode falls back to copy
+let aiGenText="";
+function aiGen(prompt, title){
+  const eng=aiEngine();
+  if(eng==="paste"||eng==="off"){ copy(prompt,"Prompt copied — paste into any AI"); return; }
+  aiGenText="";
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:34px;height:34px;border-radius:10px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
+    <h2 style="margin:0;font-size:17px;font-weight:850">${esc(title)}</h2>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    <div id="aiGenBody" class="ai-pre" style="white-space:pre-wrap;min-height:120px">Generating…</div>
+    <div id="aiGenFoot" style="display:flex;gap:8px;margin-top:12px"></div>`);
+  aiCall(prompt,null,{json:false}).then(out=>{
+    aiGenText=(out||"").trim();
+    const body=document.getElementById("aiGenBody"); if(body) body.textContent=aiGenText||"(no response)";
+    const foot=document.getElementById("aiGenFoot"); if(foot) foot.innerHTML=`<button class="btn primary sm" data-act="aigen-copy">${I.copy} Copy</button><button class="btn ghost sm" data-act="cancel-editor">Close</button>`;
+  }).catch(e=>{
+    const body=document.getElementById("aiGenBody"); if(body) body.textContent="⚠ "+e.message+"\n\nTry again, or switch engine in Settings.";
+    const foot=document.getElementById("aiGenFoot"); if(foot) foot.innerHTML=`<button class="btn ghost sm" data-act="cancel-editor">Close</button>`;
+  });
 }
 
 /* ============================ EDITORS (forms in drawer-style modal) ============================ */
@@ -1764,11 +1797,11 @@ function aiParse(s){
   if(a>=0&&b>a) t=t.slice(a,b+1);
   return JSON.parse(t);
 }
-// prompt + optional doc {data:base64-no-prefix, mime} (e.g. a PDF the model reads natively)
-async function aiCall(prompt, doc){
-  const eng=aiEngine(); const maxTok=doc?2048:1024;
+// prompt + optional doc {data:base64-no-prefix, mime}; opts.json=false for prose (default JSON)
+async function aiCall(prompt, doc, opts){
+  const eng=aiEngine(); const wantJson = !(opts&&opts.json===false); const maxTok=(opts&&opts.maxTokens)||(doc?2048:wantJson?1024:1400);
   if(eng==="proxy"){
-    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify(doc?{prompt,doc,maxTokens:maxTok}:{prompt})});
+    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify({prompt,doc:doc||undefined,maxTokens:maxTok,json:wantJson})});
     if(!res.ok) throw new Error("Proxy "+res.status+" "+(await res.text()).slice(0,140));
     const j=await res.json(); return j.text||j.output||(typeof j==="string"?j:JSON.stringify(j));
   }
@@ -1780,7 +1813,8 @@ async function aiCall(prompt, doc){
   }
   if(eng==="google"){
     const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
-    const body=JSON.stringify({contents:[{parts}],generationConfig:{responseMimeType:"application/json",maxOutputTokens:maxTok}});
+    const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
+    const body=JSON.stringify({contents:[{parts}],generationConfig:genCfg});
     // try the chosen/default model, then fall back to a known-good one so a model rename never breaks it
     const models=[aiCfg.model||"gemini-2.0-flash","gemini-1.5-flash"].filter((m,i,a)=>m&&a.indexOf(m)===i);
     let res,lastErr="";
@@ -2129,7 +2163,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2174,6 +2208,7 @@ document.addEventListener("click",e=>{
   if(act==="smart-paste"){ openSmartPaste(); return; }
   if(act==="ai-extract"){ runExtract(); return; }
   if(act==="ai-fetch-url"){ fetchJobUrl(); return; }
+  if(act==="aigen-copy"){ copy(aiGenText,"Copied"); return; }
   if(act==="ai-fallback-copy"){ const ta=$("#spInput"); copy(aiPrompt((ta?ta.value:spText)||spText),"Prompt copied — paste into any AI"); return; }
   if(act==="ai-fallback-build"){ spBuildFromPaste(); return; }
   if(act==="ai-back"){ spSetBody(smartPasteBody()); return; }
@@ -2234,6 +2269,8 @@ document.addEventListener("click",e=>{
 
   // copy brief prompts
   if(t.dataset.copy){ const o=getOp(); const map={brief:buildBrief(o),prep:prepPrompt(o),intro:introPrompt(o)}; copy(map[t.dataset.copy], t.dataset.copy==="brief"?"Brief copied":"Prompt copied"); return; }
+  if(t.dataset.gen){ const o=getOp(); const map={prep:[prepPrompt(o),"Prep me"],questions:[questionsPrompt(o),"Questions to ask"],intro:[introPrompt(o),"Your intro"]}; const m=map[t.dataset.gen]; if(m) aiGen(m[0],m[1]); return; }
+  if(t.dataset.genTy){ const o=getOp(); const r=(o.rounds||[]).find(x=>x.id===t.dataset.genTy); aiGen(thankyouPrompt(o,r),"Thank-you note"); return; }
 });
 
 // overlay click closes drawer

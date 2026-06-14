@@ -52,7 +52,11 @@ you paste into a new AI chat to prep for interviews.
   structured JSON, with `rsParseManual()` copy-paste fallback. Export: `rsHTML()`/`rsCSS()` render a
   clean printable doc (Modern/Classic/Compact templates) and `rsPrint()` uses the browser print
   pipeline → Save as PDF (no libraries). `resumeText()` derives from the structured data when present.
-- AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt`, plus `resumeText()`.
+- AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt / questionsPrompt / thankyouPrompt`,
+  plus `resumeText()`. `aiGen(prompt,title)` runs any prompt through the engine and shows the result
+  inline (paste-mode falls back to copy); `aiCall(prompt,doc,opts)` takes `opts.json=false` for prose.
+  Brief tab = one-tap **Prep me / Questions to ask / Write my intro** (`data-gen`); each round has a
+  **Thank-you note** (`data-gen-ty`). `aigen-copy` copies the generated text.
 - `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.
   `resolveCompany()` hits Clearbit autocomplete (free, no key, CORS-ok) for a real logo + canonical
   domain; `enrichLogo()/enrichLater()` cache `o.domain`/`o.logo` and fire after create/edit.

@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   try {
-    const { prompt, doc, maxTokens } = await req.json().catch(() => ({}));
+    const { prompt, doc, maxTokens, json } = await req.json().catch(() => ({}));
     if (!prompt || typeof prompt !== "string") return json({ error: "missing prompt" }, 400);
 
     const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_API_KEY");
@@ -47,18 +47,18 @@ Deno.serve(async (req) => {
       ? [{ inline_data: { mime_type: doc.mime || "application/pdf", data: doc.data } }, { text: prompt }]
       : [{ text: prompt }];
 
+    // JSON for extraction (default); plain prose when json === false (e.g. thank-you notes)
+    const generationConfig: Record<string, unknown> = {
+      maxOutputTokens: typeof maxTokens === "number" ? maxTokens : 1024,
+    };
+    if (json !== false) generationConfig.responseMimeType = "application/json";
+
     const r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            maxOutputTokens: typeof maxTokens === "number" ? maxTokens : 1024,
-          },
-        }),
+        body: JSON.stringify({ contents: [{ parts }], generationConfig }),
       },
     );
 

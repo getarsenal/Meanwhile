@@ -146,6 +146,35 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .wf b{font-size:13.5px;font-weight:750;display:block;color:var(--txt)}
 .wf small{font-size:12px;color:var(--muted);line-height:1.45}
 
+/* ---------- Dashboard hero (the visual hook) ---------- */
+.hero{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);background:linear-gradient(135deg,#16131f,#0c0b12);margin-bottom:18px}
+.hero-aurora{position:absolute;inset:-45%;z-index:0;opacity:.9;filter:blur(22px);
+  background:
+   radial-gradient(38% 48% at 18% 28%, rgba(94,106,210,.50), transparent 62%),
+   radial-gradient(40% 50% at 82% 16%, rgba(139,124,221,.40), transparent 62%),
+   radial-gradient(52% 60% at 65% 95%, rgba(78,120,180,.32), transparent 62%);
+  animation:aurora 17s ease-in-out infinite alternate}
+@keyframes aurora{0%{transform:translate(0,0) scale(1)}50%{transform:translate(4%,3%) scale(1.1)}100%{transform:translate(-3%,-2%) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){ .hero-aurora{animation:none} }
+.hero-grain{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.6;
+  background:radial-gradient(1px 1px at 22% 32%, rgba(255,255,255,.05), transparent),radial-gradient(1px 1px at 72% 62%, rgba(255,255,255,.04), transparent),radial-gradient(1px 1px at 48% 80%, rgba(255,255,255,.04), transparent)}
+.hero-inner{position:relative;z-index:1;display:flex;align-items:center;gap:18px;padding:22px 24px}
+.hero-main{flex:1;min-width:0}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent3)}
+.hero-eyebrow svg{width:14px;height:14px}
+.hero-co{display:flex;align-items:center;gap:12px;margin-top:11px}
+.hero-fav{width:46px!important;height:46px!important;flex:0 0 46px!important;border-radius:13px!important;font-size:18px!important}
+.hero-name{font-size:24px;font-weight:850;letter-spacing:-.02em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-role{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-when{font-size:12.5px;color:var(--accent3);font-weight:600;margin-top:10px}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.hero-btn{background:rgba(255,255,255,.06)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)!important;color:#fff!important}
+.hero-count{flex:0 0 auto;text-align:center;padding-left:8px}
+.hc-num{font-size:62px;font-weight:850;line-height:.9;letter-spacing:-.03em;background:linear-gradient(180deg,#ffffff,#aeb4ea);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 20px rgba(94,106,210,.55))}
+.hc-num.now{font-size:38px}
+.hc-unit{font-size:10.5px;color:var(--accent3);font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
+@media(max-width:560px){ .hero-inner{padding:18px;gap:12px} .hc-num{font-size:50px} .hc-num.now{font-size:30px} .hero-name{font-size:20px} .hero-fav{width:40px!important;height:40px!important;flex-basis:40px!important} }
+
 /* Branded launch splash (installed app only — see media query) */
 #splash{display:none;position:fixed;inset:0;z-index:9999;background:
   radial-gradient(900px 520px at 50% 22%, rgba(94,106,210,.10), transparent 60%), var(--bg);
@@ -779,7 +808,8 @@ function renderDashboard(){
 
   const stat=(num,lbl,icon,cls,tile)=>`<div class="stat ${cls||''}" ${tile?`data-tile="${tile}" role="button" tabindex="0"`:""}><div class="ico">${icon}</div><div class="num">${num}</div><div class="lbl">${lbl}</div>${tile?`<div class="tile-go">→</div>`:""}</div>`;
 
-  let html=`<div class="grid stat-grid">
+  let html=dashHero(ops);
+  html+=`<div class="grid stat-grid">
     ${stat(active,"Active",I.briefcase,"","active")}
     ${stat(interviewing,"Interviewing",I.user,"","interviewing")}
     ${stat(offers,"Offers",I.trophy,"","offers")}
@@ -818,13 +848,71 @@ function renderDashboard(){
   html+=`<div class="section-head"><h3>Pipeline</h3><div class="line"></div><span class="tag">${active} active</span></div>`;
   html+=`<div class="card panel">${funnelChart()}</div>`;
 
-  // Hot list
-  const hot=ops.filter(o=>+o.excitement>=4 && stage(o.status).active).sort((a,b)=>b.excitement-a.excitement).slice(0,6);
-  if(hot.length){
-    html+=`<div class="section-head">${I.fire}<h3 style="margin-left:-2px">Most excited about</h3><div class="line"></div></div>`;
-    html+=`<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">`+hot.map(o=>kcard(o)).join("")+`</div>`;
-  }
   return html;
+}
+
+/* The dashboard hero — the app's visual hook. Adapts to your search:
+   1) a live countdown to your next interview, 2) offers on the table, or 3) momentum. */
+function dashHero(ops){
+  const up = ops.map(o=>({o,e:nextEvent(o)})).filter(x=>x.e&&x.e.du>=0).sort((a,b)=>a.e.du-b.e.du);
+  const offers = ops.filter(o=>o.status==="offer");
+  const shell = (eyebrow,inner,accent)=>`<div class="hero"${accent?` style="--hero-accent:${accent}"`:""}><div class="hero-aurora"></div><div class="hero-grain"></div><div class="hero-inner">${inner}</div></div>`;
+
+  if(up.length){
+    const {o,e}=up[0];
+    const num = e.du===0?"Today":e.du===1?"1":String(e.du);
+    const unit = e.du===0?"go time":e.du===1?"day to go":"days to go";
+    const when = fmtDateTime(e.date,e.time)||fmtDate(e.date);
+    const inner=`
+      <div class="hero-main">
+        <div class="hero-eyebrow">${I.clock}<span>Next up</span></div>
+        <div class="hero-co">${favHTML(o,"hero-fav")}
+          <div style="min-width:0"><div class="hero-name">${esc(o.company)}</div><div class="hero-role">${esc(e.label)}${o.role?` · ${esc(o.role)}`:""}</div></div>
+        </div>
+        <div class="hero-when">${esc(when)}</div>
+        <div class="hero-actions">
+          <button class="btn primary sm" data-open="${o.id}">Open role</button>
+          <button class="btn ghost sm hero-btn" data-gen-hero="${o.id}">${I.ai} Prep me</button>
+          ${e.link?`<a class="btn ghost sm hero-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${I.link} Join</a>`:""}
+        </div>
+      </div>
+      <div class="hero-count">
+        <div class="hc-num${e.du===0?" now":""}">${num}</div>
+        <div class="hc-unit">${unit}</div>
+      </div>`;
+    return shell("next",inner);
+  }
+
+  if(offers.length){
+    const multi=offers.length>1;
+    const inner=`
+      <div class="hero-main">
+        <div class="hero-eyebrow">${I.trophy}<span>${multi?"On the table":"You've got an offer"}</span></div>
+        <div class="hero-name" style="font-size:22px">${multi?`${offers.length} offers to weigh`:esc(offers[0].company)}</div>
+        <div class="hero-role">${multi?"Score them side by side and decide with confidence.":`${esc(offers[0].role||"Offer")} — make the call.`}</div>
+        <div class="hero-actions">
+          ${multi?`<button class="btn primary sm" data-act="open-scorecard">${I.trophy} Compare offers</button>`:`<button class="btn primary sm" data-open="${offers[0].id}">Open offer</button>`}
+        </div>
+      </div>
+      <div class="hero-count"><div class="hc-num">${offers.length}</div><div class="hc-unit">${multi?"offers":"offer"}</div></div>`;
+    return shell("offers",inner,"var(--good)");
+  }
+
+  // momentum: active roles but nothing scheduled
+  const active=ops.filter(o=>stage(o.status).active && o.status!=="wishlist").length;
+  const nudges=ops.filter(needsFollowup).length;
+  const inner=`
+    <div class="hero-main">
+      <div class="hero-eyebrow">${I.spark}<span>Your search</span></div>
+      <div class="hero-name" style="font-size:22px">${active?`${active} active ${active===1?"process":"processes"}`:"Let's get moving"}</div>
+      <div class="hero-role">${nudges?`${nudges} ${nudges===1?"role needs":"roles need"} a follow-up — keep the momentum.`:"Nothing scheduled. Add a posting or invite and I'll set it up."}</div>
+      <div class="hero-actions">
+        <button class="btn primary sm" data-act="smart-paste">${I.ai} Smart add</button>
+        <button class="btn ghost sm hero-btn" data-act="add">＋ Add role</button>
+      </div>
+    </div>
+    <div class="hero-count"><div class="hc-num">${active}</div><div class="hc-unit">in flight</div></div>`;
+  return shell("momentum",inner);
 }
 
 function emptyState(){
@@ -2254,7 +2342,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2364,6 +2452,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.gen){ const o=getOp(); const map={prep:[prepPrompt(o),"Prep me"],questions:[questionsPrompt(o),"Questions to ask"],intro:[introPrompt(o),"Your intro"]}; const m=map[t.dataset.gen]; if(m) aiGen(m[0],m[1]); return; }
   if(t.dataset.genTy){ const o=getOp(); const r=(o.rounds||[]).find(x=>x.id===t.dataset.genTy); aiGen(thankyouPrompt(o,r),"Thank-you note"); return; }
   if(t.dataset.ask){ runAsk(t.dataset.ask); return; }
+  if(t.dataset.genHero){ const o=state.opportunities.find(x=>x.id===t.dataset.genHero); if(o) aiGen(prepPrompt(o),"Prep me"); return; }
 });
 
 // overlay click closes drawer

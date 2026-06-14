@@ -104,7 +104,10 @@ you paste into a new AI chat to prep for interviews.
 - `EVENT WIRING` — one delegated `document` click handler. **If you add a new `data-*` button, add its attribute to the `closest(...)` selector** in that handler or it won't fire.
 
 ## Data model
-`state = { opportunities:[], stages?:[], resume?:{file,text}, rev, meta }`
+`state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], scorecard?:{}, rev, meta }`
+- `stories[]` (PREP BANK): `{id,title,tags[],s,t,a,r}` STAR stories; `questions[]`: `{id,q,a,tags[]}`.
+  `getStories()/getQuestions()` lazily create the arrays; `storyBankText()` feeds them into the AI
+  prep prompts (`prepPrompt`, `appAnswersPrompt`). UI: `openPrepBank()` (Settings + AI Brief tab).
 Each opportunity: `{ id, company, role, status, source, referrer, workMode, location,
 excitement(1-5), compMin/compMax/compNotes, appliedDate, jobUrl, jd, jdFile, nextActionLabel/Date,
 nextMeetingLink, tags[], product, vibes, notes, offer{}, rounds[], people[], createdAt, updatedAt,

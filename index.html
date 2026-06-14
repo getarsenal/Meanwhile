@@ -1704,7 +1704,8 @@ function tabBrief(o){
       <button class="btn ghost sm" data-gen="match">${I.ai} Résumé ↔ JD match</button>
       <button class="btn ghost sm" data-gen="answers">${I.ai} Application answers</button>
     </div>
-    <details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600">View / copy the raw brief</summary>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:13px">${getStories().length?`✓ Using ${getStories().length} ${getStories().length===1?"story":"stories"} from your `:"Add reusable STAR stories in your "}<span data-act="prep-bank" style="color:var(--accent3);cursor:pointer;font-weight:700">Prep bank</span> for behavioral answers.</div>
+    <details style="margin-top:13px"><summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600">View / copy the raw brief</summary>
       <div class="ai-pre" id="briefText" style="margin-top:8px">${esc(brief)}</div>
       <button class="btn ghost sm" data-copy="brief" style="margin-top:8px">${I.copy} Copy brief</button>
     </details></div>`;
@@ -1734,7 +1735,7 @@ function buildBrief(o){
 function prepPrompt(o){
   const next=nextEvent(o);
   const who=(o.people||[]).map(p=>p.name+(p.title?` (${p.title})`:"")).join(", ");
-  return buildBrief(o)+`\n\n---\nYou're my interview-prep coach. Based on the brief above, help me get ready for ${next?`my "${next.label}" round`:"my next round"} at ${o.company}.\n1) The 8 most likely questions they'll ask for this stage and role, with a crisp angle for how I should answer each.\n2) 6 sharp, non-generic questions I should ask${who?` ${who}`:" them"} that show I've done my homework on the product.\n3) Two things to emphasize about my background to fit this role.\n\nHere's my background:\n${resumeText()}`;
+  return buildBrief(o)+`\n\n---\nYou're my interview-prep coach. Based on the brief above, help me get ready for ${next?`my "${next.label}" round`:"my next round"} at ${o.company}.\n1) The 8 most likely questions they'll ask for this stage and role, with a crisp angle for how I should answer each — where a behavioral question fits one of my STAR stories below, name that story.\n2) 6 sharp, non-generic questions I should ask${who?` ${who}`:" them"} that show I've done my homework on the product.\n3) Two things to emphasize about my background to fit this role.\n\nHere's my background:\n${resumeText()}${storyBankText()}`;
 }
 function introPrompt(o){
   return buildBrief(o)+`\n\n---\nUsing the brief above, write me a warm, confident 30-second self-introduction to open this interview at ${o.company} — tailored to the role and what they care about. Keep it natural and spoken, not corporate. Then give me a 2-sentence shorter version for a recruiter screen.\n\nMy background:\n${resumeText()}`;
@@ -1759,12 +1760,99 @@ function resumeMatchPrompt(o){
   return buildBrief(o)+`\n\n---\nCompare my résumé to the job description above for the ${o.role||"role"} at ${o.company}. Give me, in plain text:\n1) A match score out of 10 with one line of reasoning.\n2) The 6 most important keywords/skills in the JD that are missing or weak in my résumé.\n3) 4 rewritten résumé bullet points tailored to this JD, using my real experience (don't invent).\nBe concrete and specific.\n\nMy résumé:\n${resumeText()}`;
 }
 function appAnswersPrompt(o){
-  return buildBrief(o)+`\n\n---\nDraft strong, specific answers (4-6 sentences each, in my voice — not templated) to the application questions I'm most likely to face for the ${o.role||"role"} at ${o.company}:\n• "Why do you want to work here?"\n• "Why are you a great fit for this role?"\n• "What interests you most about this position?"\nUse the company details and my résumé.\n\nMy résumé:\n${resumeText()}`;
+  return buildBrief(o)+`\n\n---\nDraft strong, specific answers (4-6 sentences each, in my voice — not templated) to the application questions I'm most likely to face for the ${o.role||"role"} at ${o.company}:\n• "Why do you want to work here?"\n• "Why are you a great fit for this role?"\n• "What interests you most about this position?"\nUse the company details, my résumé, and my STAR stories where they fit.\n\nMy résumé:\n${resumeText()}${storyBankText()}`;
 }
 function followupPrompt(o){
   const quiet=daysSince(o.updatedAt)||0;
   const who=(o.people||[]).map(p=>p.name).join(", ");
   return `Write a short, warm follow-up email about the ${o.role||"role"} at ${o.company} — I applied/last spoke about ${quiet} days ago and haven't heard back.${who?` My contact: ${who}.`:""} Reiterate genuine interest, add a light touch of value, and politely ask about next steps. ~90 words, not pushy. Start with a one-line subject ("Subject: …").\n\nA little about me for voice:\n${resumeText()}`;
+}
+/* ---- Prep bank: reusable STAR stories + a question library (feeds AI prep) ---- */
+function getStories(){ state.stories=state.stories||[]; return state.stories; }
+function getQuestions(){ state.questions=state.questions||[]; return state.questions; }
+function storyBankText(){
+  const s=getStories(); if(!s.length) return "";
+  return "\n\n## My STAR stories (use for behavioral answers; cite by title)\n"+s.map(x=>`- "${x.title||"Story"}"${(x.tags||[]).length?` [${x.tags.join(", ")}]`:""} — S: ${x.s||""} | T: ${x.t||""} | A: ${x.a||""} | R: ${x.r||""}`).join("\n");
+}
+function openPrepBank(){ openEditor(prepBankBody()); }
+function prepBankBody(){
+  const stories=getStories(), qs=getQuestions();
+  const sCard=s=>`<div class="rs-card"><div class="rs-card-h"><span>${esc(s.title||"Untitled story")}</span><span style="display:flex;gap:6px"><button class="x-btn" data-story-edit="${s.id}" title="Edit">${I.edit}</button><button class="x-btn danger" data-story-del="${s.id}" title="Delete">${I.trash}</button></span></div>
+    ${(s.tags||[]).length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">${s.tags.map(t=>`<span class="chip tag-chip">${esc(t)}</span>`).join("")}</div>`:""}
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">${esc([s.s,s.t,s.a,s.r].filter(Boolean).join(" · ").slice(0,160))||"—"}</div></div>`;
+  const qCard=q=>`<div class="rs-card"><div class="rs-card-h"><span style="white-space:normal">${esc(q.q||"Question")}</span><span style="display:flex;gap:6px"><button class="x-btn" data-q-edit="${q.id}" title="Edit">${I.edit}</button><button class="x-btn danger" data-q-del="${q.id}" title="Delete">${I.trash}</button></span></div>
+    ${q.a?`<div style="font-size:12px;color:var(--muted);line-height:1.5">${esc(q.a.slice(0,180))}</div>`:`<div style="font-size:12px;color:var(--faint)">No answer noted yet.</div>`}</div>`;
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.spark}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Prep bank</h2><div style="font-size:12px;color:var(--faint)">Reusable stories &amp; questions — feeds your AI prep</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <div class="rs-sec">⭐ STAR stories</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Bank your best accomplishment stories once — AI pulls them into behavioral answers for every interview.</div>
+  ${stories.length?stories.map(sCard).join(""):`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No stories yet.</div>`}
+  <button class="btn ghost sm" data-act="story-add" style="margin-bottom:6px">＋ Add story</button>
+  <div class="rs-sec">❓ Questions they've asked</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Log questions you get asked (and your answer) to build a personal question bank.</div>
+  ${qs.length?qs.map(qCard).join(""):`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No questions yet.</div>`}
+  <button class="btn ghost sm" data-act="q-add">＋ Add question</button>`;
+}
+function storyForm(s){ s=s||{};
+  return `<h2 style="margin:0 0 14px;font-size:18px;font-weight:850">${s.id?"Edit story":"Add a STAR story"}</h2>
+  <form id="storyForm">
+    <div class="form-row"><label>Title *</label><input name="title" value="${esc(s.title||"")}" placeholder="Turned around the failing launch" required/></div>
+    <div class="form-row"><label>Tags <span style="color:var(--faint);font-weight:500">— comma separated (leadership, conflict, impact…)</span></label><input name="tags" value="${esc((s.tags||[]).join(", "))}" placeholder="leadership, impact"/></div>
+    <div class="rs-card" style="background:var(--bg2)">
+      <div class="form-row" style="margin-bottom:8px"><label>Quick draft <span style="color:var(--faint);font-weight:500">— jot the gist, let AI shape it into STAR</span></label><textarea name="rough" placeholder="Rough notes about what happened…"></textarea></div>
+      <button type="button" class="btn ghost sm" data-act="story-draft">${I.ai} Draft STAR with AI</button>
+    </div>
+    <div class="form-row"><label>Situation</label><textarea name="s" placeholder="The context…">${esc(s.s||"")}</textarea></div>
+    <div class="form-row"><label>Task</label><textarea name="t" placeholder="What you needed to do…">${esc(s.t||"")}</textarea></div>
+    <div class="form-row"><label>Action</label><textarea name="a" placeholder="What you did…">${esc(s.a||"")}</textarea></div>
+    <div class="form-row"><label>Result</label><textarea name="r" placeholder="The outcome — quantify if you can…">${esc(s.r||"")}</textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px"><button type="submit" class="btn primary" style="flex:1">${I.check} Save story</button><button type="button" class="btn ghost" data-act="prep-back">← Back</button></div>
+  </form>`;
+}
+function questionForm(q){ q=q||{};
+  return `<h2 style="margin:0 0 14px;font-size:18px;font-weight:850">${q.id?"Edit question":"Add a question"}</h2>
+  <form id="qForm">
+    <div class="form-row"><label>Question they asked *</label><textarea name="q" placeholder="Tell me about a time you disagreed with your manager." required>${esc(q.q||"")}</textarea></div>
+    <div class="form-row"><label>Your answer / notes <span style="color:var(--faint);font-weight:500">— optional</span></label><textarea name="a" placeholder="How you answered, or want to…">${esc(q.a||"")}</textarea></div>
+    <div class="form-row"><label>Tags</label><input name="tags" value="${esc((q.tags||[]).join(", "))}" placeholder="behavioral, system design"/></div>
+    <div style="display:flex;gap:10px;margin-top:8px"><button type="submit" class="btn primary" style="flex:1">${I.check} Save question</button><button type="button" class="btn ghost" data-act="prep-back">← Back</button></div>
+  </form>`;
+}
+function openStoryForm(s){ openEditor(storyForm(s)); if(s&&s.id&&editorEl) editorEl.dataset.editId=s.id; }
+function openQuestionForm(q){ openEditor(questionForm(q)); if(q&&q.id&&editorEl) editorEl.dataset.editId=q.id; }
+function saveStory(form){ const d=fd(form); if(!d.title){ toast("Give it a title"); return; }
+  const story={ title:d.title, tags:(d.tags||"").split(",").map(x=>x.trim()).filter(Boolean), s:d.s||"", t:d.t||"", a:d.a||"", r:d.r||"" };
+  const editId=editorEl&&editorEl.dataset.editId;
+  if(editId){ Object.assign(getStories().find(x=>x.id===editId)||{}, story); }
+  else getStories().push(Object.assign({id:uid()},story));
+  save(); openPrepBank(); toast("Story saved ✓");
+}
+function saveQuestion(form){ const d=fd(form); if(!d.q){ toast("Add the question"); return; }
+  const q={ q:d.q, a:d.a||"", tags:(d.tags||"").split(",").map(x=>x.trim()).filter(Boolean) };
+  const editId=editorEl&&editorEl.dataset.editId;
+  if(editId){ Object.assign(getQuestions().find(x=>x.id===editId)||{}, q); }
+  else getQuestions().push(Object.assign({id:uid()},q));
+  save(); openPrepBank(); toast("Question saved ✓");
+}
+function storyDraftPrompt(rough,title){
+  return `Turn my rough notes into a crisp STAR interview story. Return ONLY JSON: {"title":"","s":"","t":"","a":"","r":""}. Keep each field 1-2 sentences, concrete, first person; quantify the result if possible. Don't invent facts beyond my notes.\nTitle hint: ${title||"(none)"}\nNotes: ${rough}`;
+}
+async function storyDraftAI(){
+  const form=document.getElementById("storyForm"); if(!form) return;
+  const rough=(form.querySelector('[name="rough"]')||{}).value||"";
+  const title=(form.querySelector('[name="title"]')||{}).value||"";
+  if(!rough.trim()){ toast("Jot a few notes first"); return; }
+  if(aiEngine()==="paste"||aiEngine()==="off"){ copy(storyDraftPrompt(rough,title),"Prompt copied — paste into any AI"); return; }
+  const btn=editorEl&&editorEl.querySelector('[data-act="story-draft"]'); if(btn){ btn.textContent="Drafting…"; btn.disabled=true; }
+  try{ const d=aiParse(await aiCall(storyDraftPrompt(rough,title)));
+    const set=(n,v)=>{ const el=form.querySelector(`[name="${n}"]`); if(el&&v) el.value=v; };
+    if(d.title&&!title) set("title",d.title); set("s",d.s); set("t",d.t); set("a",d.a); set("r",d.r);
+    toast("Drafted ✓");
+  }catch(e){ toast("⚠ "+e.message); }
+  if(btn){ btn.innerHTML=`${I.ai} Draft STAR with AI`; btn.disabled=false; }
 }
 let aiGenText="";
 function aiGen(prompt, title){
@@ -1870,6 +1958,7 @@ function openSettings(){
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn ghost sm" data-act="edit-stages">${I.board} Edit stages</button>
     <button class="btn ghost sm" data-act="edit-resume">${I.user} My résumé</button>
+    <button class="btn ghost sm" data-act="prep-bank">${I.spark} Prep bank</button>
     <button class="btn ghost sm" data-act="export">${I.copy} Export backup</button>
     <button class="btn ghost sm" data-act="import">↑ Import backup</button>
     <button class="btn ghost sm" data-act="sample">${I.spark} Load demo data</button>
@@ -2481,7 +2570,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2535,6 +2624,11 @@ document.addEventListener("click",e=>{
   if(act==="ai-settings"){ openAISettings(); return; }
   if(act==="ai-cfg-save"){ saveAISettings(); closeEditor(); toast("AI engine saved ✓"); return; }
   if(act==="ai-save"){ saveAISettings(); openSettings(); toast("AI engine saved ✓"); return; }
+  if(act==="prep-bank"){ openPrepBank(); return; }
+  if(act==="prep-back"){ openPrepBank(); return; }
+  if(act==="story-add"){ openStoryForm(null); return; }
+  if(act==="q-add"){ openQuestionForm(null); return; }
+  if(act==="story-draft"){ storyDraftAI(); return; }
   // company brief
   if(act==="research-copy"){ const o=state.opportunities.find(x=>x.id===researchTargetId); if(o) copy(briefPrompt(o),"Prompt copied — paste into any AI"); return; }
   if(act==="research-save"){ const o=state.opportunities.find(x=>x.id===researchTargetId); const ta=$("#researchPaste"); if(o&&ta){ try{ applyResearchJSON(o,ta.value); }catch(err){ toast("⚠ Couldn't read that JSON"); } } return; }
@@ -2594,6 +2688,10 @@ document.addEventListener("click",e=>{
   if(t.dataset.ask){ runAsk(t.dataset.ask); return; }
   if(t.dataset.genHero){ const o=state.opportunities.find(x=>x.id===t.dataset.genHero); if(o) aiGen(prepPrompt(o),"Prep me"); return; }
   if(t.dataset.followup){ const o=state.opportunities.find(x=>x.id===t.dataset.followup); if(o) aiGen(followupPrompt(o),"Follow-up note"); return; }
+  if(t.dataset.storyEdit){ openStoryForm(getStories().find(x=>x.id===t.dataset.storyEdit)); return; }
+  if(t.dataset.storyDel){ if(confirm("Delete this story?")){ state.stories=getStories().filter(x=>x.id!==t.dataset.storyDel); save(); openPrepBank(); } return; }
+  if(t.dataset.qEdit){ openQuestionForm(getQuestions().find(x=>x.id===t.dataset.qEdit)); return; }
+  if(t.dataset.qDel){ if(confirm("Delete this question?")){ state.questions=getQuestions().filter(x=>x.id!==t.dataset.qDel); save(); openPrepBank(); } return; }
   if(t.dataset.taskDone){ const o=state.opportunities.find(x=>x.id===t.dataset.taskDone); if(o){ o.nextActionLabel=""; o.nextActionDate=""; o.updatedAt=Date.now(); save(); render(); toast("Done ✓"); } return; }
   if(t.dataset.thanked){ for(const o of state.opportunities){ const r=(o.rounds||[]).find(x=>x.id===t.dataset.thanked); if(r){ r.thanked=true; o.updatedAt=Date.now(); save(); render(); toast("Marked sent ✓"); break; } } return; }
 });
@@ -2623,6 +2721,8 @@ document.addEventListener("submit",e=>{
   if(e.target.id==="opForm"){ saveOpForm(e.target); }
   else if(e.target.id==="roundForm"){ saveRoundForm(e.target); }
   else if(e.target.id==="personForm"){ savePersonForm(e.target); }
+  else if(e.target.id==="storyForm"){ saveStory(e.target); }
+  else if(e.target.id==="qForm"){ saveQuestion(e.target); }
 });
 
 function fd(form){ const d={}; new FormData(form).forEach((v,k)=>d[k]=typeof v==="string"?v.trim():v); return d; }

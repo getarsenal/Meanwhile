@@ -2060,6 +2060,7 @@ function opForm(o){
       <div class="form-row"><label>Company *</label><input name="company" value="${esc(o.company||"")}" required placeholder="Acme Inc"/></div>
       <div class="form-row"><label>Role / title</label><input name="role" value="${esc(o.role||"")}" placeholder="Senior PM"/></div>
     </div>
+    <div class="form-row"><label>Company website <span style="color:var(--faint);font-weight:500">— sets the logo</span></label><input name="domain" value="${esc(o.domain||"")}" placeholder="acme.com"/></div>
     <div class="form-row"><label>Excitement / fit</label><div class="rating-pick" data-rating="excitement">${[1,2,3,4,5].map(n=>`<span class="s ${(+o.excitement>=n)?'on':''}" data-v="${n}">★</span>`).join("")}</div><input type="hidden" name="excitement" value="${o.excitement||0}"/></div>
     <div class="form-2">
       <div class="form-row"><label>Stage</label><select name="status">${allStages().map(s=>`<option value="${s.id}" ${o.status===s.id?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
@@ -2218,8 +2219,11 @@ async function aiCall(prompt, doc, opts){
     const body={model,messages:[{role:"user",content:prompt}],max_tokens:maxTok};
     if(wantJson) body.response_format={type:"json_object"};
     const res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiCfg.key},body:JSON.stringify(body)});
-    if(!res.ok){ const tx=(await res.text()).slice(0,180);
-      if(res.status===429) throw new Error("OpenAI rate/quota hit — check your plan & billing at platform.openai.com.");
+    if(!res.ok){ const tx=(await res.text()).slice(0,300);
+      if(res.status===429){
+        if(/insufficient_quota|exceeded your current quota|billing/i.test(tx)) throw new Error("Your OpenAI API account has no credits. Note: the API is billed SEPARATELY from ChatGPT Plus — add a payment method / credits at platform.openai.com → Settings → Billing. (Or use Gemini's free tier instead.)");
+        throw new Error("OpenAI rate limit — wait a few seconds and retry.");
+      }
       if(res.status===401) throw new Error("That OpenAI key looks invalid — re-copy it from platform.openai.com/api-keys.");
       throw new Error("OpenAI "+res.status+" "+tx); }
     const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
@@ -2761,6 +2765,9 @@ function saveOpForm(form){
   d.tags=d.tags?d.tags.split(",").map(s=>s.trim()).filter(Boolean):[];
   d.excitement=+d.excitement||0;
   if(d.jdFile){ try{ d.jdFile=JSON.parse(d.jdFile); }catch(e){ delete d.jdFile; } } else { d.jdFile=null; }
+  // a manually-entered company website drives the logo (and stops the auto-guess overriding it)
+  d.domain=(d.domain||"").trim().replace(/^https?:\/\//,"").replace(/^www\./,"").replace(/\/.*$/,"");
+  d.logo = d.domain ? "https://logo.clearbit.com/"+d.domain : "";
   const editId=editorEl&&editorEl.dataset.editId;
   const existing=editId?state.opportunities.find(o=>o.id===editId):null;
   if(existing){ Object.assign(existing,d,{updatedAt:Date.now()}); openId=existing.id; }

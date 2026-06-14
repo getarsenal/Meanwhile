@@ -172,8 +172,11 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .hero-count{flex:0 0 auto;text-align:center;padding-left:8px}
 .hc-num{font-size:62px;font-weight:850;line-height:.9;letter-spacing:-.03em;background:linear-gradient(180deg,#ffffff,#aeb4ea);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 20px rgba(94,106,210,.55))}
 .hc-num.now{font-size:38px}
+.hc-num.clock{font-size:33px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .hc-unit{font-size:10.5px;color:var(--accent3);font-weight:800;text-transform:uppercase;letter-spacing:.1em;margin-top:6px}
-@media(max-width:560px){ .hero-inner{padding:18px;gap:12px} .hc-num{font-size:50px} .hc-num.now{font-size:30px} .hero-name{font-size:20px} .hero-fav{width:40px!important;height:40px!important;flex-basis:40px!important} }
+.hero-tint{position:absolute;inset:-30%;z-index:0;filter:blur(26px);opacity:.9;mix-blend-mode:screen;pointer-events:none}
+.hero-mark{position:absolute;right:-36px;top:50%;transform:translateY(-50%);width:170px;height:170px;border-radius:42px;z-index:0;opacity:.06;pointer-events:none}
+@media(max-width:560px){ .hero-inner{padding:18px;gap:12px} .hc-num{font-size:50px} .hc-num.now{font-size:30px} .hc-num.clock{font-size:25px} .hero-name{font-size:20px} .hero-fav{width:40px!important;height:40px!important;flex-basis:40px!important} .hero-mark{width:128px;height:128px;right:-28px} }
 
 /* Branded launch splash (installed app only — see media query) */
 #splash{display:none;position:fixed;inset:0;z-index:9999;background:
@@ -761,11 +764,11 @@ function render(){
   else $("#viewSub").innerHTML = "";
   const c = $("#content");
   c.className = "content"+(view==="pipeline"?" pad0":"");
-  if(view==="dashboard") c.innerHTML = renderDashboard();
-  else if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
+  if(view==="dashboard"){ c.innerHTML = renderDashboard(); armHeroCountdown(); }
+  else { if(heroTimer){ clearInterval(heroTimer); heroTimer=null; } if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
   else if(view==="cards") c.innerHTML = renderCards();
   else if(view==="calendar") c.innerHTML = renderCalendar();
-  else if(view==="insights") c.innerHTML = renderInsights();
+  else if(view==="insights") c.innerHTML = renderInsights(); }
 }
 
 function activeCount(){ return state.opportunities.filter(o=>stage(o.status).active && o.status!=="wishlist").length; }
@@ -852,16 +855,46 @@ function renderDashboard(){
 }
 
 /* The dashboard hero — the app's visual hook. Adapts to your search:
-   1) a live countdown to your next interview, 2) offers on the table, or 3) momentum. */
+   1) a LIVE countdown to your next interview, 2) offers on the table, or 3) momentum.
+   Aurora is tinted by the next company's color, with a subtle CallBack watermark. */
+function heroShell(inner, tint){
+  const t = tint ? `<div class="hero-tint" style="background:radial-gradient(52% 62% at 26% 26%, ${tint}5c, transparent 62%)"></div>` : "";
+  return `<div class="hero"><div class="hero-aurora"></div>${t}<img src="icon.png" class="hero-mark" alt="" aria-hidden="true"/><div class="hero-grain"></div><div class="hero-inner">${inner}</div></div>`;
+}
+function heroCountParts(ms){
+  if(ms<=0) return {num:"Now",unit:"go time",cls:"now"};
+  const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor(s/60)%60, sec=s%60, pad=n=>String(n).padStart(2,"0");
+  return {num:`${h}:${pad(m)}:${pad(sec)}`, unit:"to go", cls:"clock"};
+}
+let heroTimer=null;
+function armHeroCountdown(){
+  if(heroTimer){ clearInterval(heroTimer); heroTimer=null; }
+  const node=document.getElementById("heroCount"); if(!node) return;
+  const deadline=+node.dataset.deadline; if(!deadline) return;
+  const tick=()=>{
+    const n=document.getElementById("heroCount"); if(!n){ clearInterval(heroTimer); heroTimer=null; return; }
+    const left=deadline-Date.now(), p=heroCountParts(left);
+    const numEl=n.querySelector(".hc-num"), unitEl=n.querySelector(".hc-unit");
+    if(numEl){ numEl.textContent=p.num; numEl.className="hc-num "+(p.cls||""); }
+    if(unitEl) unitEl.textContent=p.unit;
+    // once it passes, advance the hero to the next event (only if nothing's open)
+    if(left<-1000 && view==="dashboard" && !editorEl && !$("#drawer").classList.contains("show")){ clearInterval(heroTimer); heroTimer=null; render(); }
+  };
+  tick(); heroTimer=setInterval(tick,1000);
+}
 function dashHero(ops){
   const up = ops.map(o=>({o,e:nextEvent(o)})).filter(x=>x.e&&x.e.du>=0).sort((a,b)=>a.e.du-b.e.du);
   const offers = ops.filter(o=>o.status==="offer");
-  const shell = (eyebrow,inner,accent)=>`<div class="hero"${accent?` style="--hero-accent:${accent}"`:""}><div class="hero-aurora"></div><div class="hero-grain"></div><div class="hero-inner">${inner}</div></div>`;
 
   if(up.length){
     const {o,e}=up[0];
-    const num = e.du===0?"Today":e.du===1?"1":String(e.du);
-    const unit = e.du===0?"go time":e.du===1?"day to go":"days to go";
+    const tint=colorFor(o.company);
+    const target = e.time ? (()=>{ const d=new Date(e.date+"T"+e.time); return isNaN(d)?null:d.getTime(); })() : null;
+    const left = target!=null ? target-Date.now() : null;
+    const live = left!=null && left < 24*3600*1000 && left > -60*60*1000;  // tick within the final 24h
+    let countInner, countAttr="";
+    if(live){ const p=heroCountParts(left); countInner=`<div class="hc-num ${p.cls}">${p.num}</div><div class="hc-unit">${p.unit}</div>`; countAttr=`id="heroCount" data-deadline="${target}"`; }
+    else { const num=e.du===0?"Today":e.du===1?"1":String(e.du); const unit=e.du===0?"go time":e.du===1?"day to go":"days to go"; countInner=`<div class="hc-num${e.du===0?" now":""}">${num}</div><div class="hc-unit">${unit}</div>`; }
     const when = fmtDateTime(e.date,e.time)||fmtDate(e.date);
     const inner=`
       <div class="hero-main">
@@ -876,11 +909,8 @@ function dashHero(ops){
           ${e.link?`<a class="btn ghost sm hero-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${I.link} Join</a>`:""}
         </div>
       </div>
-      <div class="hero-count">
-        <div class="hc-num${e.du===0?" now":""}">${num}</div>
-        <div class="hc-unit">${unit}</div>
-      </div>`;
-    return shell("next",inner);
+      <div class="hero-count" ${countAttr}>${countInner}</div>`;
+    return heroShell(inner, tint);
   }
 
   if(offers.length){
@@ -895,7 +925,7 @@ function dashHero(ops){
         </div>
       </div>
       <div class="hero-count"><div class="hc-num">${offers.length}</div><div class="hc-unit">${multi?"offers":"offer"}</div></div>`;
-    return shell("offers",inner,"var(--good)");
+    return heroShell(inner, "#4ea381");
   }
 
   // momentum: active roles but nothing scheduled
@@ -912,7 +942,7 @@ function dashHero(ops){
       </div>
     </div>
     <div class="hero-count"><div class="hc-num">${active}</div><div class="hc-unit">in flight</div></div>`;
-  return shell("momentum",inner);
+  return heroShell(inner);
 }
 
 function emptyState(){

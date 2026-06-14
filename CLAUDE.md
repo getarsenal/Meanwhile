@@ -29,6 +29,13 @@ you paste into a new AI chat to prep for interviews.
 - `STORAGE` — `load()/migrate()/persist()/save()`. **`save()` bumps `state.rev` and triggers cloud push.** Use `persist()` (no push) only when writing data that came *from* the cloud.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
+- `renderDashboard` leads with `dashHero()` (hero), 4 KPI tiles, then `renderMovesHub()` — the
+  **Next moves** action hub: `nextMoves()` aggregates every actionable thing across roles (upcoming
+  interviews, thank-yous for just-finished rounds, due `nextAction` tasks, offer deadlines, quiet
+  follow-ups) into one priority-sorted list with per-row quick actions (`data-gen-hero` Prep,
+  `data-gen-ty` thank-you + `data-thanked` dismiss, `data-task-done`, `data-followup`, Compare).
+- AI **Application kit** in `tabBrief`: `coverLetterPrompt / resumeMatchPrompt / appAnswersPrompt`
+  (+ `followupPrompt` for the hub) draft the application itself from the JD + résumé via `data-gen`.
 - View renderers: `renderDashboard / renderPipeline / renderCards / renderCalendar / renderInsights`.
   The `cards` view (bottom-nav "Cards") is the glanceable all-roles browser: a responsive
   `.job-grid` of `jobCard()`s, each a summary card with a 2×2 stat grid — Stage, Next call,
@@ -102,7 +109,7 @@ Each opportunity: `{ id, company, role, status, source, referrer, workMode, loca
 excitement(1-5), compMin/compMax/compNotes, appliedDate, jobUrl, jd, jdFile, nextActionLabel/Date,
 nextMeetingLink, tags[], product, vibes, notes, offer{}, rounds[], people[], createdAt, updatedAt,
 domain, logo, tagline, research, researchAt }` — the last five are auto-filled by COMPANY ENRICH.
-`rounds[]`: `{id,name,type,date,time,link,interviewers,prep,debrief,rating,status}`.
+`rounds[]`: `{id,name,type,date,time,link,interviewers,prep,debrief,rating,status,thanked}`.
 `people[]`: `{id,name,title,linkedin,email,notes}`.
 `state.scorecard` (offer-comparison): `{ criteria:[{id,name,weight}], scores:{ [opId]:{ [critId]: 1-5 } } }`.
 Criteria/weights are global; ratings are per-offer. Lazily created — don't hand-init it.

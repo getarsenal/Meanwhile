@@ -470,6 +470,22 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ask-chips .chip:hover{border-color:var(--accent);color:var(--txt)}
 .ai-keylinks{font-size:12px;color:var(--muted);margin:-2px 2px 12px;line-height:1.7;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 11px}
 .ai-keylinks a{color:var(--accent3);font-weight:700;white-space:nowrap}
+.ai-subhead{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 9px;padding-top:14px;border-top:1px solid var(--line)}
+.ai-subhead svg{width:15px;height:15px}
+
+/* Next moves — unified action hub */
+.move{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:11px 12px;border-radius:12px;cursor:pointer;transition:.12s}
+.move:hover{background:var(--panel2)}
+.move+.move{border-top:1px solid var(--line)}
+.move-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:0 0 30px}
+.move-ico svg{width:16px;height:16px}
+.move-fav{width:28px!important;height:28px!important;flex:0 0 28px!important;border-radius:8px!important;font-size:11px!important}
+.move-body{flex:1 1 130px;min-width:0}
+.move-label{font-weight:750;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.move-co{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.move-due{font-size:11.5px;font-weight:800;flex:0 0 auto;white-space:nowrap}
+.move-actions{display:flex;gap:6px;flex:0 0 auto}
+@media(max-width:560px){ .move-actions{flex:1 1 100%;order:5;padding-left:41px} .move{gap:9px} }
 
 /* ---------- Company brief (drawer) ---------- */
 .brief-box{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
@@ -824,28 +840,8 @@ function renderDashboard(){
   // Compare competing offers (only surfaces once ≥2 offers are in play)
   html+=scorecardTeaser();
 
-  // This week + follow-ups
-  html+=`<div class="grid grid-2" style="margin-top:18px">`;
-  html+=`<div class="card panel"><div class="panel-title">${I.clock} Coming up</div>`;
-  if(!week.length) html+=`<div style="color:var(--faint);font-size:13px;padding:8px 0">Nothing scheduled this week. Add a next step to any role to see it here.</div>`;
-  else html+=week.map(({o,e})=>{
-    const cls=e.du<=0?"over":e.du<=2?"soon":"";
-    return `<div class="sub-item" data-open="${o.id}" style="cursor:pointer;margin-bottom:9px">
-      <div class="si-head"><div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0">${favHTML(o)}<div style="min-width:0"><div class="nm">${esc(o.company)}</div><div style="font-size:12px;color:var(--muted)">${esc(e.label)}</div></div></div>
-      <span class="chip" style="margin-left:auto;color:${cls==='over'?'var(--bad)':cls==='soon'?'var(--warn)':'var(--accent2)'}">${relDays(e.du)}</span></div>
-      <div class="si-meta">${fmtDateTime(e.date,e.time)} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join link</a>`:""}</div>
-    </div>`;
-  }).join("");
-  html+=`</div>`;
-
-  html+=`<div class="card panel"><div class="panel-title">${I.bell} Follow-ups</div>`;
-  if(!followups.length) html+=`<div style="color:var(--faint);font-size:13px;padding:8px 0">All clear — nothing's gone cold.</div>`;
-  else html+=followups.sort((a,b)=>daysSince(b.updatedAt)-daysSince(a.updatedAt)).map(o=>`
-    <div class="sub-item" data-open="${o.id}" style="cursor:pointer;margin-bottom:9px">
-      <div class="si-head"><div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0">${favHTML(o)}<div style="min-width:0"><div class="nm">${esc(o.company)}</div><div style="font-size:12px;color:var(--muted)">${stage(o.status).name}</div></div></div>
-      <span class="chip" style="margin-left:auto;color:var(--hot)">${daysSince(o.updatedAt)}d quiet</span></div>
-    </div>`).join("");
-  html+=`</div></div>`;
+  // Next moves — the unified, prioritized action hub
+  html+=renderMovesHub(ops);
 
   // Pipeline funnel
   html+=`<div class="section-head"><h3>Pipeline</h3><div class="line"></div><span class="tag">${active} active</span></div>`;
@@ -948,6 +944,62 @@ function dashHero(ops){
       </div>
     </div>`;
   return heroShell(inner);
+}
+
+/* ---- Next moves: one prioritized action queue across every role ---- */
+function nextMoves(ops){
+  const moves=[];
+  ops.forEach(o=>{
+    const st=stage(o.status);
+    if(!st.active && o.status!=="offer") return; // skip closed/rejected
+    (o.rounds||[]).forEach(r=>{
+      if(r.date && r.status!=="done" && r.status!=="cancelled"){ const du=daysUntil(r.date); if(du!=null && du>=0 && du<=14) moves.push({o,type:"interview",rid:r.id,label:r.name||r.type||"Interview",du,date:r.date,time:r.time}); }
+      if(r.status==="done" && r.date && !r.thanked){ const du=daysUntil(r.date); if(du!=null && du<=0 && du>=-2) moves.push({o,type:"thanks",rid:r.id,label:`Thank-you · ${r.name||r.type||"interview"}`,du:0.4,date:r.date}); }
+    });
+    if(o.nextActionDate){ const du=daysUntil(o.nextActionDate); if(du!=null && du<=14) moves.push({o,type:"task",label:o.nextActionLabel||"Next step",du,date:o.nextActionDate}); }
+    if(o.offer&&o.offer.deadline){ const du=daysUntil(o.offer.deadline); if(du!=null && du<=21) moves.push({o,type:"offer",label:"Decide on offer",du,date:o.offer.deadline}); }
+    if(needsFollowup(o)) moves.push({o,type:"followup",label:"Follow up — gone quiet",du:9000,quiet:daysSince(o.updatedAt)});
+  });
+  return moves.sort((a,b)=>a.du-b.du);
+}
+const MOVE_META={
+  interview:{ico:()=>I.cal,col:"var(--accent3)"},
+  thanks:{ico:()=>I.ai,col:"var(--good)"},
+  task:{ico:()=>I.check,col:"var(--accent2)"},
+  offer:{ico:()=>I.trophy,col:"var(--warn)"},
+  followup:{ico:()=>I.bell,col:"var(--hot)"},
+};
+function moveActions(m){
+  const o=m.o;
+  if(m.type==="interview") return `<button class="btn sm ghost" data-gen-hero="${o.id}">${I.ai} Prep</button>`;
+  if(m.type==="thanks") return `<button class="btn sm ghost" data-gen-ty="${m.rid}">${I.ai} Write</button><button class="btn sm ghost" data-thanked="${m.rid}" title="Mark sent">✓</button>`;
+  if(m.type==="task") return `<button class="btn sm ghost" data-task-done="${o.id}">✓ Done</button>`;
+  if(m.type==="offer") return state.opportunities.filter(x=>x.status==="offer").length>1?`<button class="btn sm ghost" data-act="open-scorecard">Compare</button>`:"";
+  if(m.type==="followup") return `<button class="btn sm ghost" data-followup="${o.id}">${I.ai} Draft</button>`;
+  return "";
+}
+function renderMovesHub(ops){
+  const moves=nextMoves(ops);
+  if(!moves.length) return `<div class="section-head"><h3>Next moves</h3><div class="line"></div></div>
+    <div class="card panel" style="text-align:center;color:var(--faint);font-size:13px;padding:24px">🎉 You're all caught up — nothing needs you right now.</div>`;
+  let h=`<div class="section-head"><h3>Next moves</h3><div class="line"></div><span class="tag">${moves.length}</span></div><div class="card panel" style="padding:5px">`;
+  h+=moves.map(m=>{
+    const md=MOVE_META[m.type]||MOVE_META.task;
+    const overdue = m.du<0;
+    const due = m.type==="followup" ? `${m.quiet}d quiet`
+             : m.type==="thanks" ? "Send today"
+             : overdue ? `${Math.abs(Math.round(m.du))}d ago`
+             : m.du===0 ? "Today" : relDays(m.du);
+    const dueCol = overdue?'var(--bad)':m.du===0?'var(--warn)':m.type==="followup"?'var(--hot)':'var(--accent2)';
+    return `<div class="move" data-open="${m.o.id}">
+      <div class="move-ico" style="color:${md.col};background:${md.col}1f">${md.ico()}</div>
+      ${favHTML(m.o,'move-fav')}
+      <div class="move-body"><div class="move-label">${esc(m.label)}</div><div class="move-co">${esc(m.o.company)}${m.o.role?` · ${esc(m.o.role)}`:""}</div></div>
+      <span class="move-due" style="color:${dueCol}">${due}</span>
+      <div class="move-actions">${moveActions(m)}</div>
+    </div>`;
+  }).join("");
+  return h+`</div>`;
 }
 
 function emptyState(){
@@ -1637,15 +1689,23 @@ function tabPeople(o){
 /* ---------------- AI BRIEF ---------------- */
 function tabBrief(o){
   const brief=buildBrief(o);
-  let h=`<div class="ai-box"><div class="ai-head">${I.ai} AI prep — ${aiEngine()==="paste"||aiEngine()==="off"?"copies a prompt for any AI":"one tap, generated for you"}</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Get coached on likely questions, smart questions to ask, and a tailored intro — built from this role + your résumé.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+  const live = !(aiEngine()==="paste"||aiEngine()==="off");
+  let h=`<div class="ai-box"><div class="ai-head">${I.ai} AI prep — ${live?"one tap, generated for you":"copies a prompt for any AI"}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Coaching for the interview — built from this role + your résumé.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn primary sm" data-gen="prep">${I.ai} Prep me</button>
       <button class="btn ghost sm" data-gen="questions">${I.ai} Questions to ask</button>
       <button class="btn ghost sm" data-gen="intro">${I.ai} Write my intro</button>
     </div>
-    <details><summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px">View / copy the raw brief</summary>
-      <div class="ai-pre" id="briefText">${esc(brief)}</div>
+    <div class="ai-subhead">${I.briefcase} Application kit</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Write the application itself — tailored to the job description.${o.jd||o.jdFile?"":" <span style='color:var(--faint)'>Add a job description to this role for sharper results.</span>"}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost sm" data-gen="cover">${I.ai} Cover letter</button>
+      <button class="btn ghost sm" data-gen="match">${I.ai} Résumé ↔ JD match</button>
+      <button class="btn ghost sm" data-gen="answers">${I.ai} Application answers</button>
+    </div>
+    <details style="margin-top:14px"><summary style="cursor:pointer;font-size:12px;color:var(--muted);font-weight:600">View / copy the raw brief</summary>
+      <div class="ai-pre" id="briefText" style="margin-top:8px">${esc(brief)}</div>
       <button class="btn ghost sm" data-copy="brief" style="margin-top:8px">${I.copy} Copy brief</button>
     </details></div>`;
   return h;
@@ -1691,6 +1751,21 @@ function thankyouPrompt(o,r){
   return `Write a concise, genuine thank-you email to send after my ${r?`"${r.name||r.type||"interview"}" round`:"interview"} at ${o.company}${o.role?` for the ${o.role} role`:""}.${who?` I met with ${who}.`:""}\nWarm and specific, not generic — reference the conversation at a high level and reaffirm my interest and fit. About 120 words. Start with a one-line subject ("Subject: …").${r&&r.debrief?`\n\nHow it went / what we covered: ${r.debrief}`:""}\n\nA little about me for voice:\n${resumeText()}`;
 }
 // One-tap generate: run a prompt through the engine and show the result; paste-mode falls back to copy
+// ---- Application kit (cover letter / JD match / application answers / follow-up) ----
+function coverLetterPrompt(o){
+  return buildBrief(o)+`\n\n---\nUsing the brief and job description above, write me a focused, genuine cover letter for the ${o.role||"role"} at ${o.company}. ~250-300 words, specific to this company and role, showing fit and real motivation — not a generic template. Sound like me. Plain text, ready to send.\n\nMy résumé:\n${resumeText()}`;
+}
+function resumeMatchPrompt(o){
+  return buildBrief(o)+`\n\n---\nCompare my résumé to the job description above for the ${o.role||"role"} at ${o.company}. Give me, in plain text:\n1) A match score out of 10 with one line of reasoning.\n2) The 6 most important keywords/skills in the JD that are missing or weak in my résumé.\n3) 4 rewritten résumé bullet points tailored to this JD, using my real experience (don't invent).\nBe concrete and specific.\n\nMy résumé:\n${resumeText()}`;
+}
+function appAnswersPrompt(o){
+  return buildBrief(o)+`\n\n---\nDraft strong, specific answers (4-6 sentences each, in my voice — not templated) to the application questions I'm most likely to face for the ${o.role||"role"} at ${o.company}:\n• "Why do you want to work here?"\n• "Why are you a great fit for this role?"\n• "What interests you most about this position?"\nUse the company details and my résumé.\n\nMy résumé:\n${resumeText()}`;
+}
+function followupPrompt(o){
+  const quiet=daysSince(o.updatedAt)||0;
+  const who=(o.people||[]).map(p=>p.name).join(", ");
+  return `Write a short, warm follow-up email about the ${o.role||"role"} at ${o.company} — I applied/last spoke about ${quiet} days ago and haven't heard back.${who?` My contact: ${who}.`:""} Reiterate genuine interest, add a light touch of value, and politely ask about next steps. ~90 words, not pushy. Start with a one-line subject ("Subject: …").\n\nA little about me for voice:\n${resumeText()}`;
+}
 let aiGenText="";
 function aiGen(prompt, title){
   const eng=aiEngine();
@@ -2406,7 +2481,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2514,10 +2589,13 @@ document.addEventListener("click",e=>{
 
   // copy brief prompts
   if(t.dataset.copy){ const o=getOp(); const map={brief:buildBrief(o),prep:prepPrompt(o),intro:introPrompt(o)}; copy(map[t.dataset.copy], t.dataset.copy==="brief"?"Brief copied":"Prompt copied"); return; }
-  if(t.dataset.gen){ const o=getOp(); const map={prep:[prepPrompt(o),"Prep me"],questions:[questionsPrompt(o),"Questions to ask"],intro:[introPrompt(o),"Your intro"]}; const m=map[t.dataset.gen]; if(m) aiGen(m[0],m[1]); return; }
+  if(t.dataset.gen){ const o=getOp(); const map={prep:[prepPrompt(o),"Prep me"],questions:[questionsPrompt(o),"Questions to ask"],intro:[introPrompt(o),"Your intro"],cover:[coverLetterPrompt(o),"Cover letter"],match:[resumeMatchPrompt(o),"Résumé ↔ JD match"],answers:[appAnswersPrompt(o),"Application answers"]}; const m=map[t.dataset.gen]; if(m) aiGen(m[0],m[1]); return; }
   if(t.dataset.genTy){ const o=getOp(); const r=(o.rounds||[]).find(x=>x.id===t.dataset.genTy); aiGen(thankyouPrompt(o,r),"Thank-you note"); return; }
   if(t.dataset.ask){ runAsk(t.dataset.ask); return; }
   if(t.dataset.genHero){ const o=state.opportunities.find(x=>x.id===t.dataset.genHero); if(o) aiGen(prepPrompt(o),"Prep me"); return; }
+  if(t.dataset.followup){ const o=state.opportunities.find(x=>x.id===t.dataset.followup); if(o) aiGen(followupPrompt(o),"Follow-up note"); return; }
+  if(t.dataset.taskDone){ const o=state.opportunities.find(x=>x.id===t.dataset.taskDone); if(o){ o.nextActionLabel=""; o.nextActionDate=""; o.updatedAt=Date.now(); save(); render(); toast("Done ✓"); } return; }
+  if(t.dataset.thanked){ for(const o of state.opportunities){ const r=(o.rounds||[]).find(x=>x.id===t.dataset.thanked); if(r){ r.thanked=true; o.updatedAt=Date.now(); save(); render(); toast("Marked sent ✓"); break; } } return; }
 });
 
 // overlay click closes drawer

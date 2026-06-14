@@ -2164,6 +2164,7 @@ function aiEngine(){
   if(e==="proxy") return aiProxyUrl()?"proxy":"paste";
   if(e==="anthropic") return aiCfg.key?"anthropic":"paste";
   if(e==="openai") return aiCfg.key?"openai":"paste";
+  if(e==="groq") return aiCfg.key?"groq":"paste";
   if(e==="google") return aiCfg.key?"google":"paste";
   return "paste";
 }
@@ -2228,6 +2229,23 @@ async function aiCall(prompt, doc, opts){
       throw new Error("OpenAI "+res.status+" "+tx); }
     const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
   }
+  if(eng==="groq"){
+    // OpenAI-compatible, free tier (runs Llama). Model fallback guards against renames.
+    const models=[aiCfg.model||"llama-3.3-70b-versatile","llama-3.1-8b-instant"].filter((m,i,a)=>m&&a.indexOf(m)===i);
+    const base={messages:[{role:"user",content:prompt}],max_tokens:maxTok}; if(wantJson) base.response_format={type:"json_object"};
+    let res,lastStatus=0,lastErr="";
+    for(const model of models){
+      res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiCfg.key},body:JSON.stringify(Object.assign({model},base))});
+      if(res.ok) break; lastStatus=res.status; lastErr=(await res.text()).slice(0,200);
+      if(![404,400].includes(res.status)) break;
+    }
+    if(!res||!res.ok){
+      if(lastStatus===429) throw new Error("Groq rate limit — wait a few seconds and retry (the free tier resets quickly).");
+      if(lastStatus===401) throw new Error("That Groq key looks invalid — re-copy it from console.groq.com/keys.");
+      throw new Error("Groq "+lastStatus+" "+lastErr);
+    }
+    const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
+  }
   if(eng==="google"){
     const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
     const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
@@ -2254,7 +2272,7 @@ async function aiCall(prompt, doc, opts){
 
 let spData=null, spText="", spSourceUrl="", spMatchId="";
 function openSmartPaste(keepText){ spData=null; spSourceUrl=""; spMatchId=""; if(!keepText) spText=""; openEditor(smartPasteBody()); }
-function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",openai:"ChatGPT ✓",google:"Gemini ✓"}[aiEngine()]; }
+function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",openai:"ChatGPT ✓",groq:"Groq ✓",google:"Gemini ✓"}[aiEngine()]; }
 function smartPasteBody(){
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
@@ -2386,25 +2404,27 @@ function spApply(){
 function aiEngineFields(){
   const eng=aiCfg.engine||"google";
   const opt=(v,l)=>`<option value="${v}" ${eng===v?"selected":""}>${l}</option>`;
-  const needsKey=eng==="anthropic"||eng==="openai"||eng==="google";
-  const mph=eng==="google"?"gemini-2.0-flash":eng==="openai"?"gpt-4o-mini":"claude-haiku-4-5";
+  const needsKey=eng==="anthropic"||eng==="openai"||eng==="groq"||eng==="google";
+  const mph=eng==="google"?"gemini-2.0-flash":eng==="openai"?"gpt-4o-mini":eng==="groq"?"llama-3.3-70b-versatile":"claude-haiku-4-5";
+  const kph=eng==="google"?"AIza…":eng==="groq"?"gsk_…":"sk-…";
   return `<div class="form-row"><label>Choose your AI</label><select id="aiEngine">
     ${opt("google","Gemini — free, recommended")}
-    ${opt("openai","ChatGPT (OpenAI) — your key")}
-    ${opt("anthropic","Claude (Anthropic) — your key")}
+    ${opt("groq","Groq — free &amp; fast (Llama)")}
+    ${opt("openai","ChatGPT (OpenAI) — paid key")}
+    ${opt("anthropic","Claude (Anthropic) — paid key")}
     ${opt("proxy","Cloud proxy — key on your Supabase")}
     ${opt("paste","Copy-paste — no key, any AI")}
     ${opt("off","Off")}
   </select></div>
   <div id="aiKeyRow" style="display:${needsKey?"block":"none"}">
-    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stays on this device, never synced</span></label><input id="aiKey" type="password" value="${esc(aiCfg.key||"")}" placeholder="${eng==="google"?"AIza…":"sk-…"}"/></div>
-    <div class="ai-keylinks">🔑 Get a free/paid key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
+    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stays on this device, never synced</span></label><input id="aiKey" type="password" value="${esc(aiCfg.key||"")}" placeholder="${kph}"/></div>
+    <div class="ai-keylinks">🔑 Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a> · <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (free) ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
     <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${mph}"/></div>
   </div>
   <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
     <div class="form-row"><label>Proxy URL <span style="color:var(--faint);font-weight:500">— defaults to your Supabase function</span></label><input id="aiProxy" value="${esc(aiCfg.proxyUrl||"")}" placeholder="${esc(aiProxyUrl()||"https://xxxx.supabase.co/functions/v1/ai")}"/></div>
   </div>
-  <div class="note-block" style="margin-top:6px;font-size:12px">${needsKey?"Your key is stored only in this browser (like the sync code) and used to call your chosen provider directly — your data goes to them, not to us. Gemini has a free tier; ChatGPT &amp; Claude are paid. Set a spend limit with your provider. (PDF résumé reading works on Gemini, Claude, or the proxy.)":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>`;
+  <div class="note-block" style="margin-top:6px;font-size:12px">${needsKey?"Your key is stored only in this browser (like the sync code) and used to call your chosen provider directly — your data goes to them, not to us. <b>Gemini and Groq are free</b> (no card); ChatGPT &amp; Claude need paid API credits (separate from a ChatGPT/Claude subscription). (PDF résumé reading works on Gemini, Claude, or the proxy.)":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>`;
 }
 // Inline section rendered inside Settings, right under Cloud sync
 function aiIntegrationBox(){
@@ -2737,7 +2757,7 @@ document.addEventListener("change",e=>{
   if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
   if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
-    if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="google")?"block":"none";
+    if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="groq"||v==="google")?"block":"none";
     if(p) p.style.display=(v==="proxy")?"block":"none"; }
 });
 

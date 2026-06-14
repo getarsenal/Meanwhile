@@ -1129,7 +1129,7 @@ function calEvents(){
     if(o.nextActionDate) events.push({o,date:o.nextActionDate,time:"",label:o.nextActionLabel||"Next step",type:"Task",link:o.nextMeetingLink});
     if(o.offer&&o.offer.deadline) events.push({o,date:o.offer.deadline,time:"",label:"Offer decision deadline",type:"Deadline"});
   });
-  events.sort((a,b)=> (a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  events.sort((a,b)=> (a.date+(a.time||"99:99")).localeCompare(b.date+(b.time||"99:99")));
   return events;
 }
 function calToggle(){
@@ -1152,7 +1152,7 @@ function renderCalendar(){
       <div style="width:1px;align-self:stretch;background:var(--line)"></div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px"><span class="chip" style="color:${col};border-color:${col}44">${e.type}</span><span style="font-weight:800;font-size:13.5px">${esc(e.label)}</span></div>
-        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""} ${e.rid&&d>=0?`· <span data-ics="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span>`:""}</div>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""} ${e.rid&&d>=0?`· <span data-ics="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span> · <span data-gcal="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}</div>
       </div>
       <span class="chip" style="color:${d<0?'var(--faint)':d<=2?'var(--warn)':'var(--accent2)'}">${d===0?"Today":relDays(d)}</span>
     </div>`;
@@ -1833,15 +1833,15 @@ function openQuestionForm(q){ openEditor(questionForm(q)); if(q&&q.id&&editorEl)
 function saveStory(form){ const d=fd(form); if(!d.title){ toast("Give it a title"); return; }
   const story={ title:d.title, tags:(d.tags||"").split(",").map(x=>x.trim()).filter(Boolean), s:d.s||"", t:d.t||"", a:d.a||"", r:d.r||"" };
   const editId=editorEl&&editorEl.dataset.editId;
-  if(editId){ Object.assign(getStories().find(x=>x.id===editId)||{}, story); }
-  else getStories().push(Object.assign({id:uid()},story));
+  const ex=editId&&getStories().find(x=>x.id===editId);
+  if(ex) Object.assign(ex,story); else getStories().push(Object.assign({id:editId||uid()},story));
   save(); openPrepBank(); toast("Story saved ✓");
 }
 function saveQuestion(form){ const d=fd(form); if(!d.q){ toast("Add the question"); return; }
   const q={ q:d.q, a:d.a||"", tags:(d.tags||"").split(",").map(x=>x.trim()).filter(Boolean) };
   const editId=editorEl&&editorEl.dataset.editId;
-  if(editId){ Object.assign(getQuestions().find(x=>x.id===editId)||{}, q); }
-  else getQuestions().push(Object.assign({id:uid()},q));
+  const ex=editId&&getQuestions().find(x=>x.id===editId);
+  if(ex) Object.assign(ex,q); else getQuestions().push(Object.assign({id:editId||uid()},q));
   save(); openPrepBank(); toast("Question saved ✓");
 }
 function storyDraftPrompt(rough,title){
@@ -2246,8 +2246,8 @@ async function aiCall(prompt, doc, opts){
   throw new Error("paste-mode");
 }
 
-let spData=null, spText="", spSourceUrl="";
-function openSmartPaste(){ spData=null; spSourceUrl=""; openEditor(smartPasteBody()); }
+let spData=null, spText="", spSourceUrl="", spMatchId="";
+function openSmartPaste(keepText){ spData=null; spSourceUrl=""; spMatchId=""; if(!keepText) spText=""; openEditor(smartPasteBody()); }
 function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",openai:"ChatGPT ✓",google:"Gemini ✓"}[aiEngine()]; }
 function smartPasteBody(){
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
@@ -2321,6 +2321,7 @@ function spReview(){
   const d=spData||{};
   const company=(d.company||"").trim();
   const match=company?state.opportunities.find(o=>(o.company||"").trim().toLowerCase()===company.toLowerCase()):null;
+  spMatchId = match ? match.id : "";
   const r=d.round||{}, p=d.person||{};
   const stageOpts=allStages().map(s=>`<option value="${s.id}" ${ (d.kind==="offer"&&s.id==="offer")||(!d.kind&&false)?"selected":""}>${esc(s.name)}</option>`).join("");
   spSetBody(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><h2 style="margin:0;font-size:18px;font-weight:850">Review &amp; save</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
@@ -2347,7 +2348,7 @@ function spApply(){
   const status=$("#spStatus")?$("#spStatus").value:"applied";
   const target=$("#spTarget")?$("#spTarget").value:"new";
   const r=d.round||{}, p=d.person||{};
-  let o = (target==="existing"&&company)? state.opportunities.find(x=>(x.company||"").trim().toLowerCase()===company.toLowerCase()) : null;
+  let o = (target==="existing"&&spMatchId)? state.opportunities.find(x=>x.id===spMatchId) : null;
   if(!o){
     o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},
        company:company||"(unknown)",role:role,status:status,
@@ -2360,6 +2361,8 @@ function spApply(){
     if(role) o.role=role; if(status) o.status=status;
     if(!o.source&&d.source) o.source=d.source;
     if(!o.location&&d.location) o.location=d.location;
+    if(!o.workMode&&d.workMode) o.workMode=d.workMode;
+    if(!o.compNotes&&d.compNote) o.compNotes=d.compNote;
     if(d.notes) o.notes=(o.notes?o.notes+"\n":"")+d.notes;
     if(d.nextActionLabel){ o.nextActionLabel=d.nextActionLabel; o.nextActionDate=d.nextActionDate||o.nextActionDate; }
     o.updatedAt=Date.now(); openId=o.id;
@@ -2505,7 +2508,7 @@ function initNative(){
 }
 
 /* ---- Share-into-app: a recruiter email / LinkedIn profile shared into Callback ---- */
-function handleSharedText(text){ if(!text||!String(text).trim()) return; spText=String(text); openSmartPaste(); }
+function handleSharedText(text){ if(!text||!String(text).trim()) return; spText=String(text); openSmartPaste(true); }
 async function initShareIntake(){
   const App=plugin("App");
   if(App && App.addListener){
@@ -2563,7 +2566,7 @@ async function scanCalendar(){
     const hits=list.filter(looksLikeInterview);
     if(!hits.length){ toast("No interview-like events in the next 30 days"); return; }
     spText=hits.map(e=>`${e.title}\n${e.notes}\n${e.location}\n${e.start?new Date(e.start).toString():""}`).join("\n--- next event ---\n");
-    openSmartPaste();
+    openSmartPaste(true);
   }catch(e){ toast("⚠ Calendar: "+e.message); }
 }
 
@@ -2622,7 +2625,7 @@ document.addEventListener("click",e=>{
 
   const act=t.dataset.act;
   if(act==="add"){ openEditor(opForm(null)); return; }
-  if(act==="edit-op"){ openEditor(opForm(getOp())); return; }
+  if(act==="edit-op"){ const o=getOp(); if(!o) return; openEditor(opForm(o)); editorEl.dataset.editId=o.id; return; }
   if(act==="close-drawer"){ closeDrawer(); return; }
   if(act==="cancel-editor"){ closeEditor(); return; }
   if(act==="del-op"){ if(confirm("Delete "+getOp().company+" and all its rounds/people? This can't be undone.")){ state.opportunities=state.opportunities.filter(o=>o.id!==openId); save(); closeDrawer(); render(); toast("Deleted"); } return; }
@@ -2756,17 +2759,26 @@ function saveOpForm(form){
   d.tags=d.tags?d.tags.split(",").map(s=>s.trim()).filter(Boolean):[];
   d.excitement=+d.excitement||0;
   if(d.jdFile){ try{ d.jdFile=JSON.parse(d.jdFile); }catch(e){ delete d.jdFile; } } else { d.jdFile=null; }
-  const existing=getOp();
-  if(existing && editorEl && !editorEl.dataset.editId){ // editing the open op
-    Object.assign(existing,d,{updatedAt:Date.now()});
-  } else {
-    const o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},...d};
-    state.opportunities.push(o); openId=o.id;
-  }
+  const editId=editorEl&&editorEl.dataset.editId;
+  const existing=editId?state.opportunities.find(o=>o.id===editId):null;
+  if(existing){ Object.assign(existing,d,{updatedAt:Date.now()}); openId=existing.id; }
+  else { const o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},...d}; state.opportunities.push(o); openId=o.id; }
   save(); closeEditor(); render();
   if(getOp()){ if(!$("#drawer").classList.contains("show")) openDetail(openId); else renderDrawer(); }
   enrichLater(getOp());
   toast("Saved");
+}
+// Spin a round's free-text interviewers into People records (dedup by name); returns count added
+function linkInterviewers(o, str){
+  if(!str) return 0; o.people=o.people||[]; let added=0;
+  String(str).split(/,|;|&|\band\b/i).forEach(part=>{
+    let s=part.trim(); if(s.length<2) return;
+    let title=""; const m=s.match(/^(.*?)\s*\(([^)]+)\)\s*$/); if(m){ s=m[1].trim(); title=m[2].trim(); }
+    if(!s || s.length<2) return;
+    if(o.people.some(p=>(p.name||"").trim().toLowerCase()===s.toLowerCase())) return;
+    o.people.push({id:uid(),name:s,title,linkedin:"",email:"",notes:""}); added++;
+  });
+  return added;
 }
 function saveRoundForm(form){
   const d=fd(form); const o=getOp(); o.rounds=o.rounds||[];
@@ -2774,7 +2786,8 @@ function saveRoundForm(form){
   const editId=editorEl&&editorEl.dataset.editId;
   if(editId){ Object.assign(o.rounds.find(r=>r.id===editId),d); }
   else { o.rounds.push({id:uid(),...d}); }
-  o.updatedAt=Date.now(); save(); closeEditor(); renderDrawer(); render(); toast("Round saved");
+  const added=linkInterviewers(o, d.interviewers);
+  o.updatedAt=Date.now(); save(); closeEditor(); renderDrawer(); render(); toast(added?`Round saved · +${added} to People`:"Round saved");
 }
 function savePersonForm(form){
   const d=fd(form); if(!d.name){ toast("Name required"); return; }
@@ -2808,7 +2821,7 @@ function importFile(file){
   r.onload=()=>{ try{ const data=JSON.parse(r.result);
     if(!data.opportunities) throw 0;
     if(state.opportunities.length && !confirm("Replace your current data with this backup? (Export first if unsure.)")) return;
-    state=data; save(); render(); toast("Imported "+data.opportunities.length+" roles");
+    state=migrate(data); save(); render(); toast("Imported "+data.opportunities.length+" roles");
   }catch(e){ toast("⚠ That file didn't look like a Callback backup"); } };
   r.readAsText(file);
 }
@@ -2975,7 +2988,7 @@ function rsSync(){
   if((v=g("rs-skills"))!==undefined) d.skills=v.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
   const tpl=document.getElementById("rs-template"); if(tpl) d.template=tpl.value;
 }
-function rsSave(){ rsSync(); state.resume=state.resume||{}; state.resume.data=resumeDraft; state.resume.text=resumeDerivedText(resumeDraft)||state.resume.text||""; save(); closeEditor(); toast("Résumé saved ✓"); }
+function rsSave(){ rsSync(); state.resume=state.resume||{}; state.resume.data=resumeDraft; state.resume.text=resumeDerivedText(resumeDraft); save(); closeEditor(); toast("Résumé saved ✓"); }
 function resumeParsePrompt(){
   return `Extract this résumé into structured JSON. Return ONLY a JSON object (no markdown):
 { "name":"", "title":"", "contact":{"email":"","phone":"","location":"","linkedin":"","website":""},
@@ -3086,7 +3099,8 @@ function icsStamp(date,time,addMin){
   return `${dt.getFullYear()}${pad2(dt.getMonth()+1)}${pad2(dt.getDate())}T${pad2(dt.getHours())}${pad2(dt.getMinutes())}00`;
 }
 function eventTitle(o,r){ return `${r.name||r.type||"Interview"} — ${o.company}`; }
-function eventDesc(o,r){ return [r.type?("Type: "+r.type):"", r.interviewers?("With: "+r.interviewers):"", r.link?("Link: "+r.link):"", o.role?("Role: "+o.role):"", r.prep?("Prep: "+r.prep):""].filter(Boolean).join("\\n"); }
+function icsEsc(s){ return String(s).replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/;/g,"\\;").replace(/,/g,"\\,"); }
+function eventDesc(o,r){ return [r.type?("Type: "+r.type):"", r.interviewers?("With: "+r.interviewers):"", r.link?("Link: "+r.link):"", o.role?("Role: "+o.role):"", r.prep?("Prep: "+r.prep):""].filter(Boolean).map(icsEsc).join("\\n"); }
 function downloadICS(o,r){
   if(!r.date){ toast("Add a date to this round first"); return; }
   const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Callback//Interview//EN","BEGIN:VEVENT",

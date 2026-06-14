@@ -1665,7 +1665,7 @@ function buildBrief(o){
   if(o.notes){ L.push(""); L.push(`## My notes`); L.push(o.notes); }
   if((o.people||[]).length){ L.push(""); L.push(`## People I'm meeting`); o.people.forEach(p=>{ L.push(`- ${p.name}${p.title?` — ${p.title}`:""}${p.linkedin?` · ${p.linkedin}`:""}`); if(p.notes) L.push(`  notes: ${p.notes}`); }); }
   if((o.rounds||[]).length){ L.push(""); L.push(`## Interview rounds so far`); o.rounds.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(r=>{ L.push(`- ${r.name||r.type||"Round"}${r.date?` (${fmtDate(r.date)})`:""}${r.status==="done"?" — done":""}${r.rating?` — went ${r.rating}/5`:""}`); if(r.debrief) L.push(`  debrief: ${r.debrief}`); }); }
-  if(o.jd){ L.push(""); L.push(`## Job description`); L.push(o.jd); }
+  if(o.jd){ L.push(""); L.push(`## Job description`); L.push(o.jd.length>4000?o.jd.slice(0,4000)+"\n…(trimmed)":o.jd); }
   else if(o.jdFile){ L.push(""); L.push(`## Job description`); L.push(`(attached as file: ${o.jdFile.name})`); }
   return L.join("\n");
 }
@@ -2033,7 +2033,7 @@ async function aiCall(prompt, doc, opts){
       if(![404,400,429].includes(res.status)) break; // model-not-found or quota → try the next model
     }
     if(!res||!res.ok){
-      if(lastStatus===429) throw new Error("Gemini free quota is maxed for now — wait a minute and retry, or add billing / another engine in Settings.");
+      if(lastStatus===429) throw new Error("Gemini's free limit was hit. Free keys reset per-minute (and daily) — wait a bit and retry. For uninterrupted use, enable billing on your key (Flash stays ~free at low volume) or paste a different key in Settings.");
       if(lastStatus===400 && /API key/i.test(lastErr)) throw new Error("That Gemini key looks invalid — re-copy it from aistudio.google.com/apikey.");
       throw new Error("Gemini "+lastStatus+" "+lastErr);
     }
@@ -2647,8 +2647,10 @@ async function pickFileInto(field, accept){
 // data lives on state.resume.data (synced); resumeText() derives the plain text used by AI briefs.
 function resumeText(){
   const d=state.resume&&state.resume.data;
-  if(d && (d.name||d.summary||(d.experience&&d.experience.length))) return resumeDerivedText(d);
-  return (state.resume && state.resume.text && state.resume.text.trim()) ? state.resume.text.trim() : "[PASTE YOUR RESUME / SUMMARY HERE]";
+  let s = (d && (d.name||d.summary||(d.experience&&d.experience.length))) ? resumeDerivedText(d)
+        : (state.resume && state.resume.text && state.resume.text.trim()) ? state.resume.text.trim()
+        : "[PASTE YOUR RESUME / SUMMARY HERE]";
+  return s.length>4000 ? s.slice(0,4000)+"\n…(trimmed)" : s;  // keep prompts lean for free-tier limits/cost
 }
 function resumeDerivedText(d){
   const L=[]; if(d.name) L.push(d.name); if(d.title) L.push(d.title);

@@ -128,6 +128,16 @@ There's no test suite; verify in a real browser via the preview tools:
    Google's favicon service and never resolve network-idle. Verify via `preview_eval` DOM
    assertions and `preview_inspect` instead of screenshots. Favicons fall back to colored initials.
 
+## Branding
+The CallBack mark (speech-bubble "C" + rising bars) is the app identity. Assets at repo root:
+`icon.png` (256, transparent — favicon + sidebar/topbar/empty-state img), `apple-touch-icon.png`,
+`icon-192/512.png` (full-bleed maskable, used by the inline PWA manifest), `icon-1024.png` +
+`resources/icon.png` (App Store master), `resources/splash.png`/`splash-dark.png` (native launch),
+`logo.png` (wordmark). In-app it shows in the sidebar brand, the **mobile topbar** (`.topbar-brand`,
+desktop sidebar is hidden there), the **empty state**, and a **launch splash** (`#splash`, shown only
+in `display-mode:standalone` so browser tabs skip it; faded out at boot). Regenerate icons from the
+source art with Pillow if it changes; bump `CACHE` in `sw.js` after asset changes.
+
 ## Deploy
 `git add -A && git commit -m "..." && git push`. GitHub Pages (branch `main`, root) serves it;
 live within ~1 minute. Phones cache hard — hard-refresh to see changes.

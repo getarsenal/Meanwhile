@@ -57,6 +57,11 @@ you paste into a new AI chat to prep for interviews.
   inline (paste-mode falls back to copy); `aiCall(prompt,doc,opts)` takes `opts.json=false` for prose.
   Brief tab = one-tap **Prep me / Questions to ask / Write my intro** (`data-gen`); each round has a
   **Thank-you note** (`data-gen-ty`). `aigen-copy` copies the generated text.
+- `ASK AI` — pipeline-aware assistant surfaced at the top of Insights (`askAICard()`). `pipelineContext()`
+  builds a compact all-roles+offers summary; `askPrompt(q)` wraps it + résumé; `runAsk()` answers inline
+  (`data-act="ask-ai"`, suggestion chips via `data-ask`), copy-prompt fallback in paste mode.
+- Gemini reliability: `aiCall` tries `gemini-2.0-flash`→`1.5-flash`→`2.0-flash-lite`, falling through on
+  **404/400/429** (each free-tier model has its own quota), with friendly messages for quota/bad-key.
 - `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.
   `resolveCompany()` hits Clearbit autocomplete (free, no key, CORS-ok) for a real logo + canonical
   domain; `enrichLogo()/enrichLater()` cache `o.domain`/`o.logo` and fire after create/edit.

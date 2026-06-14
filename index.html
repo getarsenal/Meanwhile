@@ -405,6 +405,10 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .jc-foot .stars{font-size:12px}
 .jc-dot{color:var(--faint)}
 .jc-tagline{font-size:11px;color:var(--accent3);margin-top:3px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ask-box{margin-bottom:18px}
+.ask-chips{display:flex;gap:7px;flex-wrap:wrap}
+.ask-chips .chip{cursor:pointer}
+.ask-chips .chip:hover{border-color:var(--accent);color:var(--txt)}
 
 /* ---------- Company brief (drawer) ---------- */
 .brief-box{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
@@ -1081,6 +1085,53 @@ function renderTimeline(){
 }
 
 /* ---------------- INSIGHTS ---------------- */
+/* ---- Ask AI: a pipeline-aware assistant, surfaced app-wide ---- */
+function pipelineContext(){
+  const ops=state.opportunities;
+  const act=ops.filter(o=>stage(o.status).active && o.status!=="wishlist");
+  const L=[`Today is ${todayYMD()}. I'm tracking ${ops.length} processes — ${act.length} active.`,""];
+  if(act.length){
+    L.push("ACTIVE PROCESSES:");
+    act.slice().sort((a,b)=>{const ea=nextEvent(a),eb=nextEvent(b);return (ea?ea.du:9999)-(eb?eb.du:9999);}).forEach(o=>{
+      const e=nextEvent(o);
+      L.push(`- ${o.company}${o.role?` (${o.role})`:""} | stage: ${stage(o.status).name}`+
+        (e?` | next: ${e.label} ${fmtDate(e.date)} (${relDays(e.du)})`:` | nothing scheduled, ${daysSince(o.updatedAt)||0}d quiet`)+
+        (compRange(o)?` | comp ${compRange(o)}`:"")+(o.excitement?` | fit ${o.excitement}/5`:"")+(o.source?` | via ${o.source}`:""));
+      if((o.people||[]).length) L.push(`    contacts: ${o.people.map(p=>p.name+(p.title?` (${p.title})`:"")).join(", ")}`);
+    });
+  }
+  const offers=ops.filter(o=>o.status==="offer");
+  if(offers.length){ L.push("","OFFERS:"); offers.forEach(o=>{ const f=o.offer||{}; L.push(`- ${o.company}${o.role?` (${o.role})`:""}: ${[f.base&&("base "+f.base),f.bonus&&("bonus "+f.bonus),f.equity&&("equity "+f.equity)].filter(Boolean).join(", ")||compRange(o)||"details TBD"}${f.deadline?` | decide by ${fmtDate(f.deadline)}`:""}`); }); }
+  return L.join("\n");
+}
+function askPrompt(q){
+  return `You are my sharp, practical job-search assistant inside my interview tracker. My pipeline:\n\n${pipelineContext()}\n\nMy résumé:\n${resumeText()}\n\n---\nAnswer concisely using specifics from my pipeline above. If I ask you to draft something (email/message), write it ready-to-send. Lead with what matters most.\n\nMe: ${q}`;
+}
+function askAICard(){
+  const live=aiEngine()!=="paste"&&aiEngine()!=="off";
+  const sugg=["What should I focus on this week?","Which processes are stalling?","Draft follow-ups for my quiet roles","Compare my offers"];
+  return `<div class="ai-box ask-box">
+    <div class="ai-head">${I.ai} Ask AI about your search</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${live?"Knows your whole pipeline + résumé — ask for strategy, drafts, or comparisons.":`Builds a prompt with your full pipeline for any AI. <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">Connect Gemini</span> for one-tap answers.`}</div>
+    <div class="ask-chips">${sugg.map(s=>`<span class="chip" data-ask="${esc(s)}">${esc(s)}</span>`).join("")}</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="askInput" placeholder="Ask anything about your search…" autocomplete="off" style="flex:1"/>
+      <button class="btn primary" data-act="ask-ai">${I.ai} Ask</button>
+    </div>
+    <div id="askAnswer" class="ai-pre" style="display:none;white-space:pre-wrap;margin-top:12px"></div>
+    <div id="askActions" style="display:none;margin-top:8px"><button class="btn ghost sm" data-act="aigen-copy">${I.copy} Copy</button></div>
+  </div>`;
+}
+async function runAsk(q){
+  const inp=$("#askInput"); q=(q||(inp?inp.value:"")||"").trim();
+  if(!q){ toast("Type a question"); return; }
+  if(inp&&q!==inp.value) inp.value=q;
+  if(aiEngine()==="paste"||aiEngine()==="off"){ copy(askPrompt(q),"Prompt copied — paste into any AI"); return; }
+  const ans=$("#askAnswer"), acts=$("#askActions");
+  if(ans){ ans.style.display="block"; ans.textContent="Thinking…"; } if(acts) acts.style.display="none";
+  try{ const out=await aiCall(askPrompt(q),null,{json:false}); aiGenText=(out||"").trim(); if(ans) ans.textContent=aiGenText||"(no response)"; if(acts) acts.style.display="block"; }
+  catch(e){ if(ans) ans.textContent="⚠ "+e.message; }
+}
 function renderInsights(){
   const ops=state.opportunities;
   if(!ops.length) return emptyState();
@@ -1089,7 +1140,7 @@ function renderInsights(){
   ops.forEach(o=>{ const s=o.source||"Unknown"; bySource[s]=bySource[s]||{total:0,advanced:0,offers:0}; bySource[s].total++; if(["hm","technical","onsite","offer"].includes(o.status))bySource[s].advanced++; if(o.status==="offer")bySource[s].offers++; });
   const srcRows=Object.entries(bySource).sort((a,b)=>b[1].total-a[1].total);
 
-  let html=scorecardTeaser();
+  let html=askAICard()+scorecardTeaser();
   html+=`<div class="grid chart-grid">`;
   // status distribution
   html+=`<div class="card panel"><div class="panel-title">${I.board} Where everything stands</div>${funnelChart()}</div>`;
@@ -1815,16 +1866,21 @@ async function aiCall(prompt, doc, opts){
     const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
     const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
     const body=JSON.stringify({contents:[{parts}],generationConfig:genCfg});
-    // try the chosen/default model, then fall back to a known-good one so a model rename never breaks it
-    const models=[aiCfg.model||"gemini-2.0-flash","gemini-1.5-flash"].filter((m,i,a)=>m&&a.indexOf(m)===i);
-    let res,lastErr="";
+    // try the chosen/default model, then fall back to others. Each free-tier model has its OWN
+    // quota, so on a 429 (or a model rename = 404/400) we try the next one before giving up.
+    const models=[aiCfg.model||"gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"].filter((m,i,a)=>m&&a.indexOf(m)===i);
+    let res,lastStatus=0,lastErr="";
     for(const model of models){
       res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiCfg.key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body});
       if(res.ok) break;
-      lastErr=res.status+" "+(await res.text()).slice(0,160);
-      if(res.status!==404 && res.status!==400) break; // only fall through on model-not-found-ish errors
+      lastStatus=res.status; lastErr=(await res.text()).slice(0,160);
+      if(![404,400,429].includes(res.status)) break; // model-not-found or quota → try the next model
     }
-    if(!res||!res.ok) throw new Error("Gemini "+lastErr);
+    if(!res||!res.ok){
+      if(lastStatus===429) throw new Error("Gemini free quota is maxed for now — wait a minute and retry, or add billing / another engine in Settings.");
+      if(lastStatus===400 && /API key/i.test(lastErr)) throw new Error("That Gemini key looks invalid — re-copy it from aistudio.google.com/apikey.");
+      throw new Error("Gemini "+lastStatus+" "+lastErr);
+    }
     const j=await res.json(); return ((((j.candidates||[])[0]||{}).content||{}).parts||[{}])[0].text||"";
   }
   throw new Error("paste-mode");
@@ -2163,7 +2219,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
   if(!t) return;
 
   // nav
@@ -2209,6 +2265,7 @@ document.addEventListener("click",e=>{
   if(act==="ai-extract"){ runExtract(); return; }
   if(act==="ai-fetch-url"){ fetchJobUrl(); return; }
   if(act==="aigen-copy"){ copy(aiGenText,"Copied"); return; }
+  if(act==="ask-ai"){ runAsk(); return; }
   if(act==="ai-fallback-copy"){ const ta=$("#spInput"); copy(aiPrompt((ta?ta.value:spText)||spText),"Prompt copied — paste into any AI"); return; }
   if(act==="ai-fallback-build"){ spBuildFromPaste(); return; }
   if(act==="ai-back"){ spSetBody(smartPasteBody()); return; }
@@ -2271,6 +2328,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.copy){ const o=getOp(); const map={brief:buildBrief(o),prep:prepPrompt(o),intro:introPrompt(o)}; copy(map[t.dataset.copy], t.dataset.copy==="brief"?"Brief copied":"Prompt copied"); return; }
   if(t.dataset.gen){ const o=getOp(); const map={prep:[prepPrompt(o),"Prep me"],questions:[questionsPrompt(o),"Questions to ask"],intro:[introPrompt(o),"Your intro"]}; const m=map[t.dataset.gen]; if(m) aiGen(m[0],m[1]); return; }
   if(t.dataset.genTy){ const o=getOp(); const r=(o.rounds||[]).find(x=>x.id===t.dataset.genTy); aiGen(thankyouPrompt(o,r),"Thank-you note"); return; }
+  if(t.dataset.ask){ runAsk(t.dataset.ask); return; }
 });
 
 // overlay click closes drawer

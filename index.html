@@ -2403,7 +2403,7 @@ function aiIntegrationBox(){
     <div class="ai-head">${I.ai} AI Integration <span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent3)">${aiEngineLabel()}</span></div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px"><b>Bring your own AI.</b> Plug in a key and CallBack calls that provider directly to power Smart add, briefs, thank-you notes &amp; résumé parsing. No key? It falls back to copy-paste with any chatbot.</div>
     ${aiEngineFields()}
-    <div style="margin-top:12px"><button class="btn primary sm" data-act="ai-save">${I.check} Save AI settings</button></div>
+    <div style="margin-top:12px"><button class="btn primary sm" data-act="ai-engine-save">${I.check} Save AI settings</button></div>
   </div>`;
 }
 function openAISettings(){
@@ -2646,7 +2646,7 @@ document.addEventListener("click",e=>{
   if(act==="ai-save"){ spApply(); return; }
   if(act==="ai-settings"){ openAISettings(); return; }
   if(act==="ai-cfg-save"){ saveAISettings(); closeEditor(); toast("AI engine saved ✓"); return; }
-  if(act==="ai-save"){ saveAISettings(); openSettings(); toast("AI engine saved ✓"); return; }
+  if(act==="ai-engine-save"){ saveAISettings(); openSettings(); toast("AI engine saved ✓"); return; }
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="prep-bank"){ openPrepBank(); return; }
   if(act==="prep-back"){ openPrepBank(); return; }

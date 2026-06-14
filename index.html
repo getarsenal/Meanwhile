@@ -78,8 +78,11 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:16px 26px;
   background:linear-gradient(180deg,rgba(10,11,14,.92),rgba(10,11,14,.72));backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.view-title{font-size:21px;font-weight:800;letter-spacing:-.02em;margin:0}
+.view-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:9px}
+.view-title .vt-ico{display:inline-flex}
+.view-title .vt-ico svg{width:20px;height:20px;color:var(--accent3)}
 .view-sub{color:var(--faint);font-size:12.5px;margin-top:1px}
+.view-sub:empty{display:none}
 .search{position:relative;flex:1;max-width:420px;margin-left:8px}
 .search input{padding-left:38px;background:var(--panel)}
 .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--faint)}
@@ -479,7 +482,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
     <div class="topbar">
       <img class="topbar-brand" src="icon.png" alt="CallBack" data-view="dashboard" title="CallBack — Dashboard"/>
       <div style="min-width:0">
-        <h2 class="view-title" id="viewTitle">Dashboard</h2>
+        <h2 class="view-title" id="viewTitle"></h2>
         <div class="view-sub" id="viewSub"></div>
       </div>
       <div class="search">
@@ -700,11 +703,11 @@ const I = {
 
 /* ============================ NAV ============================ */
 const VIEWS = [
-  {id:"dashboard", name:"Dashboard", icon:I.dash},
-  {id:"pipeline",  name:"Pipeline",  icon:I.board},
-  {id:"cards",     name:"Cards",     icon:I.cards},
-  {id:"calendar",  name:"Upcoming",  icon:I.cal},
-  {id:"insights",  name:"Insights",  icon:I.spark},
+  {id:"dashboard", name:"Home",     icon:I.dash},
+  {id:"pipeline",  name:"Pipeline", icon:I.board},
+  {id:"cards",     name:"Cards",    icon:I.cards},
+  {id:"calendar",  name:"Upcoming", icon:I.cal},
+  {id:"insights",  name:"Insights", icon:I.spark},
 ];
 function renderNav(){
   const alerts = state.opportunities.filter(needsFollowup).length;
@@ -719,19 +722,14 @@ function renderNav(){
 }
 
 /* ============================ RENDER ROUTER ============================ */
-const SUBTITLES = {
-  dashboard:()=>`${activeCount()} active processes · ${state.opportunities.length} total`,
-  pipeline:()=>"Drag cards between stages — or tap to open",
-  cards:()=>"Every role at a glance — tap any card to open",
-  calendar:()=>"Everything coming up, soonest first",
-  insights:()=>"How your search is actually going",
-};
 function render(){
   renderNav();
-  $("#viewTitle").textContent = VIEWS.find(v=>v.id===view).name;
+  const v=VIEWS.find(x=>x.id===view);
+  $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${esc(v.name)}`;
+  // No subtitle verbiage — the nav + content carry the context. Only the filter chip shows here.
   if(activeFilter && (view==="cards"||view==="pipeline"))
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
-  else $("#viewSub").textContent = SUBTITLES[view] ? SUBTITLES[view]() : "";
+  else $("#viewSub").innerHTML = "";
   const c = $("#content");
   c.className = "content"+(view==="pipeline"?" pad0":"");
   if(view==="dashboard") c.innerHTML = renderDashboard();
@@ -779,15 +777,15 @@ function renderDashboard(){
   const week=ops.map(o=>({o,e:nextEvent(o)})).filter(x=>x.e&&x.e.du>=0&&x.e.du<=7).sort((a,b)=>a.e.du-b.e.du);
   const avgExc=ops.filter(o=>o.excitement).length? (ops.reduce((s,o)=>s+(+o.excitement||0),0)/ops.filter(o=>o.excitement).length).toFixed(1):"—";
 
-  const stat=(num,lbl,sub,icon,cls,tile)=>`<div class="stat ${cls||''}" ${tile?`data-tile="${tile}" role="button" tabindex="0"`:""}><div class="ico">${icon}</div><div class="num">${num}</div><div class="lbl">${lbl}</div>${sub?`<div class="sub">${sub}</div>`:""}${tile?`<div class="tile-go">→</div>`:""}</div>`;
+  const stat=(num,lbl,icon,cls,tile)=>`<div class="stat ${cls||''}" ${tile?`data-tile="${tile}" role="button" tabindex="0"`:""}><div class="ico">${icon}</div><div class="num">${num}</div><div class="lbl">${lbl}</div>${tile?`<div class="tile-go">→</div>`:""}</div>`;
 
   let html=`<div class="grid stat-grid">
-    ${stat(active,"Active processes","In flight right now",I.briefcase,"","active")}
-    ${stat(interviewing,"Interviewing","Past the screen",I.user,"","interviewing")}
-    ${stat(offers,"Offers","On the table",I.trophy,"","offers")}
-    ${stat(respRate+"%","Advance rate",advanced+" of "+applied+" moved forward",I.spark,"","advance")}
-    ${stat(week.length,"This week","Interviews scheduled",I.clock,"","week")}
-    ${stat(followups.length, followups.length===1?"Needs a nudge":"Need a nudge","Quiet 7+ days",I.bell, followups.length?"hot":"","nudge")}
+    ${stat(active,"Active",I.briefcase,"","active")}
+    ${stat(interviewing,"Interviewing",I.user,"","interviewing")}
+    ${stat(offers,"Offers",I.trophy,"","offers")}
+    ${stat(respRate+"%","Advance",I.spark,"","advance")}
+    ${stat(week.length,"This week",I.clock,"","week")}
+    ${stat(followups.length,"Follow-ups",I.bell, followups.length?"hot":"","nudge")}
   </div>`;
 
   // Compare competing offers (only surfaces once ≥2 offers are in play)
@@ -807,7 +805,7 @@ function renderDashboard(){
   }).join("");
   html+=`</div>`;
 
-  html+=`<div class="card panel"><div class="panel-title">${I.bell} Follow-up radar</div>`;
+  html+=`<div class="card panel"><div class="panel-title">${I.bell} Follow-ups</div>`;
   if(!followups.length) html+=`<div style="color:var(--faint);font-size:13px;padding:8px 0">All clear — nothing's gone cold.</div>`;
   else html+=followups.sort((a,b)=>daysSince(b.updatedAt)-daysSince(a.updatedAt)).map(o=>`
     <div class="sub-item" data-open="${o.id}" style="cursor:pointer;margin-bottom:9px">
@@ -817,7 +815,7 @@ function renderDashboard(){
   html+=`</div></div>`;
 
   // Pipeline funnel
-  html+=`<div class="section-head"><h3>Pipeline funnel</h3><div class="line"></div><span class="tag">${active} active</span></div>`;
+  html+=`<div class="section-head"><h3>Pipeline</h3><div class="line"></div><span class="tag">${active} active</span></div>`;
   html+=`<div class="card panel">${funnelChart()}</div>`;
 
   // Hot list
@@ -1148,7 +1146,7 @@ function askAICard(){
   const live=aiEngine()!=="paste"&&aiEngine()!=="off";
   const sugg=["What should I focus on this week?","Which processes are stalling?","Draft follow-ups for my quiet roles","Compare my offers"];
   return `<div class="ai-box ask-box">
-    <div class="ai-head">${I.ai} Ask AI about your search</div>
+    <div class="ai-head">${I.ai} Ask AI</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${live?"Knows your whole pipeline + résumé — ask for strategy, drafts, or comparisons.":`Builds a prompt with your full pipeline for any AI. <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">Connect Gemini</span> for one-tap answers.`}</div>
     <div class="ask-chips">${sugg.map(s=>`<span class="chip" data-ask="${esc(s)}">${esc(s)}</span>`).join("")}</div>
     <div style="display:flex;gap:8px;margin-top:10px">
@@ -1180,13 +1178,13 @@ function renderInsights(){
   let html=askAICard()+scorecardTeaser();
   html+=`<div class="grid chart-grid">`;
   // status distribution
-  html+=`<div class="card panel"><div class="panel-title">${I.board} Where everything stands</div>${funnelChart()}</div>`;
+  html+=`<div class="card panel"><div class="panel-title">${I.board} Pipeline</div>${funnelChart()}</div>`;
   // source donut
-  html+=`<div class="card panel"><div class="panel-title">${I.link} How you got there</div>${donut(srcRows.map(([k,v])=>({label:k,value:v.total})))}</div>`;
+  html+=`<div class="card panel"><div class="panel-title">${I.link} Sources</div>${donut(srcRows.map(([k,v])=>({label:k,value:v.total})))}</div>`;
   html+=`</div>`;
 
   // source conversion table
-  html+=`<div class="section-head"><h3>Which channels actually convert</h3><div class="line"></div></div>`;
+  html+=`<div class="section-head"><h3>Channels</h3><div class="line"></div></div>`;
   html+=`<div class="card panel"><div style="font-size:12.5px;color:var(--faint);margin-bottom:12px">Advance rate = reached hiring-manager round or beyond. Your best sources are worth doubling down on.</div>`;
   html+= srcRows.map(([k,v])=>{
     const rate=v.total?Math.round(v.advanced/v.total*100):0;
@@ -1196,7 +1194,7 @@ function renderInsights(){
   // excitement vs stage scatter-ish + comp
   const withComp=ops.filter(o=>+o.compMax||+o.compMin);
   if(withComp.length){
-    html+=`<div class="section-head"><h3>Compensation in play</h3><div class="line"></div></div>`;
+    html+=`<div class="section-head"><h3>Comp</h3><div class="line"></div></div>`;
     html+=`<div class="card panel">`+withComp.sort((a,b)=>(+b.compMax||+b.compMin)-(+a.compMax||+a.compMin)).map(o=>{
       const hi=+o.compMax||+o.compMin; const lo=+o.compMin||hi; const max=Math.max(...withComp.map(x=>+x.compMax||+x.compMin));
       return `<div class="bar-row" data-open="${o.id}" style="cursor:pointer"><div class="nm">${esc(o.company)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(hi/max*100)}%;background:var(--grad)">${fmtMoney(lo)}${hi!==lo?"–"+fmtMoney(hi):""}</div></div><div style="width:90px;font-size:12px;color:var(--faint);text-align:right">${stage(o.status).name}</div></div>`;

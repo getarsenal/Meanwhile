@@ -1147,12 +1147,13 @@ function renderCalendar(){
   const row=(e)=>{
     const d=daysUntil(e.date); const cls=d<0?"":d<=2?"soon":"";
     const col=e.type==="Interview"?"var(--accent3)":e.type==="Deadline"?"var(--hot)":"var(--accent2)";
+    const ck=e.rid||(e.type==="Task"?e.o.id+"|task":e.type==="Deadline"?e.o.id+"|offer":"");
     return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:13px">
       <div style="text-align:center;flex:0 0 52px"><div style="font-size:11px;color:var(--faint);font-weight:700;text-transform:uppercase">${new Date(e.date+'T00:00').toLocaleDateString(undefined,{month:'short'})}</div><div style="font-size:21px;font-weight:850;line-height:1">${new Date(e.date+'T00:00').getDate()}</div></div>
       <div style="width:1px;align-self:stretch;background:var(--line)"></div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px"><span class="chip" style="color:${col};border-color:${col}44">${e.type}</span><span style="font-weight:800;font-size:13.5px">${esc(e.label)}</span></div>
-        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""} ${e.rid&&d>=0?`· <span data-ics="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span> · <span data-gcal="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}</div>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""} ${ck&&d>=0?`· <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}</div>
       </div>
       <span class="chip" style="color:${d<0?'var(--faint)':d<=2?'var(--warn)':'var(--accent2)'}">${d===0?"Today":relDays(d)}</span>
     </div>`;
@@ -1184,7 +1185,7 @@ function renderMonth(){
     const dn=i-startDow+1;
     if(dn<1||dn>daysIn){ cells+=`<div class="cal-cell empty"></div>`; continue; }
     const ds=ymd(y,m,dn), list=(byDay[ds]||[]);
-    const chips=list.slice(0,3).map(e=>{ const c=stage(e.o.status).color; return `<div class="cal-ev" style="background:${c}22;color:${c}" title="${esc(e.o.company)} · ${esc(e.label)}">${esc(e.o.company)}</div>`; }).join("");
+    const chips=list.slice(0,3).map(e=>{ const c=e.type==="Interview"?"#a6abe6":e.type==="Deadline"?"#cf7273":"#8b93de"; return `<div class="cal-ev" style="background:${c}22;color:${c}" title="${esc(e.o.company)} · ${esc(e.type)}: ${esc(e.label)}">${esc(e.o.company)}</div>`; }).join("");
     const more=list.length>3?`<div class="cal-more">+${list.length-3} more</div>`:"";
     const dots=list.slice(0,5).map(e=>`<span class="cal-dot" style="background:${stage(e.o.status).color}"></span>`).join("");
     cells+=`<div class="cal-cell${ds===tStr?' today':''}${ds===calSel?' sel':''}${list.length?' has':''}" data-calday="${ds}">
@@ -1209,10 +1210,11 @@ function renderMonth(){
   if(dList.length){
     detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div>`+dList.map(e=>{
       const d=daysUntil(e.date), c=stage(e.o.status).color;
+      const ck=e.rid||(e.type==="Task"?e.o.id+"|task":e.type==="Deadline"?e.o.id+"|offer":"");
       return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:11px">
         <span class="pill" style="background:${c}22;color:${c}"><span class="dot" style="background:${c}"></span>${e.type}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">${esc(e.label)}</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""}${e.rid&&d>=0?` · <span data-ics="${e.rid}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span>`:""}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""}${ck&&d>=0?` · <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ cal</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}</div>
         </div></div>`;
     }).join("")+`</div>`;
   } else {
@@ -2323,7 +2325,7 @@ function spReview(){
   const match=company?state.opportunities.find(o=>(o.company||"").trim().toLowerCase()===company.toLowerCase()):null;
   spMatchId = match ? match.id : "";
   const r=d.round||{}, p=d.person||{};
-  const stageOpts=allStages().map(s=>`<option value="${s.id}" ${ (d.kind==="offer"&&s.id==="offer")||(!d.kind&&false)?"selected":""}>${esc(s.name)}</option>`).join("");
+  const stageOpts=allStages().map(s=>`<option value="${s.id}" ${ d.kind==="offer"&&s.id==="offer"?"selected":""}>${esc(s.name)}</option>`).join("");
   spSetBody(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><h2 style="margin:0;font-size:18px;font-weight:850">Review &amp; save</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
   ${match?`<div class="form-row"><label>Add to</label><select id="spTarget"><option value="existing">Existing role — ${esc(match.company)}</option><option value="new">A new role</option></select></div>`:`<input type="hidden" id="spTarget" value="new"/>`}
   <div class="form-2">
@@ -2628,7 +2630,7 @@ document.addEventListener("click",e=>{
   if(act==="edit-op"){ const o=getOp(); if(!o) return; openEditor(opForm(o)); editorEl.dataset.editId=o.id; return; }
   if(act==="close-drawer"){ closeDrawer(); return; }
   if(act==="cancel-editor"){ closeEditor(); return; }
-  if(act==="del-op"){ if(confirm("Delete "+getOp().company+" and all its rounds/people? This can't be undone.")){ state.opportunities=state.opportunities.filter(o=>o.id!==openId); save(); closeDrawer(); render(); toast("Deleted"); } return; }
+  if(act==="del-op"){ if(confirm("Delete "+getOp().company+" and all its rounds/people? This can't be undone.")){ const id=openId; state.opportunities=state.opportunities.filter(o=>o.id!==id); if(state.scorecard&&state.scorecard.scores) delete state.scorecard.scores[id]; save(); closeDrawer(); render(); toast("Deleted"); } return; }
   if(act==="add-round"){ openEditor(roundForm(null)); return; }
   if(act==="add-person"){ openEditor(personForm(null)); return; }
   if(act==="export"){ exportData(); return; }
@@ -2692,8 +2694,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.clearfile){ const fld=t.dataset.clearfile; const h=document.querySelector(`[name="${fld}"]`); if(h)h.value=""; const lbl=document.querySelector(`[data-filename="${fld}"]`); if(lbl)lbl.innerHTML=""; return; }
   if(t.dataset.dljd){ const o=getOp(); if(o&&o.jdFile) downloadData(o.jdFile); return; }
   // calendar
-  if(t.dataset.ics){ const f=findRound(t.dataset.ics); if(f) downloadICS(f.o,f.r); return; }
-  if(t.dataset.gcal){ const f=findRound(t.dataset.gcal); if(f) window.open(googleCalUrl(f.o,f.r),"_blank","noopener"); return; }
+  if(t.dataset.ics){ const ev=eventFromKey(t.dataset.ics); if(ev) downloadEventICS(ev); else toast("Add a date first"); return; }
+  if(t.dataset.gcal){ const ev=eventFromKey(t.dataset.gcal); if(ev) window.open(googleCalEventUrl(ev),"_blank","noopener"); return; }
   if(act==="sync-connect"){ connectSync(); return; }
   if(act==="sync-disconnect"){ if(confirm("Disconnect cloud sync on this device? Your data stays here; it just stops syncing.")){ sync={}; saveSync(); setSyncState("off"); openSettings(); } return; }
   if(act==="sync-gencode"){ const f=document.querySelector('#syncCode'); if(f) f.value=randomCode(); return; }
@@ -2953,8 +2955,8 @@ function resumeStudioBody(){
   <div class="rs-sec">Header</div>
   <div class="form-2"><div class="form-row"><label>Full name</label><input id="rs-name" value="${esc(d.name)}" placeholder="Connor Scheidel"/></div><div class="form-row"><label>Headline / title</label><input id="rs-title" value="${esc(d.title)}" placeholder="Product Manager"/></div></div>
   <div class="form-2"><div class="form-row"><label>Email</label><input id="rs-email" value="${esc(c.email)}"/></div><div class="form-row"><label>Phone</label><input id="rs-phone" value="${esc(c.phone)}"/></div></div>
-  <div class="form-2"><div class="form-row"><label>Location</label><input id="rs-location" value="${esc(c.location)}" placeholder="Austin, TX"/></div><div class="form-row"><label>LinkedIn / site</label><input id="rs-linkedin" value="${esc(c.linkedin)}" placeholder="linkedin.com/in/…"/></div></div>
-  <input type="hidden" id="rs-website" value="${esc(c.website||"")}"/>
+  <div class="form-2"><div class="form-row"><label>Location</label><input id="rs-location" value="${esc(c.location)}" placeholder="Austin, TX"/></div><div class="form-row"><label>LinkedIn</label><input id="rs-linkedin" value="${esc(c.linkedin)}" placeholder="linkedin.com/in/…"/></div></div>
+  <div class="form-row"><label>Website / portfolio <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="rs-website" value="${esc(c.website||"")}" placeholder="yoursite.com"/></div>
   <div class="form-row"><label>Summary</label><textarea id="rs-summary" style="min-height:80px" placeholder="2-3 lines on who you are and your strongest wins…">${esc(d.summary)}</textarea></div>
 
   <div class="rs-sec">Experience</div>${exp||`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No roles yet.</div>`}
@@ -3100,24 +3102,31 @@ function icsStamp(date,time,addMin){
 }
 function eventTitle(o,r){ return `${r.name||r.type||"Interview"} — ${o.company}`; }
 function icsEsc(s){ return String(s).replace(/\\/g,"\\\\").replace(/\r?\n/g,"\\n").replace(/;/g,"\\;").replace(/,/g,"\\,"); }
-function eventDesc(o,r){ return [r.type?("Type: "+r.type):"", r.interviewers?("With: "+r.interviewers):"", r.link?("Link: "+r.link):"", o.role?("Role: "+o.role):"", r.prep?("Prep: "+r.prep):""].filter(Boolean).map(icsEsc).join("\\n"); }
-function downloadICS(o,r){
-  if(!r.date){ toast("Add a date to this round first"); return; }
-  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Callback//Interview//EN","BEGIN:VEVENT",
-    "UID:"+(r.id||uid())+"@callback","SUMMARY:"+eventTitle(o,r).replace(/[\n,;]/g," "),
-    "DTSTART:"+icsStamp(r.date,r.time), "DTEND:"+icsStamp(r.date,r.time,60),
-    "DESCRIPTION:"+eventDesc(o,r), r.link?("URL:"+r.link):"", "LOCATION:"+(r.link||"").replace(/[\n,;]/g," "),
-    "BEGIN:VALARM","TRIGGER:-PT30M","ACTION:DISPLAY","DESCRIPTION:"+eventTitle(o,r),"END:VALARM",
-    "END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n");
-  const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob); a.download=(o.company+"-"+(r.name||r.type||"interview")).replace(/[^\w-]+/g,"_")+".ics";
+function eventDesc(o,r){ return [r.type?("Type: "+r.type):"", r.interviewers?("With: "+r.interviewers):"", r.link?("Link: "+r.link):"", o.role?("Role: "+o.role):"", r.prep?("Prep: "+r.prep):""].filter(Boolean).join("\n"); }
+function findRound(rid){ for(const o of state.opportunities){ const r=(o.rounds||[]).find(x=>x.id===rid); if(r) return {o,r}; } return null; }
+// A normalized calendar event {uid,title,date,time,desc(raw),location}
+function roundEvent(o,r){ return {uid:r.id||uid(),title:eventTitle(o,r),date:r.date,time:r.time||"",desc:eventDesc(o,r),location:r.link||""}; }
+// Resolve a data-ics/data-gcal key — a round id, or "opId|task" / "opId|offer" for non-round events
+function eventFromKey(key){
+  const fr=findRound(key); if(fr) return roundEvent(fr.o,fr.r);
+  const [opId,kind]=String(key).split("|"); const o=state.opportunities.find(x=>x.id===opId); if(!o) return null;
+  if(kind==="task" && o.nextActionDate) return {uid:opId+"-task",title:(o.nextActionLabel||"Next step")+" — "+o.company,date:o.nextActionDate,time:"",desc:o.role?("Role: "+o.role):"",location:o.nextMeetingLink||""};
+  if(kind==="offer" && o.offer && o.offer.deadline) return {uid:opId+"-offer",title:"Offer decision — "+o.company,date:o.offer.deadline,time:"",desc:"Decide on the "+(o.role||"role")+" offer at "+o.company,location:""};
+  return null;
+}
+function buildICS(ev){ return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//CallBack//Interview//EN","BEGIN:VEVENT",
+  "UID:"+ev.uid+"@callback","SUMMARY:"+icsEsc(ev.title),"DTSTART:"+icsStamp(ev.date,ev.time),"DTEND:"+icsStamp(ev.date,ev.time,60),
+  "DESCRIPTION:"+icsEsc(ev.desc||""), ev.location?("LOCATION:"+icsEsc(ev.location)):"",
+  "BEGIN:VALARM","TRIGGER:-PT30M","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(ev.title),"END:VALARM","END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n"); }
+function downloadEventICS(ev){
+  if(!ev||!ev.date){ toast("Add a date first"); return; }
+  const blob=new Blob([buildICS(ev)],{type:"text/calendar"}); const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=ev.title.replace(/[^\w-]+/g,"_").slice(0,60)+".ics";
   document.body.appendChild(a); a.click(); a.remove(); toast("Calendar file downloaded — open it to add");
 }
-function findRound(rid){ for(const o of state.opportunities){ const r=(o.rounds||[]).find(x=>x.id===rid); if(r) return {o,r}; } return null; }
-function googleCalUrl(o,r){
-  const p=new URLSearchParams({action:"TEMPLATE", text:eventTitle(o,r),
-    dates:icsStamp(r.date,r.time)+"/"+icsStamp(r.date,r.time,60),
-    details:eventDesc(o,r).replace(/\\n/g,"\n"), location:r.link||""});
+function googleCalEventUrl(ev){
+  const p=new URLSearchParams({action:"TEMPLATE", text:ev.title,
+    dates:icsStamp(ev.date,ev.time)+"/"+icsStamp(ev.date,ev.time,60), details:ev.desc||"", location:ev.location||""});
   return "https://calendar.google.com/calendar/render?"+p.toString();
 }
 

@@ -93,7 +93,9 @@ you paste into a new AI chat to prep for interviews.
   topbar "Smart add" + Settings.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — JD/résumé attachments as base64 (`fileToData`, `downloadData`, `pickFileInto`).
-- `CALENDAR` — `.ics` + Google Calendar links (`downloadICS`, `googleCalUrl`, `findRound`).
+- `CALENDAR` — `.ics` + Google Calendar links for ANY event (rounds, next-step tasks, offer
+  deadlines) via `eventFromKey()` (round id, or `opId|task` / `opId|offer`) → `buildICS`/
+  `downloadEventICS`/`googleCalEventUrl`; `icsEsc()` escapes per RFC 5545.
 - `NATIVE (Capacitor iOS)` — device features, ALL guarded by `isNative()` so the web build is
   untouched; plugins reached via `window.Capacitor.Plugins.*`. Local-notification reminders
   (`syncReminders`/`enableReminders`, opt-in stored in `aiCfg.reminders`), on-device calendar scan

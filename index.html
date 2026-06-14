@@ -136,6 +136,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .empty .big svg{width:30px;height:30px;color:var(--accent3)}
 .empty .big.brand{background:transparent;box-shadow:none;width:84px;height:84px}
 .empty .big.brand img{width:84px;height:84px;border-radius:21px;box-shadow:var(--shadow)}
+.welcome-feats{display:flex;flex-direction:column;gap:9px;margin-top:18px;width:100%;max-width:420px;text-align:left}
+.wf{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
+.wf>span{width:34px;height:34px;border-radius:10px;background:rgba(94,106,210,.13);display:grid;place-items:center;flex:0 0 34px}
+.wf>span svg{width:18px;height:18px;color:var(--accent3)}
+.wf b{font-size:13.5px;font-weight:750;display:block;color:var(--txt)}
+.wf small{font-size:12px;color:var(--muted);line-height:1.45}
 
 /* Branded launch splash (installed app only — see media query) */
 #splash{display:none;position:fixed;inset:0;z-index:9999;background:
@@ -824,12 +830,18 @@ function renderDashboard(){
 }
 
 function emptyState(){
-  return `<div class="empty">
+  return `<div class="empty welcome">
     <div class="big brand"><img src="icon.png" alt="CallBack" width="84" height="84"/></div>
     <h3>Welcome to CallBack</h3>
-    <p style="max-width:380px">Track every company, interviewer, round and note in one place — then generate an instant AI brief whenever a new interview drops.</p>
-    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center">
+    <p style="max-width:440px">Your interview command center. Track every company, prep with AI, and never mix up who's who — all in one place.</p>
+    <div class="welcome-feats">
+      <div class="wf"><span>${I.ai}</span><div><b>Smart add</b><small>Paste a job link, email or invite → a ready-to-review entry</small></div></div>
+      <div class="wf"><span>${I.spark}</span><div><b>AI prep</b><small>Briefs, smart questions to ask & thank-you notes</small></div></div>
+      <div class="wf"><span>${I.dash}</span><div><b>Stay organized</b><small>Logos, stages & next calls at a glance</small></div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center">
       <button class="btn primary" data-act="add">${I.briefcase} Add your first role</button>
+      <button class="btn ghost" data-act="smart-paste">${I.ai} Smart add</button>
       <button class="btn ghost" data-act="sample">${I.spark} Load demo data</button>
     </div>
   </div>`;

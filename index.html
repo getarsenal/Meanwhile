@@ -813,12 +813,10 @@ function renderDashboard(){
 
   let html=dashHero(ops);
   html+=`<div class="grid stat-grid">
-    ${stat(active,"Active",I.briefcase,"","active")}
     ${stat(interviewing,"Interviewing",I.user,"","interviewing")}
     ${stat(offers,"Offers",I.trophy,"","offers")}
-    ${stat(respRate+"%","Advance",I.spark,"","advance")}
-    ${stat(week.length,"This week",I.clock,"","week")}
-    ${stat(followups.length,"Follow-ups",I.bell, followups.length?"hot":"","nudge")}
+    ${stat(avgExc==="—"?"—":avgExc+"★","Avg fit",I.spark,"")}
+    ${stat(respRate+"%","Advance",I.board,"","advance")}
   </div>`;
 
   // Compare competing offers (only surfaces once ≥2 offers are in play)
@@ -928,20 +926,25 @@ function dashHero(ops){
     return heroShell(inner, "#4ea381");
   }
 
-  // momentum: active roles but nothing scheduled
+  // momentum: active roles but nothing scheduled — a prompt, not another count
   const active=ops.filter(o=>stage(o.status).active && o.status!=="wishlist").length;
   const nudges=ops.filter(needsFollowup).length;
+  const head = nudges ? `${nudges} ${nudges===1?"role needs":"roles need"} a nudge`
+            : active ? "Nothing scheduled"
+            : "Let's line up your first interview";
+  const sub = nudges ? "A quick follow-up keeps them warm and top of mind."
+            : active ? "Add an interview or paste a job link to keep the momentum going."
+            : "Paste a job posting, recruiter email or invite — I'll set up the rest.";
   const inner=`
-    <div class="hero-main">
+    <div class="hero-main hero-prompt">
       <div class="hero-eyebrow">${I.spark}<span>Your search</span></div>
-      <div class="hero-name" style="font-size:22px">${active?`${active} active ${active===1?"process":"processes"}`:"Let's get moving"}</div>
-      <div class="hero-role">${nudges?`${nudges} ${nudges===1?"role needs":"roles need"} a follow-up — keep the momentum.`:"Nothing scheduled. Add a posting or invite and I'll set it up."}</div>
+      <div class="hero-name" style="font-size:23px">${head}</div>
+      <div class="hero-role" style="max-width:48ch;white-space:normal">${sub}</div>
       <div class="hero-actions">
         <button class="btn primary sm" data-act="smart-paste">${I.ai} Smart add</button>
-        <button class="btn ghost sm hero-btn" data-act="add">＋ Add role</button>
+        ${nudges?`<button class="btn ghost sm hero-btn" data-tile="nudge">Review follow-ups</button>`:`<button class="btn ghost sm hero-btn" data-act="add">＋ Add role</button>`}
       </div>
-    </div>
-    <div class="hero-count"><div class="hc-num">${active}</div><div class="hc-unit">in flight</div></div>`;
+    </div>`;
   return heroShell(inner);
 }
 

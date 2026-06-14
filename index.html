@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Callback — Interview Tracker</title>
+<title>CallBack — Interview Tracker</title>
 
 <!-- PWA / "Add to Home Screen" -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Callback" />
+<meta name="apple-mobile-web-app-title" content="CallBack" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#0a0b0e" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235e6ad2'/%3E%3Cpath d='M16 40 L28 28 L36 36 L48 22' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='48' cy='22' r='4' fill='white'/%3E%3C/svg%3E" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235e6ad2'/%3E%3Cpath d='M16 40 L28 28 L36 36 L48 22' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='48' cy='22' r='4' fill='white'/%3E%3C/svg%3E" />
+<link rel="icon" type="image/png" href="icon.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
 <style>
 :root{
@@ -58,7 +58,8 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
   display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;
 }
 .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
-.brand .logo{width:36px;height:36px;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.brand .logo{width:36px;height:36px;border-radius:10px;overflow:hidden;display:grid;place-items:center}
+.brand .logo img{width:36px;height:36px;object-fit:cover;border-radius:10px}
 .brand .logo svg{width:22px;height:22px}
 .brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.02em}
 .brand small{display:block;color:var(--faint);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
@@ -432,8 +433,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo"><svg viewBox="0 0 64 64" fill="none"><path d="M14 44 L28 30 L36 38 L50 22" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="22" r="4.5" fill="#fff"/></svg></div>
-      <div><h1>Callback</h1><small>Interview HQ</small></div>
+      <div class="logo"><img src="icon.png" alt="CallBack" width="36" height="36"/></div>
+      <div><h1>CallBack</h1><small>Track · Prepare · Get hired</small></div>
     </div>
     <nav id="nav"></nav>
     <div class="side-spacer"></div>
@@ -2716,7 +2717,7 @@ function googleCalUrl(o,r){
 /* ============================ BOOT ============================ */
 // register a tiny inline manifest so Android shows "Install"
 try{
-  const mani={name:"Callback — Interview Tracker",short_name:"Callback",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235e6ad2'/%3E%3Cpath d='M16 40 L28 28 L36 36 L48 22' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='48' cy='22' r='4' fill='white'/%3E%3C/svg%3E",sizes:"any",type:"image/svg+xml"}]};
+  const mani={name:"CallBack — Interview Tracker",short_name:"CallBack",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
   const link=document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(new Blob([JSON.stringify(mani)],{type:"application/manifest+json"})); document.head.appendChild(link);
 }catch(e){}
 // register the service worker for true offline (web/PWA); harmless when opened via file://

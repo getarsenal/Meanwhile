@@ -28,10 +28,12 @@ Whenever you change `index.html`, run `npx cap copy ios` to refresh the native s
 
 ## 2. App icons & splash
 
-- Master icon: a 1024×1024 PNG (App Store requires no transparency/alpha).
-- Generate the full icon/splash set with: `npm i -D @capacitor/assets` then
-  `npx capacitor-assets generate --ios` (point it at a `resources/icon.png` + `resources/splash.png`).
-- The in-app SVG logo (indigo rounded square + rising line) is the design to match.
+- Master icon is already in the repo: **`resources/icon.png`** (1024×1024, full-bleed, no alpha) —
+  the CallBack squircle (speech-bubble "C" + rising bars). `icon.png` (transparent), `icon-512/192`,
+  and `apple-touch-icon.png` are the web/PWA variants; `logo.png` is the wordmark for store listings.
+- Generate the full iOS icon set with: `npm i -D @capacitor/assets` then
+  `npx capacitor-assets generate --ios` (it reads `resources/icon.png`; add a `resources/splash.png`
+  for the launch screen, e.g. the logo centered on `#0a0b0e`).
 
 ## 3. Building the iOS app (the macOS step)
 

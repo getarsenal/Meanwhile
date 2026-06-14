@@ -72,8 +72,9 @@ you paste into a new AI chat to prep for interviews.
   via `data-research-co`) and a `.jc-tagline` line on each job card.
 - `SMART PASTE (AI ingest)` — paste an invite/email/JD/profile → AI fills a reviewable suggested
   entry. Pluggable engine via `aiEngine()` — **default `google` (Gemini, free tier; the standard for
-  broad/zero-cost reach)**, plus `proxy` (Supabase Edge Function, now Gemini-based), `anthropic`
-  (Claude, user key), and `paste` (copy-paste fallback). The Gemini path has a model fallback
+  broad/zero-cost reach)**, plus `openai` (ChatGPT, user key), `anthropic` (Claude, user key),
+  `proxy` (Supabase Edge Function, Gemini-based), and `paste` (copy-paste fallback). It's a
+  bring-your-own-LLM model. `engineReadsPDF()` gates PDF upload to proxy/anthropic/google. The Gemini path has a model fallback
   (`gemini-2.0-flash`→`gemini-1.5-flash`) so a rename never breaks it; `aiCall(prompt, doc)` can send
   a base64 PDF the model reads natively.
   `aiPrompt()` builds the extraction prompt against a fixed JSON schema; `aiParse()` is a defensive

@@ -30,10 +30,11 @@ for a full-screen, installable app (works offline).
   and export a clean PDF.
 - **Offer scorecard** — a weighted decision matrix across competing offers.
 
-## AI engine
-Defaults to **Google Gemini** (free tier) for the widest, zero-cost reach. Add a free key in
-Settings → AI engine, host your key server-side with the optional Supabase proxy, use a Claude
-key, or fall back to copy-paste with any chatbot — no key required.
+## AI engine — bring your own
+CallBack is **bring-your-own-AI**: plug in your own **Gemini** (free tier), **ChatGPT (OpenAI)**,
+or **Claude (Anthropic)** key in Settings → AI engine, and it calls that provider directly — your
+data goes only to the AI you chose, at your cost (Gemini is free). No key? It falls back to
+copy-paste with any chatbot. You can also host a key server-side via the optional Supabase proxy.
 
 ## Cloud sync
 Settings (⚙) → **Cloud sync** connects to a free Supabase project so your phone and computer

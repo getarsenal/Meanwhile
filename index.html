@@ -1970,9 +1970,12 @@ function aiEngine(){
   if(e==="off") return "off";
   if(e==="proxy") return aiProxyUrl()?"proxy":"paste";
   if(e==="anthropic") return aiCfg.key?"anthropic":"paste";
+  if(e==="openai") return aiCfg.key?"openai":"paste";
   if(e==="google") return aiCfg.key?"google":"paste";
   return "paste";
 }
+// providers that can read an uploaded PDF directly
+function engineReadsPDF(){ return ["proxy","anthropic","google"].includes(aiEngine()); }
 const AI_SCHEMA=`Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
 {
  "company": "",            // employer name; "" if unknown
@@ -2018,6 +2021,17 @@ async function aiCall(prompt, doc, opts){
     if(!res.ok) throw new Error("Claude "+res.status+" "+(await res.text()).slice(0,180));
     const j=await res.json(); return (j.content||[]).map(b=>b.text||"").join("");
   }
+  if(eng==="openai"){
+    const model=aiCfg.model||"gpt-4o-mini";
+    const body={model,messages:[{role:"user",content:prompt}],max_tokens:maxTok};
+    if(wantJson) body.response_format={type:"json_object"};
+    const res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiCfg.key},body:JSON.stringify(body)});
+    if(!res.ok){ const tx=(await res.text()).slice(0,180);
+      if(res.status===429) throw new Error("OpenAI rate/quota hit — check your plan & billing at platform.openai.com.");
+      if(res.status===401) throw new Error("That OpenAI key looks invalid — re-copy it from platform.openai.com/api-keys.");
+      throw new Error("OpenAI "+res.status+" "+tx); }
+    const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
+  }
   if(eng==="google"){
     const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
     const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
@@ -2044,7 +2058,7 @@ async function aiCall(prompt, doc, opts){
 
 let spData=null, spText="", spSourceUrl="";
 function openSmartPaste(){ spData=null; spSourceUrl=""; openEditor(smartPasteBody()); }
-function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",google:"Gemini ✓"}[aiEngine()]; }
+function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",openai:"ChatGPT ✓",google:"Gemini ✓"}[aiEngine()]; }
 function smartPasteBody(){
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
@@ -2172,28 +2186,30 @@ function spApply(){
 function openAISettings(){
   const eng=aiCfg.engine||"google";
   const opt=(v,l)=>`<option value="${v}" ${eng===v?"selected":""}>${l}</option>`;
-  const needsKey=eng==="anthropic"||eng==="google";
+  const needsKey=eng==="anthropic"||eng==="openai"||eng==="google";
+  const mph=eng==="google"?"gemini-2.0-flash":eng==="openai"?"gpt-4o-mini":"claude-haiku-4-5";
   const body=`<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
-    <div><h2 style="margin:0;font-size:18px;font-weight:850">AI engine</h2><div style="font-size:12.5px;color:var(--faint)">Powers Smart add, briefs & résumé parsing</div></div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">AI engine</h2><div style="font-size:12.5px;color:var(--faint)">Bring your own AI — powers Smart add, briefs & résumé</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
   <div class="form-row"><label>Engine</label><select id="aiEngine">
     ${opt("google","Gemini — free, recommended")}
-    ${opt("proxy","Cloud proxy — key on your Supabase (one-tap)")}
-    ${opt("anthropic","Claude — your key (one-tap)")}
+    ${opt("openai","ChatGPT (OpenAI) — your key")}
+    ${opt("anthropic","Claude (Anthropic) — your key")}
+    ${opt("proxy","Cloud proxy — key on your Supabase")}
     ${opt("paste","Copy-paste — no key, any AI")}
     ${opt("off","Off")}
   </select></div>
   <div id="aiKeyRow" style="display:${needsKey?"block":"none"}">
-    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stored on this device only, never synced</span></label><input id="aiKey" value="${esc(aiCfg.key||"")}" placeholder="${eng==="google"?"AIza…":"sk-ant-…"}"/></div>
-    ${eng==="google"?`<div style="font-size:11.5px;color:var(--muted);margin:-4px 2px 10px">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — takes 30 seconds, no card.</div>`:""}
-    <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${eng==="google"?"gemini-2.0-flash":"claude-haiku-4-5"}"/></div>
+    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stored on this device only, never synced</span></label><input id="aiKey" value="${esc(aiCfg.key||"")}" placeholder="${eng==="google"?"AIza…":"sk-…"}"/></div>
+    <div style="font-size:11.5px;color:var(--muted);margin:-4px 2px 10px">Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free)</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude</a></div>
+    <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${mph}"/></div>
   </div>
   <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
     <div class="form-row"><label>Proxy URL <span style="color:var(--faint);font-weight:500">— defaults to your Supabase function</span></label><input id="aiProxy" value="${esc(aiCfg.proxyUrl||"")}" placeholder="${esc(aiProxyUrl()||"https://xxxx.supabase.co/functions/v1/ai")}"/></div>
   </div>
-  <div class="note-block" style="margin-top:6px;font-size:12px">${eng==="google"?"Gemini's free tier covers normal use at zero cost — the broadest, most reliable option for everyone. Your key lives only in this browser (like the sync key); fine on your own device, not a shared computer.":eng==="anthropic"?"Your Claude key lives only in this browser's storage. Set a spend cap with Anthropic. Great quality; Gemini's free tier reaches more people at zero cost.":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, now Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>
+  <div class="note-block" style="margin-top:6px;font-size:12px">${needsKey?"Your key is stored only in this browser (like the sync key) and used to call your chosen provider directly — your data goes to them, not to us. Gemini has a free tier; ChatGPT &amp; Claude are paid. Set a spend limit with your provider. (PDF résumé reading works on Gemini, Claude, or the proxy.)":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="ai-cfg-save">${I.check} Save</button>
     <button class="btn ghost" data-act="cancel-editor">Cancel</button>
@@ -2496,7 +2512,7 @@ document.addEventListener("change",e=>{
   if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
   if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
-    if(k) k.style.display=(v==="anthropic"||v==="google")?"block":"none";
+    if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="google")?"block":"none";
     if(p) p.style.display=(v==="proxy")?"block":"none"; }
 });
 
@@ -2756,6 +2772,7 @@ async function rsAIParse(text, doc){
   const eng=aiEngine();
   if(eng==="off"){ toast("Turn on an AI engine in Settings"); return; }
   if(eng==="paste"){ if(!text){ toast("Paste-mode can't read a PDF — paste résumé text, or set a key in Settings"); return; } rsParseManual(text); return; }
+  if(doc && !engineReadsPDF()){ toast("PDF reading needs Gemini or Claude. Paste the résumé text, or switch engine in Settings."); return; }
   if(!text && !doc){ toast("Upload a file or paste your résumé text"); return; }
   toast("Structuring with AI…");
   try{

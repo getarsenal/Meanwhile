@@ -1796,8 +1796,8 @@ async function aiCall(prompt, doc){
   throw new Error("paste-mode");
 }
 
-let spData=null, spText="";
-function openSmartPaste(){ spData=null; openEditor(smartPasteBody()); }
+let spData=null, spText="", spSourceUrl="";
+function openSmartPaste(){ spData=null; spSourceUrl=""; openEditor(smartPasteBody()); }
 function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",google:"Gemini ✓"}[aiEngine()]; }
 function smartPasteBody(){
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
@@ -1805,13 +1805,36 @@ function smartPasteBody(){
     <div><h2 style="margin:0;font-size:18px;font-weight:850">Smart add</h2><div style="font-size:12.5px;color:var(--faint)">Engine: ${aiEngineLabel()} · <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">change</span></div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
-  <div style="font-size:12.5px;color:var(--muted);margin:8px 0 12px">Paste a <b>calendar invite</b>, <b>recruiter / interview email</b>, <b>job posting</b>, or a <b>LinkedIn / contact profile</b>. I'll turn it into an entry you review before saving.</div>
-  <textarea id="spInput" style="min-height:160px" placeholder="Paste here…">${esc(spText)}</textarea>
+  <div style="font-size:12.5px;color:var(--muted);margin:8px 0 12px">Drop in a <b>job posting link</b>, or paste a <b>calendar invite</b>, <b>recruiter email</b>, <b>job description</b>, or a <b>LinkedIn / contact profile</b>. I'll turn it into an entry you review before saving.</div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input id="spUrl" placeholder="Paste a job posting URL…" autocomplete="off" style="flex:1"/>
+    <button class="btn ghost" data-act="ai-fetch-url">${I.ai} Fetch</button>
+  </div>
+  <div style="text-align:center;font-size:11px;color:var(--faint);margin-bottom:10px">— or paste the details below —</div>
+  <textarea id="spInput" style="min-height:150px" placeholder="Paste here…">${esc(spText)}</textarea>
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
     <button class="btn ghost" data-act="cancel-editor">Cancel</button>
   </div>
   <div style="font-size:11.5px;color:var(--faint);margin-top:10px;text-align:center">On iPhone you can also <span data-act="scan-calendar" style="color:var(--accent3);cursor:pointer;font-weight:700">scan your calendar</span> or share an email/profile straight into Callback.</div>`;
+}
+async function fetchJobUrl(){
+  const inp=$("#spUrl"); let url=inp?inp.value.trim():"";
+  if(!url){ toast("Paste a job URL first"); return; }
+  if(!/^https?:\/\//i.test(url)) url="https://"+url;
+  spSourceUrl=url;
+  const btn=editorEl&&editorEl.querySelector('[data-act="ai-fetch-url"]'); if(btn){ btn.textContent="Fetching…"; btn.disabled=true; }
+  try{
+    // Jina Reader: free, CORS-friendly, returns clean readable text (no key, no backend)
+    const res=await fetch("https://r.jina.ai/"+url,{headers:{Accept:"text/plain"}});
+    if(!res.ok) throw new Error("status "+res.status);
+    let text=await res.text();
+    if(!text || text.trim().length<40) throw new Error("empty");
+    if(text.length>14000) text=text.slice(0,14000);
+    const ta=$("#spInput"); if(ta) ta.value=text; spText=text;
+    if(btn){ btn.innerHTML=`${I.ai} Fetch`; btn.disabled=false; }
+    runExtract();
+  }catch(e){ spSourceUrl=""; if(btn){ btn.innerHTML=`${I.ai} Fetch`; btn.disabled=false; } toast("⚠ Couldn't read that page — paste the job text instead"); }
 }
 function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card"); if(card){ card.innerHTML=html; const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
 async function runExtract(){
@@ -1879,10 +1902,11 @@ function spApply(){
     o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},
        company:company||"(unknown)",role:role,status:status,
        source:d.source||"",location:d.location||"",workMode:d.workMode||"",
-       compNotes:d.compNote||"",notes:d.notes||"",
+       compNotes:d.compNote||"",notes:d.notes||"",jobUrl:spSourceUrl||"",
        nextActionLabel:d.nextActionLabel||"",nextActionDate:d.nextActionDate||""};
     state.opportunities.push(o); openId=o.id;
   } else {
+    if(spSourceUrl && !o.jobUrl) o.jobUrl=spSourceUrl;
     if(role) o.role=role; if(status) o.status=status;
     if(!o.source&&d.source) o.source=d.source;
     if(!o.location&&d.location) o.location=d.location;
@@ -2149,6 +2173,7 @@ document.addEventListener("click",e=>{
   // smart paste / AI ingest
   if(act==="smart-paste"){ openSmartPaste(); return; }
   if(act==="ai-extract"){ runExtract(); return; }
+  if(act==="ai-fetch-url"){ fetchJobUrl(); return; }
   if(act==="ai-fallback-copy"){ const ta=$("#spInput"); copy(aiPrompt((ta?ta.value:spText)||spText),"Prompt copied — paste into any AI"); return; }
   if(act==="ai-fallback-build"){ spBuildFromPaste(); return; }
   if(act==="ai-back"){ spSetBody(smartPasteBody()); return; }

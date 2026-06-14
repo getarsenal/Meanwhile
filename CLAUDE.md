@@ -69,8 +69,11 @@ you paste into a new AI chat to prep for interviews.
   a base64 PDF the model reads natively.
   `aiPrompt()` builds the extraction prompt against a fixed JSON schema; `aiParse()` is a defensive
   JSON extractor; `spReview()/spApply()` map the result to a new opportunity or merge into a matched
-  one (adding round/people). Config in localStorage `callback_ai_cfg_v1` (device-local, never synced,
-  never in repo). `openAISettings()` configures the engine. Entry: topbar "Smart add" + Settings.
+  one (adding round/people). **Job URL → auto-fill**: `fetchJobUrl()` pulls a posting via Jina Reader
+  (`r.jina.ai`, free/CORS/no-key) → clean text → the same extraction; the source URL is saved to
+  `o.jobUrl` (which also yields the logo domain). Config in localStorage `callback_ai_cfg_v1`
+  (device-local, never synced, never in repo). `openAISettings()` configures the engine. Entry:
+  topbar "Smart add" + Settings.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — JD/résumé attachments as base64 (`fileToData`, `downloadData`, `pickFileInto`).
 - `CALENDAR` — `.ics` + Google Calendar links (`downloadICS`, `googleCalUrl`, `findRound`).

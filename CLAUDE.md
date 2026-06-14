@@ -133,11 +133,22 @@ Backed by the user's own Supabase project. The app stores URL + anon key + sync 
 localStorage per device. **No Supabase keys or sync codes belong in this repo.** The setup SQL
 lives in `index.html` as the `SYNC_SQL` constant (and in the in-app Settings panel).
 
+## PWA / offline
+`sw.js` (registered at boot, http(s) only) caches the app shell — network-first for
+navigations (updates show online), cache fallback offline. Cross-origin (logos/AI/Jina/
+Supabase) is never intercepted, so it fails gracefully offline. Inline web manifest already
+present. Bump `CACHE` in `sw.js` to force-invalidate.
+
+## Server-side (optional, needs Supabase deploy)
+- `supabase/functions/ai` — Gemini proxy for Smart add / briefs / résumé / digest-free AI.
+- `supabase/functions/digest` — daily reminder digest (quiet processes + 7-day upcoming) to
+  Slack and/or email (Resend); reads the vault via `get_vault` with `DIGEST_CODE`. Scheduled
+  via Supabase cron. Runbook in `supabase/README.md`.
+
 ## Backlog / ideas not yet built
-- Thank-you-note tracker / reminders per round.
-- "Questions they asked me" / "questions to ask" reusable libraries.
-- Service worker for true offline of the web/PWA version (Capacitor build is already offline).
-- Real PNG app icons + screenshots for App Store.
+- Real PNG app icons + screenshots for App Store (icons currently inline SVG).
+- "Questions they asked me" reusable library (questions-to-ask is now generated on demand).
+- Per-user digest config (currently one vault via env; fine for personal use).
 
 ## Tone for the owner
 Connor is sharp but not a developer — explain choices briefly, default to action, keep the UI

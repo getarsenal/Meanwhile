@@ -30,6 +30,25 @@ Then in the app: **AI engine → Cloud proxy → Save**. The proxy URL auto-fill
 `https://<your-project>.supabase.co/functions/v1/ai` (derived from your sync settings);
 override it only if you deployed elsewhere.
 
+## Daily reminder digest (optional, `functions/digest`)
+
+Your push-notification stand-in for the web/PWA. Once a day it reads your synced data and
+sends a summary of what's gone quiet and what's coming up — to Slack and/or email.
+
+```bash
+supabase secrets set SUPABASE_URL=https://<ref>.supabase.co
+supabase secrets set SUPABASE_ANON_KEY=<your-anon-key>
+supabase secrets set DIGEST_CODE=<your in-app Sync code>     # which vault to read
+# pick one or both destinations:
+supabase secrets set SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+supabase secrets set RESEND_API_KEY=re_...  DIGEST_EMAIL=you@example.com
+supabase functions deploy digest
+```
+
+Then schedule it: Supabase Dashboard → Edge Functions → **digest** → **Schedules**, e.g. CRON
+`0 13 * * *` (~8am ET). Trigger it manually any time by opening the function URL. It returns a
+JSON preview so you can see exactly what it would send.
+
 ## Notes
 
 - **No keys belong in this repo.** The key is set via `supabase secrets`, which stores

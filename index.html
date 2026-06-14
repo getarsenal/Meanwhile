@@ -2661,6 +2661,10 @@ try{
   const mani={name:"Callback — Interview Tracker",short_name:"Callback",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235e6ad2'/%3E%3Cpath d='M16 40 L28 28 L36 36 L48 22' stroke='white' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='48' cy='22' r='4' fill='white'/%3E%3C/svg%3E",sizes:"any",type:"image/svg+xml"}]};
   const link=document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(new Blob([JSON.stringify(mani)],{type:"application/manifest+json"})); document.head.appendChild(link);
 }catch(e){}
+// register the service worker for true offline (web/PWA); harmless when opened via file://
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
 
 render();
 initSync();

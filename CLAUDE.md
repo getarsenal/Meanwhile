@@ -45,6 +45,11 @@ you paste into a new AI chat to prep for interviews.
   draws per-job swimlanes — a unique HSL color per job, dots for each round/applied/offer/task placed
   by date %, solid line up to today + dashed into the future, a shared month axis and "today" line,
   with the current stage shown via its stage-colored pill. CSS-positioned (no SVG), clipped to width.
+  Calendar items are interactive: each row has **edit** (`data-cal-edit`) / **delete** (`data-cal-del`)
+  keyed by `eventFromKey` (round id, or `opId|task`/`opId|offer`) → `calEditEvent`/`calDeleteEvent`.
+  Closing without data loss: a CLOSED stage (rejected/withdrawn/ghosted) or a round `status:cancelled`
+  drops out of active views but stays for Insights; the Cards view hides closed roles behind a
+  `cards-closed` toggle (`cardsShowClosed`), rendering them dimmed.
 - `CHARTS` — hand-rolled SVG (funnel bars + donut). No chart library on purpose.
 - `OFFER SCORECARD` — weighted decision matrix across competing offers (status `offer`).
   `openScorecard()` modal; `scorecardBody()`; `scResult()` (weighted 1–5 avg over rated criteria);

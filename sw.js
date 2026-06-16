@@ -1,4 +1,4 @@
-// Callback service worker — true offline for the web/PWA build.
+// Meanwhile service worker — true offline for the web/PWA build.
 // The whole app is inline in index.html, so caching the shell = the app works offline.
 // Cross-origin requests (company logos, AI APIs, Jina reader, Supabase) are never
 // intercepted, so they fail gracefully offline exactly as they do today.

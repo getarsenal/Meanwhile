@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>CallBack — Interview Tracker</title>
+<title>Meanwhile — Interview Tracker</title>
 
 <!-- PWA / "Add to Home Screen" -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="CallBack" />
+<meta name="apple-mobile-web-app-title" content="Meanwhile" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#0a0b0e" />
 <link rel="icon" type="image/png" href="icon.png" />
@@ -511,15 +511,15 @@ tbody td{padding:12px 14px;vertical-align:middle}
 <!-- Branded launch splash — only when running as an installed app (PWA/native); browser tabs skip it -->
 <div id="splash"><div class="sp-inner">
   <img src="icon.png" alt="" width="88" height="88"/>
-  <div class="sp-name">CallBack</div>
+  <div class="sp-name">Meanwhile</div>
   <div class="sp-tag">Track · Prepare · Get hired</div>
 </div></div>
 <div class="app">
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo"><img src="icon.png" alt="CallBack" width="36" height="36"/></div>
-      <div><h1>CallBack</h1><small>Track · Prepare · Get hired</small></div>
+      <div class="logo"><img src="icon.png" alt="Meanwhile" width="36" height="36"/></div>
+      <div><h1>Meanwhile</h1><small>Track · Prepare · Get hired</small></div>
     </div>
     <nav id="nav"></nav>
     <div class="side-spacer"></div>
@@ -533,7 +533,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   <!-- Main -->
   <main class="main">
     <div class="topbar">
-      <img class="topbar-brand" src="icon.png" alt="CallBack" data-view="dashboard" title="CallBack — Dashboard"/>
+      <img class="topbar-brand" src="icon.png" alt="Meanwhile" data-view="dashboard" title="Meanwhile — Dashboard"/>
       <div style="min-width:0">
         <h2 class="view-title" id="viewTitle"></h2>
         <div class="view-sub" id="viewSub"></div>
@@ -861,7 +861,7 @@ function renderDashboard(){
 
 /* The dashboard hero — the app's visual hook. Adapts to your search:
    1) a LIVE countdown to your next interview, 2) offers on the table, or 3) momentum.
-   Aurora is tinted by the next company's color, with a subtle CallBack watermark. */
+   Aurora is tinted by the next company's color, with a subtle Meanwhile watermark. */
 function heroShell(inner, tint){
   const t = tint ? `<div class="hero-tint" style="background:radial-gradient(52% 62% at 26% 26%, ${tint}5c, transparent 62%)"></div>` : "";
   return `<div class="hero"><div class="hero-aurora"></div>${t}<img src="icon.png" class="hero-mark" alt="" aria-hidden="true"/><div class="hero-grain"></div><div class="hero-inner">${inner}</div></div>`;
@@ -1013,8 +1013,8 @@ function renderMovesHub(ops){
 
 function emptyState(){
   return `<div class="empty welcome">
-    <div class="big brand"><img src="icon.png" alt="CallBack" width="84" height="84"/></div>
-    <h3>${getProfile().name?`Welcome, ${esc(getProfile().name.split(" ")[0])}`:"Welcome to CallBack"}</h3>
+    <div class="big brand"><img src="icon.png" alt="Meanwhile" width="84" height="84"/></div>
+    <h3>${getProfile().name?`Welcome, ${esc(getProfile().name.split(" ")[0])}`:"Welcome to Meanwhile"}</h3>
     <p style="max-width:440px">Your interview command center. Track every company, prep with AI, and never mix up who's who — all in one place.</p>
     <div class="welcome-feats">
       <div class="wf"><span>${I.ai}</span><div><b>Smart add</b><small>Paste a job link, email or invite → a ready-to-review entry</small></div></div>
@@ -1997,12 +1997,12 @@ function openSettings(){
     <button class="btn ghost sm" data-act="scan-calendar">${I.cal} Scan calendar</button>
     <button class="btn ghost sm" data-act="enable-reminders">${I.bell} ${aiCfg.reminders?"Reminders on ✓":"Turn on reminders"}</button>
   </div>
-  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Calendar scan, reminders, Contacts, and sharing emails/profiles into CallBack work in the App Store build. On the web they'll let you know.</div>
+  <div style="font-size:11.5px;color:var(--faint);margin-top:10px">Calendar scan, reminders, Contacts, and sharing emails/profiles into Meanwhile work in the App Store build. On the web they'll let you know.</div>
 
   <div class="section-head"><h3>About</h3><div class="line"></div></div>
   <div style="display:flex;align-items:center;gap:11px">
-    <img src="icon.png" alt="CallBack" width="34" height="34" style="border-radius:10px"/>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5"><b style="color:var(--txt)">CallBack</b> — your interview command center.<br><span style="font-size:11.5px;color:var(--faint)">Local-first · your data stays yours · <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></span></div>
+    <img src="icon.png" alt="Meanwhile" width="34" height="34" style="border-radius:10px"/>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5"><b style="color:var(--txt)">Meanwhile</b> — your interview command center.<br><span style="font-size:11.5px;color:var(--faint)">Local-first · your data stays yours · <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></span></div>
   </div>`;
   openEditor(body);
   updateSyncUI();
@@ -2298,7 +2298,7 @@ function smartPasteBody(){
     <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
     <button class="btn ghost" data-act="cancel-editor">Cancel</button>
   </div>
-  <div style="font-size:11.5px;color:var(--faint);margin-top:10px;text-align:center">On iPhone you can also <span data-act="scan-calendar" style="color:var(--accent3);cursor:pointer;font-weight:700">scan your calendar</span> or share an email/profile straight into Callback.</div>`;
+  <div style="font-size:11.5px;color:var(--faint);margin-top:10px;text-align:center">On iPhone you can also <span data-act="scan-calendar" style="color:var(--accent3);cursor:pointer;font-weight:700">scan your calendar</span> or share an email/profile straight into Meanwhile.</div>`;
 }
 async function fetchJobUrl(){
   const inp=$("#spUrl"); let url=inp?inp.value.trim():"";
@@ -2438,7 +2438,7 @@ function aiEngineFields(){
 function aiIntegrationBox(){
   return `<div class="ai-box" style="margin-top:16px">
     <div class="ai-head">${I.ai} AI Integration <span style="margin-left:auto;font-size:12px;font-weight:700;color:var(--accent3)">${aiEngineLabel()}</span></div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px"><b>Bring your own AI.</b> Plug in a key and CallBack calls that provider directly to power Smart add, briefs, thank-you notes &amp; résumé parsing. No key? It falls back to copy-paste with any chatbot.</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px"><b>Bring your own AI.</b> Plug in a key and Meanwhile calls that provider directly to power Smart add, briefs, thank-you notes &amp; résumé parsing. No key? It falls back to copy-paste with any chatbot.</div>
     ${aiEngineFields()}
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" data-act="ai-engine-save">${I.check} Save AI settings</button><button class="btn ghost sm" data-act="ai-test">⚡ Test connection</button></div>
     <div id="aiTestStatus" style="font-size:12px;font-weight:600;margin-top:9px;line-height:1.5"></div>
@@ -2542,7 +2542,7 @@ function initNative(){
   scheduleRemindersSoon();
 }
 
-/* ---- Share-into-app: a recruiter email / LinkedIn profile shared into Callback ---- */
+/* ---- Share-into-app: a recruiter email / LinkedIn profile shared into Meanwhile ---- */
 function handleSharedText(text){ if(!text||!String(text).trim()) return; spText=String(text); openSmartPaste(true); }
 async function initShareIntake(){
   const App=plugin("App");
@@ -2860,7 +2860,7 @@ document.addEventListener("drop",e=>{ const col=e.target.closest(".col[data-stag
 function exportData(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  const d=new Date(); a.download=`callback-backup-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
+  const d=new Date(); a.download=`meanwhile-backup-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
   a.click(); toast("Backup downloaded");
 }
 function importFile(file){
@@ -2870,7 +2870,7 @@ function importFile(file){
     if(!data.opportunities) throw 0;
     if(state.opportunities.length && !confirm("Replace your current data with this backup? (Export first if unsure.)")) return;
     state=migrate(data); save(); render(); toast("Imported "+data.opportunities.length+" roles");
-  }catch(e){ toast("⚠ That file didn't look like a Callback backup"); } };
+  }catch(e){ toast("⚠ That file didn't look like a Meanwhile backup"); } };
   r.readAsText(file);
 }
 
@@ -3174,7 +3174,7 @@ function calDeleteEvent(key){
   if(kind==="task" && confirm("Clear this next-step reminder?")){ o.nextActionLabel=""; o.nextActionDate=""; o.updatedAt=Date.now(); save(); render(); toast("Cleared"); }
   else if(kind==="offer" && confirm("Clear the offer deadline?")){ o.offer=o.offer||{}; o.offer.deadline=""; o.updatedAt=Date.now(); save(); render(); toast("Cleared"); }
 }
-function buildICS(ev){ return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//CallBack//Interview//EN","BEGIN:VEVENT",
+function buildICS(ev){ return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Meanwhile//Interview//EN","BEGIN:VEVENT",
   "UID:"+ev.uid+"@callback","SUMMARY:"+icsEsc(ev.title),"DTSTART:"+icsStamp(ev.date,ev.time),"DTEND:"+icsStamp(ev.date,ev.time,60),
   "DESCRIPTION:"+icsEsc(ev.desc||""), ev.location?("LOCATION:"+icsEsc(ev.location)):"",
   "BEGIN:VALARM","TRIGGER:-PT30M","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(ev.title),"END:VALARM","END:VEVENT","END:VCALENDAR"].filter(Boolean).join("\r\n"); }
@@ -3193,7 +3193,7 @@ function googleCalEventUrl(ev){
 /* ============================ BOOT ============================ */
 // register a tiny inline manifest so Android shows "Install"
 try{
-  const mani={name:"CallBack — Interview Tracker",short_name:"CallBack",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+  const mani={name:"Meanwhile — Interview Tracker",short_name:"Meanwhile",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
   const link=document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(new Blob([JSON.stringify(mani)],{type:"application/manifest+json"})); document.head.appendChild(link);
 }catch(e){}
 // register the service worker for true offline (web/PWA); harmless when opened via file://

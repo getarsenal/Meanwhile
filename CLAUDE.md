@@ -1,13 +1,13 @@
-# Callback — project brief for Claude Code
+# Meanwhile — project brief for Claude Code
 
 Read this first. It's the hand-off for continuing work on this app from any device
 (local machine, Claude Code on the web, or the mobile app connected to this repo).
 
 ## What this is
-**Callback** is a personal job-interview-process tracker for the repo owner (Connor).
+**Meanwhile** is a personal job-interview-process tracker for the repo owner (Connor).
 It's a **single, self-contained `index.html`** — vanilla JS, no framework, no build step,
 no dependencies, no bundler. It runs by just opening the file. Hosted on GitHub Pages at
-**https://getarsenal.github.io/CallBack/** and installable to a phone home screen (PWA).
+**https://getarsenal.github.io/Meanwhile/** and installable to a phone home screen (PWA).
 
 Design goals, in priority order: **(1) extremely easy to use, (2) visually stunning,
 (3) thorough.** Everything is editable/deletable; the hero feature is one-tap **AI briefs**
@@ -150,7 +150,8 @@ There's no test suite; verify in a real browser via the preview tools:
    assertions and `preview_inspect` instead of screenshots. Favicons fall back to colored initials.
 
 ## Branding
-The CallBack mark (speech-bubble "C" + rising bars) is the app identity. Assets at repo root:
+The Meanwhile mark (a person kicking back in an office chair, periwinkle on a dark indigo squircle)
+is the app identity. Assets at repo root:
 `icon.png` (256, transparent — favicon + sidebar/topbar/empty-state img), `apple-touch-icon.png`,
 `icon-192/512.png` (full-bleed maskable, used by the inline PWA manifest), `icon-1024.png` +
 `resources/icon.png` (App Store master), `resources/splash.png`/`splash-dark.png` (native launch),

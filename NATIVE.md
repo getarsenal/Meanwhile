@@ -23,9 +23,9 @@ anything it accesses):
 
 ```xml
 <key>NSCalendarsUsageDescription</key>
-<string>Callback reads your calendar to suggest interview entries you can review.</string>
+<string>Meanwhile reads your calendar to suggest interview entries you can review.</string>
 <key>NSContactsUsageDescription</key>
-<string>Callback can pull an interviewer's photo and details from your contacts.</string>
+<string>Meanwhile can pull an interviewer's photo and details from your contacts.</string>
 ```
 
 Local notifications need no Info.plist string — permission is requested in-app when you tap
@@ -44,12 +44,12 @@ Those three work as soon as the plugins are synced and the Info.plist strings ar
 
 ## 4. Share-into-app (the big one) — a Share Extension
 
-This lets you hit **Share → Callback** on a recruiter email or a LinkedIn profile and have it open
+This lets you hit **Share → Meanwhile** on a recruiter email or a LinkedIn profile and have it open
 Smart add pre-filled. It needs a small native target Capacitor can't scaffold for you:
 
 1. **App Group.** In Xcode, select the **App** target → Signing & Capabilities → **+ App Groups** →
    add `group.com.scheidelholdings.callback`. (Must match `APP_GROUP` in `index.html`.)
-2. **New target:** File → New → Target → **Share Extension**. Name it `ShareToCallback`. Give it the
+2. **New target:** File → New → Target → **Share Extension**. Name it `ShareToMeanwhile`. Give it the
    **same App Group**.
 3. In the extension's `ShareViewController.swift`, write the shared text into the App Group and open
    the app via its `callback://` scheme:

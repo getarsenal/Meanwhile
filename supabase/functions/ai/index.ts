@@ -1,4 +1,4 @@
-// Callback — "Smart add" AI proxy (Supabase Edge Function), Gemini-based
+// Meanwhile — "Smart add" AI proxy (Supabase Edge Function), Gemini-based
 //
 // Holds the model API key SERVER-SIDE so the browser never sees it. The app POSTs
 // { prompt, doc?, maxTokens? } and this calls Gemini, returning { text } (raw JSON the

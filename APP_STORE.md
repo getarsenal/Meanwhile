@@ -1,6 +1,6 @@
-# Shipping Callback to the Apple App Store
+# Shipping Meanwhile to the Apple App Store
 
-Callback is a single static web app, so the path to the App Store is to **wrap it in
+Meanwhile is a single static web app, so the path to the App Store is to **wrap it in
 [Capacitor](https://capacitorjs.com/)** (same approach as your DTMB game template) and submit
 the resulting native iOS app. This doc is the runbook + the checklist Apple will hold you to.
 
@@ -15,7 +15,7 @@ From a copy of this repo:
 ```bash
 npm init -y
 npm install @capacitor/core @capacitor/cli @capacitor/ios
-npx cap init Callback com.scheidelholdings.callback --web-dir .
+npx cap init Meanwhile com.scheidelholdings.callback --web-dir .
 # capacitor.config.json is already in this repo — keep its appId/appName/webDir
 npx cap add ios
 ```
@@ -29,7 +29,7 @@ Whenever you change `index.html`, run `npx cap copy ios` to refresh the native s
 ## 2. App icons & splash
 
 - Master icon is already in the repo: **`resources/icon.png`** (1024×1024, full-bleed, no alpha) —
-  the CallBack squircle (speech-bubble "C" + rising bars). `icon.png` (transparent), `icon-512/192`,
+  the Meanwhile mark (a figure kicking back in an office chair, on a dark indigo squircle). `icon.png` (transparent), `icon-512/192`,
   and `apple-touch-icon.png` are the web/PWA variants; `logo.png` is the wordmark for store listings.
 - Generate the full iOS icon set with: `npm i -D @capacitor/assets` then
   `npx capacitor-assets generate --ios` (it reads `resources/icon.png`; add a `resources/splash.png`
@@ -54,18 +54,18 @@ You need Xcode to archive + upload. Pick one:
 - [ ] **App icon** 1024×1024, no alpha.
 - [ ] **Screenshots** for 6.7" and 6.5" iPhones (take them from the running app: dashboard,
       pipeline, a role's AI Brief, the calendar).
-- [ ] **Privacy policy URL** — host `privacy.html` (e.g. https://getarsenal.github.io/CallBack/privacy.html)
+- [ ] **Privacy policy URL** — host `privacy.html` (e.g. https://getarsenal.github.io/Meanwhile/privacy.html)
       and paste that URL.
 - [ ] **App Privacy questionnaire** — answer "Data Not Collected." (Cloud Sync goes to the
       user's own database; the app collects nothing for the developer. `privacy.html` says this.)
-- [ ] **Sign in / demo:** Apple reviewers must be able to use the app with no account. Callback
+- [ ] **Sign in / demo:** Apple reviewers must be able to use the app with no account. Meanwhile
       needs none — mention "tap Load demo data" in the Review Notes so they see it populated.
 - [ ] **Encryption export compliance:** answer "No" to non-standard encryption (HTTPS only).
 - [ ] **Age rating, category** (Productivity / Business), keywords, description.
 
-## 5. Likely review pitfalls (and why Callback is fine)
+## 5. Likely review pitfalls (and why Meanwhile is fine)
 
-- *"Spam / web-wrapper" (Guideline 4.2):* thin wrappers get rejected. Callback is a full native
+- *"Spam / web-wrapper" (Guideline 4.2):* thin wrappers get rejected. Meanwhile is a full native
   experience (offline data, native nav, no browser chrome) — present it as a productivity app,
   not "a website." Good icon + screenshots matter here.
 - *"Minimum functionality":* it has real, persistent functionality — fine.

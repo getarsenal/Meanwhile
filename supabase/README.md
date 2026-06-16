@@ -1,6 +1,6 @@
 # Smart add — optional cloud proxy
 
-Callback's **Smart add** (paste an invite / email / job post / profile → suggested entry)
+Meanwhile's **Smart add** (paste an invite / email / job post / profile → suggested entry)
 works three ways. You pick the engine in **Settings → Smart add engine**:
 
 1. **Gemini (default, free)** — paste a free **Gemini** key into the app's AI engine

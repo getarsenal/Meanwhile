@@ -1,4 +1,4 @@
-// Callback — daily reminder digest (Supabase Edge Function, scheduled).
+// Meanwhile — daily reminder digest (Supabase Edge Function, scheduled).
 //
 // Your push-notification stand-in for the web/PWA: once a day this reads your synced
 // data and sends a summary of (a) processes that have gone quiet and need a nudge and
@@ -11,7 +11,7 @@
 //   supabase secrets set DIGEST_CODE=<your in-app Sync code>          # which vault to read
 //   # pick one or both destinations:
 //   supabase secrets set SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
-//   supabase secrets set RESEND_API_KEY=re_...  DIGEST_EMAIL=you@example.com  DIGEST_FROM="Callback <onboarding@resend.dev>"
+//   supabase secrets set RESEND_API_KEY=re_...  DIGEST_EMAIL=you@example.com  DIGEST_FROM="Meanwhile <onboarding@resend.dev>"
 //   supabase functions deploy digest
 //
 // Schedule it daily (Supabase Dashboard → Edge Functions → digest → Schedules, e.g. CRON
@@ -83,7 +83,7 @@ function buildDigest(state: any, today: Date) {
   upcoming.sort((a, b) => a.du - b.du);
 
   const parts: string[] = [];
-  parts.push(`*Callback — your daily digest* (${ymd(today)})`);
+  parts.push(`*Meanwhile — your daily digest* (${ymd(today)})`);
   parts.push("");
   parts.push(upcoming.length ? `📅 *Coming up (7 days)*\n${upcoming.map((u) => u.line).join("\n")}` : "📅 Nothing scheduled in the next 7 days.");
   parts.push("");
@@ -130,7 +130,7 @@ Deno.serve(async () => {
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${resend}` },
-        body: JSON.stringify({ from: Deno.env.get("DIGEST_FROM") || "Callback <onboarding@resend.dev>", to: [email], subject: `Callback digest — ${ymd(today)}`, html }),
+        body: JSON.stringify({ from: Deno.env.get("DIGEST_FROM") || "Meanwhile <onboarding@resend.dev>", to: [email], subject: `Meanwhile digest — ${ymd(today)}`, html }),
       });
       sent.push("email:" + r.status);
     }

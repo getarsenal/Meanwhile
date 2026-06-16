@@ -1,6 +1,6 @@
 {
   "appId": "com.scheidelholdings.callback",
-  "appName": "Callback",
+  "appName": "Meanwhile",
   "webDir": ".",
   "server": {
     "iosScheme": "callback"

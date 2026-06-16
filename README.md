@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="logo.png" alt="CallBack — Track. Prepare. Get hired." width="360"/>
+  <img src="logo.png" alt="Meanwhile — Track. Prepare. Get hired." width="360"/>
 </p>
 
-<h1 align="center">CallBack — Interview Tracker</h1>
+<h1 align="center">Meanwhile — Interview Tracker</h1>
 
 A single-file, offline-friendly app to run your whole job search in one place: companies,
 rounds, interviewers, comp, notes — plus **AI** that turns a pasted job link or email into an
@@ -31,7 +31,7 @@ for a full-screen, installable app (works offline).
 - **Offer scorecard** — a weighted decision matrix across competing offers.
 
 ## AI engine — bring your own
-CallBack is **bring-your-own-AI**: plug in your own **Gemini** (free tier), **ChatGPT (OpenAI)**,
+Meanwhile is **bring-your-own-AI**: plug in your own **Gemini** (free tier), **ChatGPT (OpenAI)**,
 or **Claude (Anthropic)** key in Settings → AI engine, and it calls that provider directly — your
 data goes only to the AI you chose, at your cost (Gemini is free). No key? It falls back to
 copy-paste with any chatbot. You can also host a key server-side via the optional Supabase proxy.

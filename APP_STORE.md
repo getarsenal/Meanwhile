@@ -15,7 +15,7 @@ From a copy of this repo:
 ```bash
 npm init -y
 npm install @capacitor/core @capacitor/cli @capacitor/ios
-npx cap init Meanwhile com.scheidelholdings.callback --web-dir .
+npx cap init Meanwhile com.scheidelholdings.meanwhile --web-dir .
 # capacitor.config.json is already in this repo — keep its appId/appName/webDir
 npx cap add ios
 ```
@@ -50,7 +50,7 @@ You need Xcode to archive + upload. Pick one:
 ## 4. App Store Connect checklist
 
 - [ ] **Apple Developer Program** membership ($99/yr).
-- [ ] **Bundle ID** `com.scheidelholdings.callback` registered.
+- [ ] **Bundle ID** `com.scheidelholdings.meanwhile` registered.
 - [ ] **App icon** 1024×1024, no alpha.
 - [ ] **Screenshots** for 6.7" and 6.5" iPhones (take them from the running app: dashboard,
       pipeline, a role's AI Brief, the calendar).

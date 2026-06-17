@@ -1,9 +1,9 @@
 {
-  "appId": "com.scheidelholdings.callback",
+  "appId": "com.scheidelholdings.meanwhile",
   "appName": "Meanwhile",
   "webDir": ".",
   "server": {
-    "iosScheme": "callback"
+    "iosScheme": "meanwhile"
   },
   "ios": {
     "contentInset": "always",

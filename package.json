@@ -1,5 +1,5 @@
 {
-  "name": "callback",
+  "name": "meanwhile",
   "version": "1.0.0",
   "private": true,
   "description": "Meanwhile — interview-process tracker. The web app is the single static index.html (no build). This package.json exists only for the Capacitor iOS wrapper.",

@@ -48,11 +48,11 @@ This lets you hit **Share → Meanwhile** on a recruiter email or a LinkedIn pro
 Smart add pre-filled. It needs a small native target Capacitor can't scaffold for you:
 
 1. **App Group.** In Xcode, select the **App** target → Signing & Capabilities → **+ App Groups** →
-   add `group.com.scheidelholdings.callback`. (Must match `APP_GROUP` in `index.html`.)
+   add `group.com.scheidelholdings.meanwhile`. (Must match `APP_GROUP` in `index.html`.)
 2. **New target:** File → New → Target → **Share Extension**. Name it `ShareToMeanwhile`. Give it the
    **same App Group**.
 3. In the extension's `ShareViewController.swift`, write the shared text into the App Group and open
-   the app via its `callback://` scheme:
+   the app via its `meanwhile://` scheme:
 
    ```swift
    import UIKit
@@ -60,7 +60,7 @@ Smart add pre-filled. It needs a small native target Capacitor can't scaffold fo
    import MobileCoreServices
 
    class ShareViewController: UIViewController {
-     let group = "group.com.scheidelholdings.callback"
+     let group = "group.com.scheidelholdings.meanwhile"
      override func viewDidAppear(_ animated: Bool) {
        super.viewDidAppear(animated)
        guard let item = extensionContext?.inputItems.first as? NSExtensionItem,
@@ -69,7 +69,7 @@ Smart add pre-filled. It needs a small native target Capacitor can't scaffold fo
        let handle: (Any?) -> Void = { value in
          let text = (value as? String) ?? (value as? URL)?.absoluteString ?? ""
          if let d = UserDefaults(suiteName: self.group) { d.set(text, forKey: "shared_intake") }
-         if let url = URL(string: "callback://share") {
+         if let url = URL(string: "meanwhile://share") {
            // open the host app; extension context can't openURL directly, so use a responder hop
            var r: UIResponder? = self
            while r != nil { if let app = r as? UIApplication { app.perform(#selector(UIApplication.open(_:options:completionHandler:)), with: url); break }; r = r?.next }
@@ -89,7 +89,7 @@ Smart add pre-filled. It needs a small native target Capacitor can't scaffold fo
    > picks it up on next launch/resume (the JS already reads `shared_intake` on `resume`).
 
 4. The app side is already handled: on launch/resume it configures `Preferences` with the App Group,
-   reads `shared_intake`, clears it, and opens Smart add with the text. The `callback://` scheme is
+   reads `shared_intake`, clears it, and opens Smart add with the text. The `meanwhile://` scheme is
    already set in `capacitor.config.json`.
 
 ## 5. After any web change

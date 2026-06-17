@@ -2531,7 +2531,7 @@ function openResearchManual(o){
 // reached through the Capacitor bridge global (window.Capacitor.Plugins.*) — no bundler needed.
 // Setup + the iOS Share Extension live in NATIVE.md. Calls are defensive: a missing/renamed
 // plugin surfaces a toast, never a crash.
-const APP_GROUP="group.com.scheidelholdings.callback";
+const APP_GROUP="group.com.scheidelholdings.meanwhile";
 function cap(){ return (typeof window!=="undefined") && window.Capacitor; }
 function isNative(){ const c=cap(); return !!(c && c.isNativePlatform && c.isNativePlatform()); }
 function plugin(){ const c=cap(); if(!c||!c.Plugins) return null; for(const n of arguments){ if(c.Plugins[n]) return c.Plugins[n]; } return null; }

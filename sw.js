@@ -2,7 +2,7 @@
 // The whole app is inline in index.html, so caching the shell = the app works offline.
 // Cross-origin requests (company logos, AI APIs, Jina reader, Supabase) are never
 // intercepted, so they fail gracefully offline exactly as they do today.
-const CACHE = "meanwhile-v22";
+const CACHE = "meanwhile-v23";
 const SHELL = ["./", "./index.html"];
 
 self.addEventListener("install", (e) => {

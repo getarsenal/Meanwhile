@@ -623,6 +623,20 @@ function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }c
 // save() = a real user change: bump revision, persist, and push to cloud
 function save(){ state.rev = Date.now(); persist(); schedulePush(); if(typeof scheduleRemindersSoon==="function") scheduleRemindersSoon(); }
 
+// Ask the browser to keep our localStorage from being evicted. iOS/Safari purge script-writable
+// storage for sites unused for ~7 days — that's what wipes a home-screen PWA you come back to days
+// later. Persistent storage opts out of that. Best-effort: returns a boolean we can surface in UI.
+let storagePersisted=null;
+async function requestPersistentStorage(){
+  try{
+    if(navigator.storage && navigator.storage.persisted){
+      storagePersisted = await navigator.storage.persisted();
+      if(!storagePersisted && navigator.storage.persist){ storagePersisted = await navigator.storage.persist(); }
+    }
+  }catch(e){ storagePersisted=null; }
+  return storagePersisted;
+}
+
 /* ============================ CLOUD SYNC (Supabase) ============================ */
 const SYNC_KEY = "callback_sync_cfg_v1";
 let sync = loadSync();
@@ -731,6 +745,20 @@ function needsFollowup(o){
   if(ne && ne.du>=0) return false; // something scheduled ahead
   return since!=null && since>=7;
 }
+// When a role enters a CLOSED stage (rejected / withdrawn / ghosted) we clear the road ahead:
+// cancel any still-scheduled future interview rounds and drop pending next-step / offer dates so
+// they vanish from the calendar, timeline and Next moves. Past rounds stay as history (Insights).
+// Non-destructive — rounds are marked `cancelled`, not deleted, and editing one can re-open it.
+// Idempotent, so it's safe to call after any status change.
+function closeOutRole(o){
+  if(!o || stage(o.status).active) return 0;
+  let n=0; const today=todayYMD();
+  (o.rounds||[]).forEach(r=>{ if(r.status!=="done" && r.status!=="cancelled" && r.date && r.date>=today){ r.status="cancelled"; n++; } });
+  if(o.nextActionDate && o.nextActionDate>=today){ o.nextActionLabel=""; o.nextActionDate=""; o.nextMeetingLink=""; n++; }
+  if(o.offer && o.offer.deadline && o.offer.deadline>=today){ o.offer.deadline=""; n++; }
+  return n;
+}
+function closeOutToast(n){ if(n) toast(`Closed — cleared ${n} upcoming ${n>1?"items":"item"} ✓`); }
 
 /* ============================ ICONS ============================ */
 const I = {
@@ -1133,16 +1161,20 @@ function renderCards(){
 function calEvents(){
   const events=[];
   state.opportunities.forEach(o=>{
-    (o.rounds||[]).forEach(r=>{ if(r.date && r.status!=="cancelled"){ events.push({o,rid:r.id,date:r.date,time:r.time,label:r.name||r.type,type:"Interview",link:r.link,done:r.status==="done"}); } });
-    if(o.nextActionDate) events.push({o,date:o.nextActionDate,time:"",label:o.nextActionLabel||"Next step",type:"Task",link:o.nextMeetingLink});
-    if(o.offer&&o.offer.deadline) events.push({o,date:o.offer.deadline,time:"",label:"Offer decision deadline",type:"Deadline"});
+    const closed=!stage(o.status).active;
+    (o.rounds||[]).forEach(r=>{ if(r.date && r.status!=="cancelled"){ events.push({o,closed,rid:r.id,date:r.date,time:r.time,label:r.name||r.type,type:"Interview",link:r.link,done:r.status==="done"}); } });
+    if(o.nextActionDate) events.push({o,closed,date:o.nextActionDate,time:"",label:o.nextActionLabel||"Next step",type:"Task",link:o.nextMeetingLink});
+    if(o.offer&&o.offer.deadline) events.push({o,closed,date:o.offer.deadline,time:"",label:"Offer decision deadline",type:"Deadline"});
   });
   events.sort((a,b)=> (a.date+(a.time||"99:99")).localeCompare(b.date+(b.time||"99:99")));
   return events;
 }
 function calToggle(){
   const seg=(id,label,icon)=>`<button class="seg ${calMode===id?'on':''}" data-calmode="${id}">${icon} ${label}</button>`;
-  return `<div class="cal-toggle">${seg("month","Month",I.cal)}${seg("list","List",I.table)}${seg("timeline","Timeline",I.spark)}</div>`;
+  return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+    <div class="cal-toggle" style="margin-bottom:0">${seg("month","Month",I.cal)}${seg("list","List",I.table)}${seg("timeline","Timeline",I.spark)}</div>
+    <button class="btn primary sm" data-cal-add="${calSel||todayYMD()}" style="margin-left:auto">＋ Add event</button>
+  </div>`;
 }
 function renderCalendar(){
   if(calMode==="timeline") return calToggle()+renderTimeline();
@@ -1156,7 +1188,7 @@ function renderCalendar(){
     const d=daysUntil(e.date); const cls=d<0?"":d<=2?"soon":"";
     const col=e.type==="Interview"?"var(--accent3)":e.type==="Deadline"?"var(--hot)":"var(--accent2)";
     const ck=e.rid||(e.type==="Task"?e.o.id+"|task":e.type==="Deadline"?e.o.id+"|offer":"");
-    return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:13px">
+    return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:13px${e.closed?';opacity:.5':''}">
       <div style="text-align:center;flex:0 0 52px"><div style="font-size:11px;color:var(--faint);font-weight:700;text-transform:uppercase">${new Date(e.date+'T00:00').toLocaleDateString(undefined,{month:'short'})}</div><div style="font-size:21px;font-weight:850;line-height:1">${new Date(e.date+'T00:00').getDate()}</div></div>
       <div style="width:1px;align-self:stretch;background:var(--line)"></div>
       <div style="flex:1;min-width:0">
@@ -1193,7 +1225,7 @@ function renderMonth(){
     const dn=i-startDow+1;
     if(dn<1||dn>daysIn){ cells+=`<div class="cal-cell empty"></div>`; continue; }
     const ds=ymd(y,m,dn), list=(byDay[ds]||[]);
-    const chips=list.slice(0,3).map(e=>{ const c=e.type==="Interview"?"#a6abe6":e.type==="Deadline"?"#cf7273":"#8b93de"; return `<div class="cal-ev" style="background:${c}22;color:${c}" title="${esc(e.o.company)} · ${esc(e.type)}: ${esc(e.label)}">${esc(e.o.company)}</div>`; }).join("");
+    const chips=list.slice(0,3).map(e=>{ const c=e.type==="Interview"?"#a6abe6":e.type==="Deadline"?"#cf7273":"#8b93de"; return `<div class="cal-ev" style="background:${c}22;color:${c}${e.closed?';opacity:.45':''}" title="${esc(e.o.company)} · ${esc(e.type)}: ${esc(e.label)}${e.closed?' (closed)':''}">${esc(e.o.company)}</div>`; }).join("");
     const more=list.length>3?`<div class="cal-more">+${list.length-3} more</div>`:"";
     const dots=list.slice(0,5).map(e=>`<span class="cal-dot" style="background:${stage(e.o.status).color}"></span>`).join("");
     cells+=`<div class="cal-cell${ds===tStr?' today':''}${ds===calSel?' sel':''}${list.length?' has':''}" data-calday="${ds}">
@@ -1214,19 +1246,20 @@ function renderMonth(){
   const dDate = calSel || tStr;
   const dList = (byDay[dDate]||[]).slice().sort((a,b)=>(a.time||"99").localeCompare(b.time||"99"));
   const longDate = new Date(dDate+'T00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const addBtn=`<button class="add-sub" data-cal-add="${dDate}" style="margin-top:10px">＋ Add an event on this day</button>`;
   let detail="";
   if(dList.length){
     detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div>`+dList.map(e=>{
       const d=daysUntil(e.date), c=stage(e.o.status).color;
       const ck=e.rid||(e.type==="Task"?e.o.id+"|task":e.type==="Deadline"?e.o.id+"|offer":"");
-      return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:11px">
+      return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:11px${e.closed?';opacity:.5':''}">
         <span class="pill" style="background:${c}22;color:${c}"><span class="dot" style="background:${c}"></span>${e.type}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">${esc(e.label)}</div>
           <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""}${ck&&d>=0?` · <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ cal</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}${ck?` · <span data-cal-edit="${ck}" style="color:var(--accent3);cursor:pointer;font-weight:700">edit</span> · <span data-cal-del="${ck}" style="color:var(--bad);cursor:pointer;font-weight:700">delete</span>`:""}</div>
         </div></div>`;
-    }).join("")+`</div>`;
+    }).join("")+addBtn+`</div>`;
   } else {
-    detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div><div style="color:var(--faint);font-size:13px;padding:4px 2px">Nothing scheduled.${calSel?"":" Tap a day to see its events."}</div></div>`;
+    detail=`<div class="cal-detail"><div class="cal-detail-h">${longDate}</div><div style="color:var(--faint);font-size:13px;padding:4px 2px">Nothing scheduled.${calSel?"":" Tap a day to see its events."}</div>${addBtn}</div>`;
   }
 
   return `<div class="calendar">${header}<div class="cal-grid">${dow}${cells}</div>${detail}</div>`;
@@ -1683,17 +1716,25 @@ function tabRounds(o){
 function tabPeople(o){
   const people=o.people||[];
   let h = people.length
-    ? `<div style="font-size:12.5px;color:var(--faint);margin-bottom:12px">Everyone you're meeting. Save their LinkedIn, then tap <b>Research prompt</b> to get a ready-to-paste AI brief on them.</div>`
-    : tabEmpty(I.user,"No contacts yet","Save the people you're meeting — recruiters, hiring managers, panelists. Add a LinkedIn and generate a one-tap research brief on each.");
+    ? `<div style="font-size:12.5px;color:var(--faint);margin-bottom:12px">Everyone you're meeting. Add a LinkedIn, then tap <b>Enrich</b> to pull an at-a-glance AI profile — background, what they care about, and talking points.</div>`
+    : tabEmpty(I.user,"No contacts yet","Save the people you're meeting — recruiters, hiring managers, panelists. Add a LinkedIn and tap Enrich for a one-tap profile on each.");
   people.forEach(p=>{
+    const enriched=p.summary||p.headline||(p.talking||[]).length;
     h+=`<div class="sub-item">
-      <div class="si-head"><div style="display:flex;align-items:center;gap:10px"><div class="fav" style="background:${colorFor(p.name)};width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden">${p.photo?`<img src="${esc(p.photo)}" style="width:100%;height:100%;object-fit:cover" alt=""/>`:esc(initials(p.name))}</div><div><div class="nm">${esc(p.name)}</div><div style="font-size:12px;color:var(--muted)">${esc(p.title||"")}</div></div></div>
+      <div class="si-head"><div style="display:flex;align-items:center;gap:10px"><div class="fav" style="background:${colorFor(p.name)};width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden">${p.photo?`<img src="${esc(p.photo)}" style="width:100%;height:100%;object-fit:cover" alt=""/>`:esc(initials(p.name))}</div><div><div class="nm">${esc(p.name)}</div><div style="font-size:12px;color:var(--muted)">${esc(p.title||p.headline||"")}</div></div></div>
         <button class="del" data-del-person="${p.id}">${I.trash}</button></div>
       ${p.notes?`<div class="note-block" style="margin-top:8px">${esc(p.notes)}</div>`:""}
+      ${enriched?`<div class="brief-box" style="margin-top:8px;padding:11px">
+        ${p.headline&&p.headline!==p.title?`<div style="font-weight:800;font-size:12.5px;color:var(--accent3)">${esc(p.headline)}</div>`:""}
+        ${p.summary?`<div style="font-size:12px;color:var(--muted);line-height:1.55;margin-top:${p.headline?"5px":"0"}">${esc(p.summary)}</div>`:""}
+        ${(p.talking||[]).length?`<div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:9px 0 4px">Talking points</div><ul style="margin:0;padding-left:16px;font-size:12px;color:var(--muted);line-height:1.5">${p.talking.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}
+        <div style="font-size:10.5px;color:var(--faint);margin-top:7px">${I.ai.replace(/width="[^"]*"/,'')} AI profile${p.enrichedAt?` · ${daysSince(p.enrichedAt)===0?"today":daysSince(p.enrichedAt)+"d ago"}`:""}</div>
+      </div>`:""}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
         ${p.linkedin?`<a href="${esc(p.linkedin)}" target="_blank" rel="noopener" class="btn sm ghost">in LinkedIn ↗</a>`:""}
         ${p.email?`<a href="mailto:${esc(p.email)}" class="btn sm ghost">✉ Email</a>`:""}
-        <button class="btn sm ghost" data-research="${p.id}" style="color:var(--accent3)">${I.ai} Research prompt</button>
+        <button class="btn sm ghost" data-enrich-person="${p.id}" style="color:var(--accent3)">${I.ai} ${enriched?"Re-enrich":"Enrich"}</button>
+        <button class="btn sm ghost" data-research="${p.id}" title="Copy a deep-research prompt">${I.copy} Prompt</button>
         <button class="btn sm ghost" data-edit-person="${p.id}">${I.edit}</button>
       </div>
     </div>`;
@@ -1743,7 +1784,7 @@ function buildBrief(o){
   if(o.product){ L.push(""); L.push(`## Company / product`); L.push(o.product); }
   if(o.vibes){ L.push(""); L.push(`## Vibes / culture read`); L.push(o.vibes); }
   if(o.notes){ L.push(""); L.push(`## My notes`); L.push(o.notes); }
-  if((o.people||[]).length){ L.push(""); L.push(`## People I'm meeting`); o.people.forEach(p=>{ L.push(`- ${p.name}${p.title?` — ${p.title}`:""}${p.linkedin?` · ${p.linkedin}`:""}`); if(p.notes) L.push(`  notes: ${p.notes}`); }); }
+  if((o.people||[]).length){ L.push(""); L.push(`## People I'm meeting`); o.people.forEach(p=>{ L.push(`- ${p.name}${p.title?` — ${p.title}`:""}${p.linkedin?` · ${p.linkedin}`:""}`); if(p.headline&&p.headline!==p.title) L.push(`  ${p.headline}`); if(p.summary) L.push(`  background: ${p.summary}`); if(p.notes) L.push(`  notes: ${p.notes}`); }); }
   if((o.rounds||[]).length){ L.push(""); L.push(`## Interview rounds so far`); o.rounds.slice().sort((a,b)=>(a.date||"").localeCompare(b.date||"")).forEach(r=>{ L.push(`- ${r.name||r.type||"Round"}${r.date?` (${fmtDate(r.date)})`:""}${r.status==="done"?" — done":""}${r.rating?` — went ${r.rating}/5`:""}`); if(r.debrief) L.push(`  debrief: ${r.debrief}`); }); }
   if(o.jd){ L.push(""); L.push(`## Job description`); L.push(o.jd.length>4000?o.jd.slice(0,4000)+"\n…(trimmed)":o.jd); }
   else if(o.jdFile){ L.push(""); L.push(`## Job description`); L.push(`(attached as file: ${o.jdFile.name})`); }
@@ -1759,6 +1800,25 @@ function introPrompt(o){
 }
 function researchPrompt(o,p){
   return `Help me prep to meet an interviewer. Research this person and give me: a short summary of their background and career path, what they likely care about / focus on in interviews, any common ground I might build rapport on, and 4 thoughtful questions I could ask them.\n\nPerson: ${p.name}${p.title?` — ${p.title}`:""} at ${o.company}\nLinkedIn: ${p.linkedin||"(none provided — search for them)"}\n${p.notes?`What I already know: ${p.notes}\n`:""}Role I'm interviewing for: ${o.role||"(role)"}. Use web search if you can.`;
+}
+// ---- Contact enrichment: turn a name + LinkedIn into a saved, at-a-glance profile brief ----
+function enrichPersonPrompt(o,p){
+  return `You're briefing me before I meet someone in a job interview process. Research this person and return ONLY a JSON object (no markdown): {"headline":"","summary":"","talking":["",""]}
+- "headline": one short line — their current role/title and company (max ~10 words).
+- "summary": 70-110 words on their background, career path and what they likely focus on or value in interviews. Hedge rather than invent if you're unsure who they are.
+- "talking": 2-4 specific rapport-builders or smart questions I could raise with them.
+Person: ${p.name}${p.title?` — ${p.title}`:""} at ${o.company}.${p.linkedin?` LinkedIn: ${p.linkedin}.`:""}${p.email?` Email: ${p.email}.`:""}${p.notes?` What I already know: ${p.notes}.`:""} Role I'm interviewing for: ${o.role||"(role)"}. Use web search if available.`;
+}
+async function enrichPerson(pid){
+  const o=getOp(); if(!o) return; const p=(o.people||[]).find(x=>x.id===pid); if(!p) return;
+  if(aiEngine()==="paste"||aiEngine()==="off"){ copy(enrichPersonPrompt(o,p),"Prompt copied — paste into any AI, then paste the summary into this contact's notes"); return; }
+  const btn=document.querySelector(`[data-enrich-person="${pid}"]`); if(btn){ btn.textContent="Enriching…"; btn.disabled=true; }
+  try{
+    const d=aiParse(await aiCall(enrichPersonPrompt(o,p)));
+    p.headline=(d.headline||"").trim(); p.summary=(d.summary||"").trim();
+    p.talking=Array.isArray(d.talking)?d.talking.filter(Boolean).slice(0,4):[]; p.enrichedAt=Date.now();
+    o.updatedAt=Date.now(); save(); renderDrawer(); toast("Contact enriched ✓");
+  }catch(err){ toast("⚠ "+err.message); if(btn){ btn.innerHTML=`${I.ai} Enrich`; btn.disabled=false; } }
 }
 function questionsPrompt(o){
   const next=nextEvent(o);
@@ -1954,7 +2014,10 @@ function openSettings(){
 
   <div class="ai-box" style="margin-top:14px">
     <div class="ai-head">${I.link} Cloud sync <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Sync your phone &amp; computer through a free Supabase project. Every device that shares the same <b>sync code</b> stays up to date automatically.</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Sync your phone &amp; computer through a free Supabase project. Every device that shares the same <b>sync code</b> stays up to date automatically.</div>
+    <div class="note-block" style="margin-bottom:12px;font-size:12px;${storagePersisted?"border-color:var(--good)44":"border-color:var(--warn)44"}">
+      ${storagePersisted?`🔒 <b style="color:var(--good)">Storage protected</b> — this device won't auto-clear your data.`:`⚠ <b style="color:var(--warn)">Protect your data.</b> Phone browsers can wipe an app's local data after about a week unused${connected?", so cloud sync (below) is your safety net — keep it on.":"."} <b>Turn on cloud sync below</b> and keep a copy of your sync code somewhere safe — it's the only way to restore after a wipe or on a new device. An occasional Export backup helps too.`}
+    </div>
 
     <details ${setupOpen?"open":""} style="margin-bottom:14px">
       <summary style="cursor:pointer;font-weight:800;font-size:13px;color:var(--accent3)">① One-time Supabase setup (≈5 min)</summary>
@@ -1971,7 +2034,7 @@ function openSettings(){
     <div class="form-row"><label>Your private sync code <span style="color:var(--faint);font-weight:500">— same on every device</span></label>
       <div style="display:flex;gap:8px"><input id="syncCode" value="${esc(sync.code||randomCode())}" placeholder="amber-slate-pixel-4821"/>
       <button class="btn ghost sm" data-act="sync-gencode" title="New random code">↻</button></div>
-      <div style="font-size:11.5px;color:var(--faint);margin-top:5px">Treat this like a password — anyone with it can read your data. On your <b>second</b> device, enter this <i>exact</i> code to pull everything in.</div>
+      <div style="font-size:11.5px;color:var(--faint);margin-top:5px">Treat this like a password — anyone with it can read your data. <b style="color:var(--warn)">Returning after a wipe, or on a new device? Type your original code here exactly to pull your data back.</b> A different code starts an empty vault.</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
       <button class="btn primary sm" data-act="sync-connect">${I.check} ${connected?"Save & sync now":"Connect & sync"}</button>
@@ -2292,8 +2355,8 @@ function smartPasteBody(){
     <input id="spUrl" placeholder="Paste a job posting URL…" autocomplete="off" style="flex:1"/>
     <button class="btn ghost" data-act="ai-fetch-url">${I.ai} Fetch</button>
   </div>
-  <div style="text-align:center;font-size:11px;color:var(--faint);margin-bottom:10px">— or paste the details below —</div>
-  <textarea id="spInput" style="min-height:150px" placeholder="Paste here…">${esc(spText)}</textarea>
+  <div style="text-align:center;font-size:11px;color:var(--faint);margin-bottom:10px">— or paste a link / the details below, then Extract —</div>
+  <textarea id="spInput" style="min-height:150px" placeholder="Paste a job link, calendar invite, recruiter email, JD, or LinkedIn profile…">${esc(spText)}</textarea>
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
     <button class="btn ghost" data-act="cancel-editor">Cancel</button>
@@ -2321,7 +2384,10 @@ async function fetchJobUrl(){
 function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card"); if(card){ card.innerHTML=html; const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
 async function runExtract(){
   const ta=$("#spInput"); spText=ta?ta.value.trim():"";
-  if(!spText){ toast("Paste something first"); return; }
+  // Also accept a bare link dropped in the big box — fetch the page first, then extract.
+  const urlInBox=spText && /^(https?:\/\/|www\.)\S+$/i.test(spText) && !/\s/.test(spText);
+  if(urlInBox){ const inp=$("#spUrl"); if(inp) inp.value=spText; return fetchJobUrl(); }
+  if(!spText){ toast("Paste a job link or some details first"); return; }
   if(aiEngine()==="paste" || aiEngine()==="off"){ return spShowFallback(); }
   const btn=editorEl&&editorEl.querySelector('[data-act="ai-extract"]'); if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
   try{
@@ -2356,14 +2422,37 @@ function spReview(){
   spMatchId = match ? match.id : "";
   const r=d.round||{}, p=d.person||{};
   const stageOpts=allStages().map(s=>`<option value="${s.id}" ${ d.kind==="offer"&&s.id==="offer"?"selected":""}>${esc(s.name)}</option>`).join("");
+  // Highlight what the AI couldn't pin down so you can fill the gaps at a glance.
+  const need=v=> (v==null||String(v).trim()==="");
+  const flag=v=> need(v)?' style="border-color:var(--warn);box-shadow:0 0 0 2px rgba(207,178,98,.25)"':'';
+  const missing=[];
+  if(need(d.company)) missing.push("Company");
+  if(need(d.role)) missing.push("Role");
+  if(need(d.location)&&need(d.workMode)) missing.push("Location");
+  if(need(d.compNote)) missing.push("Salary");
+  if(need(d.source)) missing.push("Source");
+  const banner = missing.length
+    ? `<div class="note-block" style="border-color:var(--warn)55;color:var(--warn);font-size:12.5px;margin-bottom:12px">⚠ Couldn't auto-fill: <b>${missing.join(", ")}</b> — the highlighted boxes need a look before you save.</div>`
+    : `<div class="note-block" style="border-color:var(--good)55;color:var(--good);font-size:12.5px;margin-bottom:12px">✓ Got everything I needed — just confirm and save.</div>`;
+  const wmOpts=["",...WORKMODES].map(s=>`<option ${d.workMode===s?"selected":""}>${s}</option>`).join("");
+  const srcOpts=["",...SOURCES].map(s=>`<option ${d.source===s?"selected":""}>${s}</option>`).join("");
   spSetBody(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><h2 style="margin:0;font-size:18px;font-weight:850">Review &amp; save</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${banner}
   ${match?`<div class="form-row"><label>Add to</label><select id="spTarget"><option value="existing">Existing role — ${esc(match.company)}</option><option value="new">A new role</option></select></div>`:`<input type="hidden" id="spTarget" value="new"/>`}
   <div class="form-2">
-    <div class="form-row"><label>Company</label><input id="spCompany" value="${esc(d.company||"")}"/></div>
-    <div class="form-row"><label>Role</label><input id="spRole" value="${esc(d.role||"")}"/></div>
+    <div class="form-row"><label>Company</label><input id="spCompany" value="${esc(d.company||"")}"${flag(d.company)}/></div>
+    <div class="form-row"><label>Role</label><input id="spRole" value="${esc(d.role||"")}"${flag(d.role)}/></div>
   </div>
   <div class="form-row"><label>Stage</label><select id="spStatus">${stageOpts}</select></div>
-  ${(r.name||r.type||r.date||r.link||r.interviewers)?`<label style="margin-top:6px">📅 Interview round detected</label><div class="note-block">${esc([r.name,r.type].filter(Boolean).join(" · "))}${r.date?`<br>${esc(fmtDateTime(r.date,r.time)||r.date)}`:""}${r.interviewers?`<br>with ${esc(r.interviewers)}`:""}${r.link?`<br>${esc(r.link)}`:""}</div>`:""}
+  <div class="form-2">
+    <div class="form-row"><label>How you got here</label><select id="spSource">${srcOpts}</select></div>
+    <div class="form-row"><label>Work mode</label><select id="spWorkMode">${wmOpts}</select></div>
+  </div>
+  <div class="form-2">
+    <div class="form-row"><label>Location</label><input id="spLocation" value="${esc(d.location||"")}" placeholder="NYC / Remote"${flag(d.location)&&need(d.workMode)?flag(d.location):""}/></div>
+    <div class="form-row"><label>Salary note</label><input id="spComp" value="${esc(d.compNote||"")}" placeholder="$150k–190k + equity"${flag(d.compNote)}/></div>
+  </div>
+  ${(r.name||r.type||r.date||r.link||r.interviewers)?`<label style="margin-top:6px">📅 Interview round detected</label><div class="note-block">${esc([r.name,r.type].filter(Boolean).join(" · "))||"Interview"}${r.date?`<br>${esc(fmtDateTime(r.date,r.time)||r.date)}`:`<br><span style="color:var(--warn)">no date — add it after saving</span>`}${r.interviewers?`<br>with ${esc(r.interviewers)}`:""}${r.link?`<br>${esc(r.link)}`:""}</div>`:""}
   ${(p.name)?`<label style="margin-top:6px">👤 Contact detected</label><div class="note-block">${esc(p.name)}${p.title?` · ${esc(p.title)}`:""}${p.email?`<br>${esc(p.email)}`:""}${p.linkedin?`<br>${esc(p.linkedin)}`:""}</div>`:""}
   ${d.notes?`<label style="margin-top:6px">Notes</label><div class="note-block">${esc(d.notes)}</div>`:""}
   <div style="display:flex;gap:10px;margin-top:14px">
@@ -2375,26 +2464,31 @@ function spReview(){
 }
 function spApply(){
   const d=spData||{};
-  const company=($("#spCompany")?$("#spCompany").value:d.company||"").trim();
-  const role=$("#spRole")?$("#spRole").value.trim():(d.role||"");
+  const val=(id,fb)=>{ const el=$("#"+id); return el?el.value.trim():(fb||""); };
+  const company=val("spCompany",d.company);
+  const role=val("spRole",d.role);
   const status=$("#spStatus")?$("#spStatus").value:"applied";
+  const source=val("spSource",d.source);
+  const location=val("spLocation",d.location);
+  const workMode=$("#spWorkMode")?$("#spWorkMode").value:(d.workMode||"");
+  const compNote=val("spComp",d.compNote);
   const target=$("#spTarget")?$("#spTarget").value:"new";
   const r=d.round||{}, p=d.person||{};
   let o = (target==="existing"&&spMatchId)? state.opportunities.find(x=>x.id===spMatchId) : null;
   if(!o){
     o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},
        company:company||"(unknown)",role:role,status:status,
-       source:d.source||"",location:d.location||"",workMode:d.workMode||"",
-       compNotes:d.compNote||"",notes:d.notes||"",jobUrl:spSourceUrl||"",
+       source:source||"",location:location||"",workMode:workMode||"",
+       compNotes:compNote||"",notes:d.notes||"",jobUrl:spSourceUrl||"",
        nextActionLabel:d.nextActionLabel||"",nextActionDate:d.nextActionDate||""};
     state.opportunities.push(o); openId=o.id;
   } else {
     if(spSourceUrl && !o.jobUrl) o.jobUrl=spSourceUrl;
     if(role) o.role=role; if(status) o.status=status;
-    if(!o.source&&d.source) o.source=d.source;
-    if(!o.location&&d.location) o.location=d.location;
-    if(!o.workMode&&d.workMode) o.workMode=d.workMode;
-    if(!o.compNotes&&d.compNote) o.compNotes=d.compNote;
+    if(source) o.source=source;
+    if(location) o.location=location;
+    if(workMode) o.workMode=workMode;
+    if(compNote) o.compNotes=compNote;
     if(d.notes) o.notes=(o.notes?o.notes+"\n":"")+d.notes;
     if(d.nextActionLabel){ o.nextActionLabel=d.nextActionLabel; o.nextActionDate=d.nextActionDate||o.nextActionDate; }
     o.updatedAt=Date.now(); openId=o.id;
@@ -2405,6 +2499,7 @@ function spApply(){
   if(p&&p.name){
     o.people=o.people||[]; o.people.push({id:uid(),name:p.name,title:p.title||"",linkedin:p.linkedin||"",email:p.email||"",notes:p.notes||""});
   }
+  closeOutRole(o);
   save(); closeEditor(); render(); openDetail(o.id); enrichLater(o); toast("Added ✓");
 }
 
@@ -2631,7 +2726,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-cal-add],[data-enrich-person]");
   if(!t) return;
 
   // nav
@@ -2739,6 +2834,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.gcal){ const ev=eventFromKey(t.dataset.gcal); if(ev) window.open(googleCalEventUrl(ev),"_blank","noopener"); return; }
   if(t.dataset.calEdit){ calEditEvent(t.dataset.calEdit); return; }
   if(t.dataset.calDel){ calDeleteEvent(t.dataset.calDel); return; }
+  if(t.dataset.calAdd){ openCalEventForm(t.dataset.calAdd); return; }
   if(act==="sync-connect"){ connectSync(); return; }
   if(act==="sync-disconnect"){ if(confirm("Disconnect cloud sync on this device? Your data stays here; it just stops syncing.")){ sync={}; saveSync(); setSyncState("off"); openSettings(); } return; }
   if(act==="sync-gencode"){ const f=document.querySelector('#syncCode'); if(f) f.value=randomCode(); return; }
@@ -2752,6 +2848,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.editPerson){ const p=getOp().people.find(x=>x.id===t.dataset.editPerson); openEditor(personForm(p)); editorEl.dataset.editId=p.id; return; }
   if(t.dataset.delPerson){ const o=getOp(); o.people=o.people.filter(x=>x.id!==t.dataset.delPerson); o.updatedAt=Date.now(); save(); renderDrawer(); return; }
   if(t.dataset.research){ const o=getOp(); const p=o.people.find(x=>x.id===t.dataset.research); copy(researchPrompt(o,p),"Research prompt copied — paste into any AI"); return; }
+  if(t.dataset.enrichPerson){ enrichPerson(t.dataset.enrichPerson); return; }
 
   // copy brief prompts
   if(t.dataset.copy){ const o=getOp(); const map={brief:buildBrief(o),prep:prepPrompt(o),intro:introPrompt(o)}; copy(map[t.dataset.copy], t.dataset.copy==="brief"?"Brief copied":"Prompt copied"); return; }
@@ -2773,11 +2870,13 @@ $("#overlay").addEventListener("click",closeDrawer);
 
 // stage select in drawer footer
 document.addEventListener("change",e=>{
-  if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
+  if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); const n=closeOutRole(o); save(); renderDrawer(); render(); closeOutToast(n); }
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
   if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
     if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="groq"||v==="google")?"block":"none";
     if(p) p.style.display=(v==="proxy")?"block":"none"; }
+  if(e.target.id==="calOp"){ const row=$("#calNewCoRow"); if(row){ row.style.display=(e.target.value==="__new")?"block":"none"; const ci=row.querySelector('[name="newCompany"]'); if(ci&&e.target.value==="__new") setTimeout(()=>ci.focus(),30); } }
+  if(e.target.id==="calKind"){ calEventKindToggle(); }
 });
 
 // scorecard criteria name/weight — update live without rebuilding inputs (keeps text focus)
@@ -2793,6 +2892,7 @@ document.addEventListener("submit",e=>{
   if(e.target.id==="opForm"){ saveOpForm(e.target); }
   else if(e.target.id==="roundForm"){ saveRoundForm(e.target); }
   else if(e.target.id==="personForm"){ savePersonForm(e.target); }
+  else if(e.target.id==="calEventForm"){ saveCalEvent(e.target); }
   else if(e.target.id==="storyForm"){ saveStory(e.target); }
   else if(e.target.id==="qForm"){ saveQuestion(e.target); }
 });
@@ -2811,10 +2911,11 @@ function saveOpForm(form){
   const existing=editId?state.opportunities.find(o=>o.id===editId):null;
   if(existing){ Object.assign(existing,d,{updatedAt:Date.now()}); openId=existing.id; }
   else { const o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},...d}; state.opportunities.push(o); openId=o.id; }
+  const closedN=closeOutRole(getOp());
   save(); closeEditor(); render();
   if(getOp()){ if(!$("#drawer").classList.contains("show")) openDetail(openId); else renderDrawer(); }
   enrichLater(getOp());
-  toast("Saved");
+  closedN?closeOutToast(closedN):toast("Saved");
 }
 // Spin a round's free-text interviewers into People records (dedup by name); returns count added
 function linkInterviewers(o, str){
@@ -2854,7 +2955,7 @@ let dragId=null;
 document.addEventListener("dragstart",e=>{ const c=e.target.closest(".kcard"); if(c){ dragId=c.dataset.id; c.classList.add("dragging"); } });
 document.addEventListener("dragend",e=>{ const c=e.target.closest(".kcard"); if(c)c.classList.remove("dragging"); document.querySelectorAll(".col.drop").forEach(c=>c.classList.remove("drop")); });
 document.addEventListener("dragover",e=>{ const col=e.target.closest(".col[data-stage]"); if(col){ e.preventDefault(); document.querySelectorAll(".col.drop").forEach(c=>c.classList.remove("drop")); col.classList.add("drop"); } });
-document.addEventListener("drop",e=>{ const col=e.target.closest(".col[data-stage]"); if(col&&dragId){ const o=state.opportunities.find(x=>x.id===dragId); if(o&&o.status!==col.dataset.stage){ o.status=col.dataset.stage; o.updatedAt=Date.now(); save(); render(); } dragId=null; } });
+document.addEventListener("drop",e=>{ const col=e.target.closest(".col[data-stage]"); if(col&&dragId){ const o=state.opportunities.find(x=>x.id===dragId); if(o&&o.status!==col.dataset.stage){ o.status=col.dataset.stage; o.updatedAt=Date.now(); const n=closeOutRole(o); save(); render(); closeOutToast(n); } dragId=null; } });
 
 /* ============================ IMPORT / EXPORT ============================ */
 function exportData(){
@@ -3160,6 +3261,68 @@ function eventFromKey(key){
   if(kind==="offer" && o.offer && o.offer.deadline) return {uid:opId+"-offer",title:"Offer decision — "+o.company,date:o.offer.deadline,time:"",desc:"Decide on the "+(o.role||"role")+" offer at "+o.company,location:""};
   return null;
 }
+// Add an event straight from the calendar — pick a day, assign it to a role (or spin up a new one),
+// and log it as an interview round or a next-step reminder. Mirrors what the drawer forms create,
+// so everything stays one data model.
+function calEventForm(date){
+  const ops=state.opportunities.slice().sort((a,b)=>(a.company||"").localeCompare(b.company||""));
+  const noOps=!ops.length;
+  const opts=ops.map(o=>`<option value="${o.id}">${esc(o.company)}${o.role?" — "+esc(o.role):""}</option>`).join("");
+  const long=new Date(date+'T00:00').toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:14px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.cal}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Add an event</h2><div style="font-size:12.5px;color:var(--faint)">${esc(long)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <form id="calEventForm">
+    <input type="hidden" name="date" value="${esc(date)}"/>
+    <div class="form-row"><label>Assign to role</label>
+      <select name="opId" id="calOp">${opts}<option value="__new" ${noOps?"selected":""}>＋ New role…</option></select></div>
+    <div class="form-row" id="calNewCoRow" style="display:${noOps?"block":"none"}"><label>New company *</label><input name="newCompany" placeholder="Acme Inc"/></div>
+    <div class="form-row"><label>What is it?</label><select name="kind" id="calKind">
+      <option value="interview">Interview / call</option>
+      <option value="task">Reminder / next step</option>
+      <option value="offer">Offer decision deadline</option>
+    </select></div>
+    <div class="form-2">
+      <div class="form-row"><label>Title</label><input name="title" placeholder="e.g. Tech screen w/ Sam"/></div>
+      <div class="form-row" id="calTimeRow"><label>Time</label><input type="time" name="time"/></div>
+    </div>
+    <div class="form-row" id="calTypeRow"><label>Type</label><select name="type">${["",...ROUND_TYPES].map(t=>`<option>${t}</option>`).join("")}</select></div>
+    <div class="form-row" id="calLinkRow"><label>Meeting link <span style="color:var(--faint);font-weight:500">— optional</span></label><input name="link" placeholder="Zoom / Meet URL"/></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button type="submit" class="btn primary" style="flex:1">${I.check} Add to calendar</button>
+      <button type="button" class="btn ghost" data-act="cancel-editor">Cancel</button>
+    </div>
+  </form>`;
+}
+function openCalEventForm(date){ openEditor(calEventForm(date||todayYMD())); }
+function calEventKindToggle(){
+  const kind=$("#calKind")?$("#calKind").value:"interview";
+  const typeRow=$("#calTypeRow"), timeRow=$("#calTimeRow"), linkRow=$("#calLinkRow");
+  if(typeRow) typeRow.style.display=(kind==="interview")?"block":"none";
+  if(timeRow) timeRow.style.display=(kind==="interview")?"block":"none";
+  if(linkRow) linkRow.style.display=(kind==="offer")?"none":"block";
+}
+function saveCalEvent(form){
+  const d=fd(form);
+  let o=null;
+  if(d.opId==="__new"){
+    const co=(d.newCompany||"").trim(); if(!co){ toast("Name the company, or pick an existing role"); return; }
+    o={id:uid(),createdAt:Date.now(),updatedAt:Date.now(),rounds:[],people:[],offer:{},company:co,role:"",status:(activeStages()[0]||{id:"applied"}).id};
+    state.opportunities.push(o);
+  } else { o=state.opportunities.find(x=>x.id===d.opId); }
+  if(!o){ toast("Pick a role"); return; }
+  if(d.kind==="task"){
+    o.nextActionLabel=d.title||"Next step"; o.nextActionDate=d.date; if(d.link) o.nextMeetingLink=d.link;
+  } else if(d.kind==="offer"){
+    o.offer=o.offer||{}; o.offer.deadline=d.date;
+  } else {
+    o.rounds=o.rounds||[]; o.rounds.push({id:uid(),name:d.title||"",type:d.type||"",date:d.date,time:d.time||"",interviewers:"",link:d.link||"",prep:"",debrief:"",rating:0,status:""});
+  }
+  o.updatedAt=Date.now(); calSel=d.date; calMode="month"; view="calendar";
+  save(); closeEditor(); enrichLater(o); render(); toast("Added to calendar ✓");
+}
 // Edit/delete a calendar item directly from the calendar (round, next-step task, or offer deadline)
 function calEditEvent(key){
   const fr=findRound(key);
@@ -3202,6 +3365,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 
 render();
+requestPersistentStorage().then(()=>{ if(syncOn() && view==="dashboard" && typeof updateSyncUI==="function") updateSyncUI(); });
 initSync();
 initNative();
 // dismiss the branded launch splash (only visible when installed/standalone)

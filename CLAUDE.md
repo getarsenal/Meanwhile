@@ -4,7 +4,13 @@ Read this first. It's the hand-off for continuing work on this app from any devi
 (local machine, Claude Code on the web, or the mobile app connected to this repo).
 
 ## What this is
-**Meanwhile** is a personal job-interview-process tracker for the repo owner (Connor).
+**Meanwhile** follows one person through the whole employment lifecycle: *find it → research it →
+prepare for it → get hired →* **understand the company you just joined**. Before the job it's an
+interview tracker; after the job it turns the same Company/People records into your map of how the
+place actually works. The through-line: *Meanwhile was there before I got hired, and it's still
+here helping me understand the company now that I'm here.*
+
+It's a personal tool for the repo owner (Connor).
 It's a **single, self-contained `index.html`** — vanilla JS, no framework, no build step,
 no dependencies, no bundler. It runs by just opening the file. Hosted on GitHub Pages at
 **https://getarsenal.github.io/Meanwhile/** and installable to a phone home screen (PWA).
@@ -96,6 +102,8 @@ you paste into a new AI chat to prep for interviews.
   `o.jobUrl` (which also yields the logo domain). Config in localStorage `callback_ai_cfg_v1`
   (device-local, never synced, never in repo). `openAISettings()` configures the engine. Entry:
   topbar "Smart add" + Settings.
+- `POST-HIRE (90-day mode → My Company)` — everything that happens *after* you get the job. See the
+  dedicated section below; it's the largest addition to the app.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — JD/résumé attachments as base64 (`fileToData`, `downloadData`, `pickFileInto`).
 - `CALENDAR` — `.ics` + Google Calendar links for ANY event (rounds, next-step tasks, offer
@@ -110,8 +118,71 @@ you paste into a new AI chat to prep for interviews.
   Setup in `NATIVE.md`.
 - `EVENT WIRING` — one delegated `document` click handler. **If you add a new `data-*` button, add its attribute to the `closest(...)` selector** in that handler or it won't fire.
 
+## POST-HIRE: 90-day mode → My Company
+The second half of the product. **Nothing is duplicated when you get hired** — the opportunity you
+interviewed for *becomes* your employer, and the people you met *are* your colleagues.
+
+**Lifecycle.** `HIRED_STAGE` (`status:"hired"`) is a fixed system stage alongside `CLOSED_STAGES`:
+not an active pipeline stage (it drops out of the kanban, Next moves and follow-up nagging) but not
+closed either (Cards keeps it visible, badged *Employee*; Insights counts it as an advance). The
+transition is the **"I got the job"** button in the role drawer (`openHire`/`saveHire`) which asks
+for exactly three things — start date, title, manager — writes `o.hired`, records milestones, and
+drops you into the Work view. Picking "Hired" in the drawer's stage `<select>` routes to the same
+modal rather than silently setting a status.
+
+**Storage.** All of it lives on `state.work` — plain arrays listed in `WORK_LISTS`, so it syncs,
+exports and migrates like everything else. Access via `W()` (lazily creates the arrays),
+`wOf(list,opId)`, `wFind`, `wAdd`. **Never hand-init `state.work`.**
+
+**The entity registry (`ENT`)** drives lists, detail modals, forms, search and graph nodes for all
+nine types: `person, project, problem, department, system, process, decision, question, capture`.
+Add a type there and most of the UI comes free. `entFields(type)` is the form spec (one builder,
+`openEntForm`/`saveEntForm`, handles every type). **People are the deliberate exception**: they stay
+on `o.people` so a person is one record from interview to colleague — `entGet("person",id)` searches
+across opportunities and `entOpId` finds their company.
+
+**The relationship graph** is a flat array, `W().links`:
+`{opId, st, sid, rel, tt, tid, conf, via:[captureIds], seen}` (source-type/id → rel → target-type/id).
+No graph database — at personal scale a filtered array beats one, per the brief. `addLink()` dedups
+and keeps the highest confidence; `relatedTo()/relatedOfType()` read it; `evidenceFor()` walks `via`
+back to the notes that established each edge. Vocabulary is fixed in `REL_LABEL`.
+
+**Quick capture is the whole game** (`openCapture`): one big textarea, optional voice via
+`webkitSpeechRecognition` (`capVoice`, feature-detected), then `capExtract()` → `capturePrompt()` →
+`buildPlan()` → **review screen** (`capReview`) → `capApply()`. With no AI configured it still saves
+the raw note. The FAB (`renderFab`) appears app-wide once you have an employer.
+
+**Entity resolution** is the delicate part (`resolveEnt`). `personMatch()` scores name pairs through
+a nickname table (`NICK`: mike→michael); surnames decide it when both have one, a bare first name is
+0.7 ("probable"), and **two plausible matches means the item is left unticked until the user picks** —
+never a silent merge. Non-people go through `canonThing()` + `SYS_ALIAS` (sfdc→salesforce).
+`capApply` re-resolves before creating so entities made earlier in the same batch (a person's
+department) aren't duplicated.
+
+**Ask Meanwhile** (`workRefs`/`askWorkPrompt`/`runWorkAsk`) dumps the structured records with bracket
+ids, requires inline citations, and renders `[p2]` back as clickable chips (`citeHTML`/`citeLabel`).
+**Who do I ask?** (`whoToAsk`) is ranked *in JS from the graph* so the evidence is always real — the
+AI only phrases the recommendation over candidates it can't add to. **What am I missing?**
+(`knowledgeGaps`) is likewise computed, so every gap is a fact about your notes. Same principle in
+`reportData/reportText` for the 30/60/90 reviews: numbers computed, narrative generated.
+
+**Work view** (`renderWork`): hero with the day-N-of-90 ring, then tabs
+`overview | people | projects | problems | knowledge | timeline | ask`. `careerTimeline()` merges
+pre-hire events (discovered/applied/rounds) with post-hire ones (milestones, captures, entities).
+`workGraph()` is a hand-rolled radial SVG map — a discovery tool, not the primary interface.
+Day 91 changes nothing: the ring keeps counting and the framing becomes *My Company*.
+
+**Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
+`employers().length > 0`, so a new user never sees an empty object.
+
 ## Data model
-`state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, rev, meta }`
+`state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
+- `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], departments[], systems[],
+  processes[], decisions[], questions[], links[], milestones[], reports[] }` — every record carries
+  `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
+  library; post-hire **open questions** are `state.work.questions`.
+- `o.hired`: `{startDate, title, manager, managerId, acceptedAt}` — present once `status==="hired"`.
+- `o.people[]` gains post-hire fields: `deptId`, `expertise[]`, `at`, `fromCapture`.
 - `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name
   drives the Home greeting (`render()`: "Good afternoon, {first}"), the welcome state, and AI briefs
   (`buildBrief` adds a "Candidate (me)" line). Synced like the rest of state.
@@ -136,8 +207,12 @@ edit/delete work. Don't create rounds/people without ids.
 - Respect iOS safe areas (`env(safe-area-inset-*)`) for top bar / bottom nav / drawer.
 - Keep it dependency-free and single-file. No CDN scripts, no npm at runtime.
 - Stages: the active pipeline stages are user-editable (`state.stages`); the closed buckets
-  (rejected/withdrawn/ghosted) are fixed in `CLOSED_STAGES`. Never hard-code a status id without
-  a fallback — a user may have renamed/removed it.
+  (rejected/withdrawn/ghosted) are fixed in `CLOSED_STAGES`, and `HIRED_STAGE` sits between the two.
+  Never hard-code a status id without a fallback — a user may have renamed/removed it.
+- **The AI must never invent organizational knowledge.** Post-hire prompts say "based on your
+  notes", cite their sources, and are told to answer "you haven't recorded anything about that"
+  rather than fill a gap. Anything ranked or counted (who to ask, gaps, report numbers) is computed
+  in JS from the records so the evidence is real; the model only does wording.
 
 ## How to verify changes (do this — don't ship untested)
 There's no test suite; verify in a real browser via the preview tools:
@@ -186,6 +261,12 @@ present. Bump `CACHE` in `sw.js` to force-invalidate.
 - Real PNG app icons + screenshots for App Store (icons currently inline SVG).
 - "Questions they asked me" reusable library (questions-to-ask is now generated on demand).
 - Per-user digest config (currently one vault via env; fine for personal use).
+- Post-hire, deliberately not built yet (the brief's Tier 4 — don't start these until the capture →
+  extract → ask loop has been lived in for a while): calendar/email/Slack/Teams ingestion feeding
+  the same graph, meeting transcript import, and a "what changed at my company this week?" diff
+  against the previous map. The weekly briefing (`weekData`) is the seed of that last one.
+- Semantic/vector search for Ask Meanwhile. Today retrieval is the full structured record set plus
+  the 40 most recent notes, which is plenty at personal scale and needs no new infrastructure.
 
 ## Tone for the owner
 Connor is sharp but not a developer — explain choices briefly, default to action, keep the UI

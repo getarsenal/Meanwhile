@@ -2,11 +2,19 @@
   <img src="logo.png" alt="Meanwhile — Track. Prepare. Get hired." width="360"/>
 </p>
 
-<h1 align="center">Meanwhile — Interview Tracker</h1>
+<h1 align="center">Meanwhile</h1>
+<p align="center"><i>From getting hired to knowing how the company works.</i></p>
 
-A single-file, offline-friendly app to run your whole job search in one place: companies,
-rounds, interviewers, comp, notes — plus **AI** that turns a pasted job link or email into an
-entry, drafts your prep and thank-you notes, and answers questions about your pipeline.
+A single-file, offline-friendly app that follows you through the whole thing.
+
+**Before the job** — find it, research it, prepare for it: companies, rounds, interviewers, comp,
+notes, plus **AI** that turns a pasted job link or email into an entry, drafts your prep and
+thank-you notes, and answers questions about your pipeline.
+
+**After the job** — understand it, navigate it, remember it. Mark a role *I got the job* and the
+same company and people you built while interviewing become your map of the place: 90-day mode,
+one-tap capture of what just happened, and answers about who to ask and why things work the way
+they do — each one citing the note you learned it from.
 
 No build step, no dependencies, no accounts. Your data lives in your browser (with JSON
 export/import for backup, and optional cloud sync to a database you own).
@@ -29,6 +37,24 @@ for a full-screen, installable app (works offline).
 - **Résumé Studio** — upload your résumé (PDF read natively), edit it in structured sections,
   and export a clean PDF.
 - **Offer scorecard** — a weighted decision matrix across competing offers.
+
+### After you're hired
+- **I got the job** — one button turns the role you interviewed for into your employer. Nothing is
+  duplicated and nothing is lost: the people you met are already your colleagues.
+- **90-day mode** — day *N* of 90, with everything you've learned about the place in one command
+  center. It doesn't expire; on day 91 it just becomes *My Company*.
+- **Capture** — say or type what happened ("Met Mike, he owns Salesforce reporting, Finance doesn't
+  trust the forecast"). AI pulls out the people, systems, projects, problems and open questions,
+  shows you what it found, and files it. You capture once; it does the bookkeeping.
+- **Who do I ask?** — describe what you're stuck on and get ranked people *with the evidence*: what
+  they own, what they know, which of your notes back it up.
+- **What am I missing?** — gaps worked out from your own records: systems with no owner, projects
+  with no lead, departments you depend on but have never met.
+- **Ask Meanwhile** — questions about your company answered from your notes, with every claim
+  linked back to where you recorded it. It says "you haven't recorded that" instead of guessing.
+- **30 / 60 / 90-day reviews** — what you learned, who you know, what's still fuzzy.
+- **The map** — people, departments and systems as a visual graph, plus a career timeline that runs
+  from the day you found the job to last week's meeting.
 
 ## AI engine — bring your own
 Meanwhile is **bring-your-own-AI**: plug in your own **Gemini** (free tier), **ChatGPT (OpenAI)**,

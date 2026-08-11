@@ -500,6 +500,111 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .brief-meta{font-size:10px;color:var(--faint);margin-top:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
 .brief-empty{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
 
+/* ---------- Post-hire: 90-day mode / My Company ---------- */
+.fab{position:fixed;right:22px;bottom:26px;z-index:45;display:flex;align-items:center;gap:9px;padding:14px 20px;border-radius:999px;
+  background:var(--grad);color:#fff;font-weight:800;font-size:14.5px;box-shadow:0 12px 30px -8px rgba(94,106,210,.7),0 2px 6px rgba(0,0,0,.4);transition:.15s}
+.fab:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.fab:active{transform:translateY(0) scale(.98)}
+.fab svg{width:19px;height:19px}
+@media(max-width:860px){ .fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));padding:13px 17px;font-size:14px} }
+
+.work-hero{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(150deg,var(--panel),var(--panel2));padding:20px;margin-bottom:16px}
+.work-hero .wh-glow{position:absolute;inset:0;pointer-events:none}
+.work-hero .wh-top{display:flex;align-items:center;gap:14px;position:relative}
+.work-hero .fav{width:52px;height:52px;border-radius:14px;flex:0 0 52px;display:grid;place-items:center;font-weight:800;font-size:21px;color:#fff;overflow:hidden;position:relative}
+.work-hero .fav img{width:100%;height:100%;object-fit:cover}
+.wh-name{font-size:21px;font-weight:850;letter-spacing:-.02em;line-height:1.2}
+.wh-sub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.45}
+.wh-ring{margin-left:auto;flex:0 0 auto;position:relative;width:76px;height:76px;display:grid;place-items:center}
+.wh-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.wh-ring .rn{font-size:21px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums}
+.wh-ring .rl{font-size:9.5px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.wh-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;position:relative}
+@media(max-width:560px){ .wh-ring{width:62px;height:62px} .wh-ring .rn{font-size:17px} .wh-name{font-size:18px} }
+
+.w-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-bottom:18px}
+.w-tile{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 12px;cursor:pointer;transition:.14s;min-width:0}
+.w-tile:hover{border-color:var(--line2);transform:translateY(-2px)}
+.w-tile .n{font-size:23px;font-weight:850;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.w-tile .l{font-size:11px;font-weight:700;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-tile .d{font-size:10.5px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.ent-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;cursor:pointer;transition:.12s;min-width:0}
+.ent-row:hover{background:var(--panel2)}
+.ent-row+.ent-row{border-top:1px solid var(--line)}
+.ent-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:0 0 30px;font-size:11px;font-weight:800;color:#fff;overflow:hidden;position:relative}
+.ent-ico img{width:100%;height:100%;object-fit:cover}
+.ent-ico svg{width:15px;height:15px}
+.ent-body{flex:1;min-width:0}
+.ent-name{font-weight:750;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ent-meta{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ent-tail{flex:0 0 auto;font-size:11px;font-weight:800;color:var(--faint);white-space:nowrap}
+.st-pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:999px;white-space:nowrap;flex:0 0 auto}
+.ent-empty{text-align:center;padding:26px 18px;color:var(--faint);font-size:12.5px;line-height:1.6}
+
+.cap-ta{min-height:150px;font-size:15px;line-height:1.6}
+.cap-mic{display:flex;align-items:center;gap:8px;justify-content:center;padding:12px;border-radius:12px;border:1.5px dashed var(--line2);color:var(--muted);font-weight:700;font-size:13px;width:100%;transition:.15s}
+.cap-mic:hover{border-color:var(--accent);color:var(--accent3)}
+.cap-mic svg{width:18px;height:18px;flex:0 0 18px}
+.cap-mic.rec{border-color:var(--hot);color:var(--hot);border-style:solid;background:rgba(207,114,115,.08)}
+.cap-mic .pulse{width:9px;height:9px;border-radius:50%;background:var(--hot);animation:pulse 1.1s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+.cap-hint{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;line-height:1.5}
+
+.rev-group{margin-bottom:14px}
+.rev-head svg{width:14px;height:14px;flex:0 0 14px}
+.rev-head{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin-bottom:8px}
+.rev-item{display:flex;align-items:flex-start;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px 11px;margin-bottom:7px}
+.rev-item.off{opacity:.5}
+.rev-cb{width:20px;height:20px;flex:0 0 20px;border-radius:6px;border:1.5px solid var(--line2);display:grid;place-items:center;cursor:pointer;margin-top:1px;color:transparent}
+.rev-cb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.rev-cb svg{width:13px;height:13px}
+.rev-b{flex:1;min-width:0}
+.rev-n{font-weight:750;font-size:13.5px;line-height:1.4}
+.rev-m{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.rev-flag{font-size:11px;color:var(--warn);font-weight:700;margin-top:5px}
+.rev-item select{margin-top:6px;padding:7px 9px;font-size:12.5px}
+.rev-rel{font-size:12px;color:var(--muted);line-height:1.7}
+.rev-rel b{color:var(--txt);font-weight:750}
+.rev-rel .r{color:var(--accent3);font-weight:800;font-size:10.5px;letter-spacing:.04em}
+
+.tl{position:relative;padding-left:26px}
+.tl:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:2px}
+.tl-item{position:relative;padding:0 0 16px}
+.tl-dot{position:absolute;left:-24px;top:4px;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--bg2);box-shadow:0 0 0 1px var(--line)}
+.tl-d{font-size:10.5px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.tl-t{font-weight:700;font-size:13.5px;margin-top:2px;line-height:1.45}
+.tl-s{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+
+.evd{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.evd .e{font-size:11px;font-weight:700;color:var(--accent3);background:rgba(94,106,210,.12);border:1px solid rgba(94,106,210,.25);border-radius:8px;padding:3px 8px;cursor:pointer}
+.evd .e:hover{background:rgba(94,106,210,.22)}
+.ai-answer{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 14px;font-size:13.5px;line-height:1.72;color:var(--txt);white-space:pre-wrap;max-height:420px;overflow:auto;margin-bottom:10px}
+.cite{color:var(--accent3);font-weight:700;cursor:pointer}
+.cite:hover{text-decoration:underline}
+
+.who-card{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:9px}
+.who-h{display:flex;align-items:center;gap:10px}
+.who-rank{width:22px;height:22px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:850;flex:0 0 22px}
+.who-why{font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:8px;padding-left:32px}
+.who-why li{margin-bottom:2px}
+
+.gap-item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;font-size:13px;line-height:1.6}
+.gap-item+.gap-item{border-top:1px solid var(--line)}
+.gap-ico{width:24px;height:24px;border-radius:8px;flex:0 0 24px;display:grid;place-items:center;font-size:12px}
+.gap-ico svg{width:14px;height:14px}
+.gap-item b{font-weight:750}
+.gap-do{font-size:11.5px;color:var(--accent3);font-weight:700;cursor:pointer;margin-top:3px;display:inline-block}
+
+.wgraph{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:13px;background:var(--bg2);padding:6px}
+.wgraph svg{display:block;margin:0 auto}
+.wgraph text{font-family:inherit}
+.wg-node{cursor:pointer}
+.wg-node:hover circle{stroke:#fff;stroke-width:1.6}
+
+.w-switch{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch}
+.sect-note{font-size:12.5px;color:var(--faint);line-height:1.6;margin:-4px 2px 12px}
+
 /* ---------- Résumé studio ---------- */
 .rs-import{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
 .rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -583,13 +688,23 @@ const DEFAULT_STAGES = [
 ];
 // Closed/system stages are fixed; the active pipeline stages are user-editable (state.stages)
 const CLOSED_STAGES = DEFAULT_STAGES.filter(s=>!s.active);
+// You got the job. Not an active pipeline stage (it leaves the job-search views) and not a
+// closed/dead one either — the role lives on in Work as your employer. See POST-HIRE.
+const HIRED_STAGE = {id:"hired", name:"Hired — I work here", color:"#4ea381", active:false, hired:true};
 function activeStages(){ return (state && state.stages && state.stages.length) ? state.stages : DEFAULT_STAGES.filter(s=>s.active); }
-function allStages(){ return activeStages().concat(CLOSED_STAGES); }
+function allStages(){ return activeStages().concat([HIRED_STAGE], CLOSED_STAGES); }
 function stage(id){ return allStages().find(s=>s.id===id) || activeStages()[0] || DEFAULT_STAGES[0]; }
 
 const SOURCES = ["Referral","Recruiter reached out","LinkedIn","Company site","Job board","Cold apply","Networking event","Other"];
 const WORKMODES = ["Remote","Hybrid","Onsite"];
 const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","System design","Behavioral","Onsite loop","Panel","Final / Exec","Culture fit","Other"];
+
+/* Post-hire (see the POST-HIRE section): everything you learn once you're inside a company.
+   Plain arrays on state.work — same storage, sync, export and backup as the rest. */
+const WORK_LISTS = ["captures","projects","problems","departments","systems","processes","decisions","questions","links","milestones","reports"];
+const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
+const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
+const QUESTION_STATUS = ["Open","Answered","Dismissed"];
 
 let state = load();
 let view = "dashboard";
@@ -601,6 +716,8 @@ let drawerTab = "overview";
 let calMode = "month";  // "month" | "list" | "timeline" — Upcoming view sub-mode
 let calCursor = null;   // Date (1st of displayed month); null = current month
 let calSel = null;      // "YYYY-MM-DD" selected day in month grid
+let workOpId = null;    // which employer the Work view is showing (null = first)
+let workTab = "overview";
 
 /* ============================ STORAGE ============================ */
 function load(){
@@ -615,6 +732,8 @@ function migrate(s){
     (o.rounds||[]).forEach(r=>{ if(!r.id) r.id=uid(); });
     (o.people||[]).forEach(p=>{ if(!p.id) p.id=uid(); });
   });
+  // post-hire records live in state.work — same rule: everything needs a stable id
+  if(s.work) WORK_LISTS.forEach(k=>{ (s.work[k]||[]).forEach(r=>{ if(!r.id) r.id=uid(); if(!r.at) r.at=Date.now(); }); });
   // derive a real revision from the newest record so cloud-seed comparisons work
   if(s.rev==null) s.rev = s.opportunities.reduce((m,o)=>Math.max(m,+o.updatedAt||0),0);
   return s;
@@ -753,6 +872,19 @@ const I = {
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>',
   edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  // post-hire
+  building:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v15M15 21V10h3a2 2 0 0 1 2 2v9M8 8h2M8 12h2M8 16h2"/></svg>',
+  people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><path d="M16.5 5.2a3.4 3.4 0 0 1 0 5.8M18.2 14.4c2 .8 3.3 2.5 3.3 4.6"/></svg>',
+  project:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>',
+  problem:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.6 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  system:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="4" width="19" height="7" rx="2"/><rect x="2.5" y="13" width="19" height="7" rx="2"/><path d="M6.5 7.5h.01M6.5 16.5h.01"/></svg>',
+  process:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="3.5" width="7" height="6" rx="1.5"/><rect x="14.5" y="14.5" width="7" height="6" rx="1.5"/><path d="M9.5 6.5h5a3 3 0 0 1 3 3v5M12 12l-2.5 2.5L12 17"/></svg>',
+  decision:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M5 8 12 3l7 5"/><path d="M5 8 2.5 15a3 3 0 0 0 5 0Zm14 0-2.5 7a3 3 0 0 0 5 0Z"/></svg>',
+  question:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 4M12 17.3h.01"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3h9L20 8.5v11A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+  map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 3.5-6 2.4V21l6-2.4 6 2.4 6-2.4V3.5L15 5.9Z"/><path d="M9 3.5v15M15 5.9v15"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>',
 };
 
 /* ============================ NAV ============================ */
@@ -762,24 +894,30 @@ const VIEWS = [
   {id:"cards",     name:"Cards",    icon:I.cards},
   {id:"calendar",  name:"Upcoming", icon:I.cal},
   {id:"insights",  name:"Insights", icon:I.spark},
+  // Work only appears once you've actually got a job — nothing empty is ever shown to a new user
+  {id:"work",      name:"Work",     icon:I.building, when:()=>employers().length>0},
 ];
+function navViews(){ return VIEWS.filter(v=>!v.when||v.when()); }
 function renderNav(){
   const alerts = state.opportunities.filter(needsFollowup).length;
   const upcoming = state.opportunities.reduce((n,o)=>{ const e=nextEvent(o); return n+(e&&e.du>=0&&e.du<=7?1:0); },0);
-  $("#nav").innerHTML = VIEWS.map(v=>{
+  const views=navViews();
+  $("#nav").innerHTML = views.map(v=>{
     let badge="";
     if(v.id==="calendar"&&upcoming) badge=`<span class="badge">${upcoming}</span>`;
     if(v.id==="dashboard"&&alerts) badge=`<span class="badge alert">${alerts}</span>`;
     return `<button class="nav-btn ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${v.name}</span>${badge}</button>`;
   }).join("");
-  $("#mnav").innerHTML = VIEWS.map(v=>`<button class="mnav ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${v.name.split(" ")[0]}</span></button>`).join("");
+  $("#mnav").innerHTML = views.map(v=>`<button class="mnav ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${v.name.split(" ")[0]}</span></button>`).join("");
 }
 
 /* ============================ RENDER ROUTER ============================ */
 function getProfile(){ state.profile=state.profile||{}; return state.profile; }
 function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
+  if(view==="work" && !employers().length) view="dashboard";   // employer deleted / not hired yet
   renderNav();
+  renderFab();
   const v=VIEWS.find(x=>x.id===view);
   const name=(getProfile().name||"").trim();
   // On Home, lead with a personal greeting when a name is set
@@ -795,7 +933,16 @@ function render(){
   else { if(heroTimer){ clearInterval(heroTimer); heroTimer=null; } if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
   else if(view==="cards") c.innerHTML = renderCards();
   else if(view==="calendar") c.innerHTML = renderCalendar();
+  else if(view==="work") c.innerHTML = renderWork();
   else if(view==="insights") c.innerHTML = renderInsights(); }
+}
+/* The Capture button follows you everywhere once you're employed — capture is the whole game
+   (see POST-HIRE). Hidden pre-hire so nothing new clutters the job-search app. */
+function renderFab(){
+  const want = employers().length>0;
+  let fab=document.getElementById("captureFab");
+  if(!want){ if(fab) fab.remove(); return; }
+  if(!fab){ fab=el(`<button class="fab" id="captureFab" data-act="capture" title="Capture what just happened">${I.plus}<span>Capture</span></button>`); document.body.appendChild(fab); }
 }
 
 function activeCount(){ return state.opportunities.filter(o=>stage(o.status).active && o.status!=="wishlist").length; }
@@ -830,7 +977,7 @@ function renderDashboard(){
   const offers=ops.filter(o=>o.status==="offer").length;
   const interviewing=ops.filter(o=>["recruiter","hm","technical","onsite"].includes(o.status)).length;
   const applied=ops.filter(o=>o.status!=="wishlist").length;
-  const advanced=ops.filter(o=>["hm","technical","onsite","offer"].includes(o.status)).length;
+  const advanced=ops.filter(o=>["hm","technical","onsite","offer","hired"].includes(o.status)).length;
   const respRate=applied?Math.round(advanced/applied*100):0;
   const followups=ops.filter(needsFollowup);
   const week=ops.map(o=>({o,e:nextEvent(o)})).filter(x=>x.e&&x.e.du>=0&&x.e.du<=7).sort((a,b)=>a.e.du-b.e.du);
@@ -848,6 +995,10 @@ function renderDashboard(){
 
   // Compare competing offers (only surfaces once ≥2 offers are in play)
   html+=scorecardTeaser();
+
+  // If the hero is busy with the job search, your company still gets a way in
+  const heroIsWork = employers().length && !ops.some(o=>{const e=nextEvent(o); return e&&e.du>=0;}) && !offers;
+  if(!heroIsWork) html+=workStrip();
 
   // Next moves — the unified, prioritized action hub
   html+=renderMovesHub(ops);
@@ -933,6 +1084,10 @@ function dashHero(ops){
     return heroShell(inner, "#4ea381");
   }
 
+  // nothing pending in the search, but you've got a job — the day-to-day leads instead
+  const emp=employers();
+  if(emp.length) return workHeroCard(emp[0]);
+
   // momentum: active roles but nothing scheduled — a prompt, not another count
   const active=ops.filter(o=>stage(o.status).active && o.status!=="wishlist").length;
   const nudges=ops.filter(needsFollowup).length;
@@ -953,6 +1108,42 @@ function dashHero(ops){
       </div>
     </div>`;
   return heroShell(inner);
+}
+
+/* The Home hero, employed edition: how far into the job you are and one tap to capture.
+   (Defined here next to dashHero; the counts come from the POST-HIRE section.) */
+function workHeroCard(o){
+  const day=hireDay(o), c=workCounts(o);
+  const bits=[`${c.people} ${c.people===1?"person":"people"}`,`${c.projects} ${c.projects===1?"project":"projects"}`,`${c.openProblems} open ${c.openProblems===1?"problem":"problems"}`,`${c.questions} ${c.questions===1?"question":"questions"}`];
+  const inner=`
+    <div class="hero-main">
+      <div class="hero-eyebrow">${I.building}<span>${day!=null&&day<=90?"90-day mode":"Your company"}</span></div>
+      <div class="hero-co">${favHTML(o,"hero-fav")}
+        <div style="min-width:0"><div class="hero-name">${esc(o.company)}</div><div class="hero-role">${esc(workTitle(o))}</div></div>
+      </div>
+      <div class="hero-when">${esc(bits.join(" · "))}</div>
+      <div class="hero-actions">
+        <button class="btn primary sm" data-act="capture">${I.plus} Capture</button>
+        <button class="btn ghost sm hero-btn" data-wtab="overview">${I.building} Open</button>
+        <button class="btn ghost sm hero-btn" data-act="who-ask">Who do I ask?</button>
+      </div>
+    </div>
+    <div class="hero-count"><div class="hc-num">${day!=null&&day>0?day:"—"}</div><div class="hc-unit">${day==null?"add start date":day<=0?"days to go":day<=90?"of 90":"days in"}</div></div>`;
+  return heroShell(inner, colorFor(o.company));
+}
+// a compact entry point when the hero is busy with the job search
+function workStrip(){
+  const emp=employers(); if(!emp.length) return "";
+  return `<div class="section-head"><h3>At work</h3><div class="line"></div></div>
+    <div class="card panel" style="padding:5px">${emp.map(o=>{
+      const day=hireDay(o), c=workCounts(o);
+      return `<div class="move" data-wop="${o.id}">
+        ${favHTML(o,'move-fav')}
+        <div class="move-body"><div class="move-label">${esc(o.company)}${day!=null&&day>0?` · day ${day}`:""}</div>
+          <div class="move-co">${c.people} people · ${c.openProblems} open ${c.openProblems===1?"problem":"problems"} · ${c.questions} ${c.questions===1?"question":"questions"}</div></div>
+        <div class="move-actions"><button class="btn sm ghost" data-act="capture">${I.plus} Capture</button></div>
+      </div>`;
+    }).join("")}</div>`;
 }
 
 /* ---- Next moves: one prioritized action queue across every role ---- */
@@ -1097,11 +1288,11 @@ function jcContacts(o){
 }
 function jobCard(o){
   const st=stage(o.status), e=nextEvent(o), fu=needsFollowup(o), comp=compRange(o);
-  const flag = o.status==='offer' ? `<span class="jc-tag good">Offer</span>` : fu ? `<span class="jc-tag warn">Nudge</span>` : "";
+  const flag = o.status==='hired' ? `<span class="jc-tag good">Employee</span>` : o.status==='offer' ? `<span class="jc-tag good">Offer</span>` : fu ? `<span class="jc-tag warn">Nudge</span>` : "";
   const nextV = e
     ? `<div class="v sm" style="color:${e.du<=0?'var(--bad)':e.du<=2?'var(--warn)':'var(--accent2)'}">${esc(e.label)}</div><div class="jc-sub">${fmtDate(e.date)}${e.time?` · ${fmtDateTime(e.date,e.time).split('· ').pop()}`:''} · ${relDays(e.du)}</div>`
     : `<div class="v sm" style="color:var(--faint)">Nothing scheduled</div>`;
-  return `<div class="job-card${stage(o.status).active?"":" closed"}" data-open="${o.id}">
+  return `<div class="job-card${stage(o.status).active||o.status==="hired"?"":" closed"}" data-open="${o.id}">
     <div class="jc-head">${favHTML(o)}<div class="jc-id"><div class="jc-co">${esc(o.company)}</div><div class="jc-role">${esc(o.role||"—")}</div>${o.tagline?`<div class="jc-tagline">${esc(o.tagline)}</div>`:""}</div>${flag}</div>
     <div class="jc-grid">
       <div class="jc-stat"><div class="k">Stage</div><div class="v"><span class="pill" style="background:${st.color}22;color:${st.color}"><span class="dot" style="background:${st.color}"></span>${esc(st.name)}</span></div></div>
@@ -1116,11 +1307,36 @@ function jobCard(o){
     </div>
   </div>`;
 }
+/* Search reaches into everything you know about the places you've worked, not just the roles */
+function searchWork(q){
+  q=q.trim().toLowerCase(); if(q.length<2) return [];
+  const T=q.split(/\s+/).filter(Boolean);
+  const out=[];
+  employers().forEach(o=>{
+    ["person","project","problem","system","department","process","decision","question","capture"].forEach(t=>{
+      entAll(t,o.id).forEach(r=>{
+        const hay=[entName(t,r),entRowMeta(t,r),r.text,r.description,r.note,r.notes,r.reason,r.answer,(r.expertise||[]).join(" ")].filter(Boolean).join(" ").toLowerCase();
+        const score=T.filter(x=>hay.includes(x)).length;
+        if(score) out.push({t,r,o,score});
+      });
+    });
+  });
+  return out.sort((a,b)=>b.score-a.score).slice(0,24);
+}
 function renderCards(){
   const all=sortRoles(filtered());
-  if(!all.length) return `<div class="empty"><div class="big">${I.cards}</div><h3>${searchQ?"No matches":"No roles yet"}</h3><p>${searchQ?"Try a different search.":"Add a role to get started."}</p></div>`;
-  const closedN=all.filter(o=>!stage(o.status).active).length;
-  const list=cardsShowClosed?all:all.filter(o=>stage(o.status).active);
+  const found=searchQ?searchWork(searchQ):[];
+  const foundHTML = found.length ? `<div class="section-head"><h3>From your companies</h3><div class="line"></div><span class="tag">${found.length}</span></div>
+    <div class="card panel" style="padding:5px;margin-bottom:18px">${found.map(f=>entRow(f.t,f.r,{meta:[ENT[f.t].label,f.o.company,entRowMeta(f.t,f.r)].filter(Boolean).join(" · ")})).join("")}</div>` : "";
+  if(!all.length) return foundHTML+`<div class="empty"><div class="big">${I.cards}</div><h3>${searchQ?(found.length?"No matching roles":"No matches"):"No roles yet"}</h3><p>${searchQ?"Try a different search.":"Add a role to get started."}</p></div>`;
+  if(foundHTML) return foundHTML+`<div class="section-head"><h3>Roles</h3><div class="line"></div></div>`+renderCardsGrid(all);
+  return renderCardsGrid(all);
+}
+function renderCardsGrid(all){
+  // a job you took isn't "closed" — it stays visible, badged Employee
+  const isLive=o=>stage(o.status).active||o.status==="hired";
+  const closedN=all.filter(o=>!isLive(o)).length;
+  const list=cardsShowClosed?all:all.filter(isLive);
   const sorts=[["updatedAt","Recent"],["next","Next call"],["excitement","Fit"],["company","A–Z"],["stage","Stage"]];
   const sortChips=sorts.map(([k,l])=>`<span class="chip ${tableSort.key===k?'tag-chip':''}" data-sort="${k}" style="cursor:pointer;white-space:nowrap">${l}${tableSort.key===k?(tableSort.dir>0?" ↑":" ↓"):""}</span>`).join("");
   const closedChip=closedN?`<span class="chip ${cardsShowClosed?'tag-chip':''}" data-act="cards-closed" style="cursor:pointer;white-space:nowrap">${cardsShowClosed?"Hide closed":"Closed · "+closedN}</span>`:"";
@@ -1363,7 +1579,7 @@ function renderInsights(){
   if(!ops.length) return emptyState();
   // Source breakdown + conversion
   const bySource={};
-  ops.forEach(o=>{ const s=o.source||"Unknown"; bySource[s]=bySource[s]||{total:0,advanced:0,offers:0}; bySource[s].total++; if(["hm","technical","onsite","offer"].includes(o.status))bySource[s].advanced++; if(o.status==="offer")bySource[s].offers++; });
+  ops.forEach(o=>{ const s=o.source||"Unknown"; bySource[s]=bySource[s]||{total:0,advanced:0,offers:0}; bySource[s].total++; if(["hm","technical","onsite","offer","hired"].includes(o.status))bySource[s].advanced++; if(o.status==="offer"||o.status==="hired")bySource[s].offers++; });
   const srcRows=Object.entries(bySource).sort((a,b)=>b[1].total-a[1].total);
 
   let html=askAICard()+scorecardTeaser();
@@ -1575,6 +1791,1198 @@ function scorecardPrompt(){
   return L.join("\n");
 }
 
+/* ============================ POST-HIRE (90-day mode → My Company) ============================
+   Meanwhile doesn't stop at "hired". The same Company/People records you built while interviewing
+   become your map of the place once you're inside. Everything here lives on state.work — plain
+   arrays, so it syncs, exports and backs up exactly like the rest of the app.
+
+   The shape:   COMPANY (an existing opportunity, status "hired")
+                  ├── people (o.people — the SAME records you met while interviewing)
+                  ├── departments / systems / processes / decisions / projects / problems / questions
+                  ├── captures  ("what happened?" notes — the only thing you actually type)
+                  └── links     (the relationship graph: who knows what, what affects what)
+
+   The rule that makes it work: you capture once, in your own words, and the AI does the
+   bookkeeping — resolving names against records that already exist, never silently merging
+   an ambiguous person, and citing the note it learned each thing from. */
+
+function W(){ state.work = state.work || {}; WORK_LISTS.forEach(k=>{ state.work[k]=state.work[k]||[]; }); return state.work; }
+function wOf(k,opId){ return W()[k].filter(x=>x.opId===opId); }
+function wFind(k,id){ return W()[k].find(x=>x.id===id); }
+function wAdd(k,rec){ rec.id=rec.id||uid(); rec.at=rec.at||Date.now(); W()[k].push(rec); return rec; }
+
+/* One registry so every entity type gets lists, detail views, forms and graph nodes for free.
+   People are the exception on purpose — they stay on o.people so a person you met in an
+   interview is literally the same record as the colleague you work with. */
+const ENT = {
+  person:    {list:"people",      icon:I.user,     col:"#6d8bc4", label:"Person",     plural:"People",         name:r=>r.name},
+  project:   {list:"projects",    icon:I.project,  col:"#8a72bd", label:"Project",    plural:"Projects",       name:r=>r.name},
+  problem:   {list:"problems",    icon:I.problem,  col:"#cf7273", label:"Problem",    plural:"Problems",       name:r=>r.title},
+  department:{list:"departments", icon:I.people,   col:"#bf8a4f", label:"Department", plural:"Departments",    name:r=>r.name},
+  system:    {list:"systems",     icon:I.system,   col:"#5b9c97", label:"System",     plural:"Systems",        name:r=>r.name},
+  process:   {list:"processes",   icon:I.process,  col:"#5b86b3", label:"Process",    plural:"Processes",      name:r=>r.name},
+  decision:  {list:"decisions",   icon:I.decision, col:"#a874a0", label:"Decision",   plural:"Decisions",      name:r=>r.title},
+  question:  {list:"questions",   icon:I.question, col:"#c6a45c", label:"Question",   plural:"Open questions", name:r=>r.q},
+  capture:   {list:"captures",    icon:I.note,     col:"#7c828f", label:"Note",       plural:"Notes",          name:r=>capTitle(r)},
+};
+const ENT_TYPES = Object.keys(ENT);
+function opById(id){ return state.opportunities.find(o=>o.id===id); }
+function entAll(type,opId){ if(type==="person"){ const o=opById(opId); return (o&&o.people)||[]; } return wOf(ENT[type].list,opId); }
+function entGet(type,id){
+  if(type==="person"){ for(const o of state.opportunities){ const p=(o.people||[]).find(x=>x.id===id); if(p) return p; } return null; }
+  return wFind(ENT[type].list,id);
+}
+function entOpId(type,id){
+  if(type==="person"){ const o=state.opportunities.find(o=>(o.people||[]).some(p=>p.id===id)); return o?o.id:null; }
+  const r=wFind(ENT[type].list,id); return r?r.opId:null;
+}
+function entName(type,rec){ return rec?((ENT[type].name(rec)||"").toString()||"Untitled"):""; }
+function entLabel(type,id){ const r=entGet(type,id); return r?entName(type,r):"(deleted)"; }
+function entIcoHTML(type,rec,big){
+  const c=ENT[type], sz=big?"width:40px;height:40px;flex:0 0 40px;border-radius:12px;font-size:14px;":"";
+  if(type==="person"&&rec) return `<div class="ent-ico" style="${sz}background:${colorFor(rec.name||"?")}">${rec.photo?`<img src="${esc(rec.photo)}" alt=""/>`:esc(initials(rec.name))}</div>`;
+  return `<div class="ent-ico" style="${sz}background:${c.col}26;color:${c.col}">${c.icon}</div>`;
+}
+function entDelete(type,id){
+  if(type==="person"){ const o=opById(entOpId(type,id)); if(o){ o.people=(o.people||[]).filter(p=>p.id!==id); o.updatedAt=Date.now(); } }
+  else { const k=ENT[type].list; W()[k]=W()[k].filter(x=>x.id!==id); }
+  const w=W(); w.links=w.links.filter(l=>!((l.st===type&&l.sid===id)||(l.tt===type&&l.tid===id)));
+}
+
+/* ---- The relationship graph. A flat link list, not a graph database — the app has no backend
+   to host one, and at personal scale a filtered array is faster than any query language. ---- */
+const REL_LABEL={KNOWS:"knows",OWNS:"owns",WORKS_IN:"works in",INVOLVED_IN:"involved in",AFFECTS:"affects",
+  USES:"uses",HELPED_SOLVE:"helped solve",DEPENDS_ON:"depends on",PART_OF:"part of",ANSWERS:"answers",
+  REPORTS_TO:"reports to",RELATES_TO:"relates to",MENTIONS:"mentions"};
+const REL_TYPES=Object.keys(REL_LABEL);
+function addLink(opId,st,sid,rel,tt,tid,conf,via){
+  if(!sid||!tid||(st===tt&&sid===tid)) return null;
+  const w=W();
+  const ex=w.links.find(l=>l.opId===opId&&l.st===st&&l.sid===sid&&l.rel===rel&&l.tt===tt&&l.tid===tid);
+  if(ex){ ex.conf=Math.max(ex.conf||0,conf==null?0.9:conf); if(via&&!(ex.via||[]).includes(via)) ex.via=(ex.via||[]).concat(via); ex.seen=(ex.seen||1)+1; return ex; }
+  return wAdd("links",{opId,st,sid,rel,tt,tid,conf:conf==null?0.9:conf,via:via?[via]:[],seen:1});
+}
+function linksOf(type,id){ return W().links.filter(l=>(l.st===type&&l.sid===id)||(l.tt===type&&l.tid===id)); }
+// links as seen from one entity: {rel, dir, type, id, conf, via}
+function relatedTo(type,id,skipMentions){
+  return linksOf(type,id).filter(l=>!(skipMentions&&l.rel==="MENTIONS")).map(l=>{
+    const out = l.st===type&&l.sid===id;
+    return {rel:l.rel, dir:out?"out":"in", type:out?l.tt:l.st, id:out?l.tid:l.sid, conf:l.conf, via:l.via||[], link:l};
+  }).filter(r=>entGet(r.type,r.id));
+}
+function relatedOfType(type,id,wantType,rels){
+  return relatedTo(type,id,true).filter(r=>r.type===wantType&&(!rels||rels.includes(r.rel)));
+}
+// every capture that mentions (or established something about) this entity — the evidence trail
+function evidenceFor(type,id){
+  const ids=new Set();
+  linksOf(type,id).forEach(l=>{ if(l.st==="capture") ids.add(l.sid); (l.via||[]).forEach(v=>ids.add(v)); });
+  return [...ids].map(i=>wFind("captures",i)).filter(Boolean).sort((a,b)=>b.at-a.at);
+}
+function evidenceHTML(list,label){
+  if(!list.length) return "";
+  return `<div class="evd">${label?`<span style="font-size:11px;color:var(--faint);font-weight:700;align-self:center">${esc(label)}</span>`:""}${
+    list.slice(0,6).map(c=>`<span class="e" data-cite="capture|${c.id}">${esc(fmtDate(ymdOf(c.at)))} note</span>`).join("")}</div>`;
+}
+function ymdOf(ts){ const d=new Date(ts); return ymd(d.getFullYear(),d.getMonth(),d.getDate()); }
+
+/* ---- Lifecycle: interested → applied → interviewing → offer → hired. Same Company record. ---- */
+function employers(){ return state.opportunities.filter(o=>o.status==="hired"); }
+function workOp(){ const e=employers(); if(!e.length) return null; return e.find(o=>o.id===workOpId)||e[0]; }
+function hireDay(o){ const s=o.hired&&o.hired.startDate; if(!s) return null; const du=daysUntil(s); return du==null?null:(du>0?-du:1-du); }
+function workTitle(o){ return (o.hired&&o.hired.title)||o.role||"your role"; }
+
+function openHire(opId){
+  const o=opById(opId); if(!o) return;
+  const ppl=(o.people||[]);
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.trophy}</div>
+    <div><h2 style="margin:0;font-size:19px;font-weight:850">You're going in.</h2><div style="font-size:12.5px;color:var(--faint)">${esc(o.company)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:6px 0 16px">Meanwhile can now turn everything you learned while interviewing — the company, the ${ppl.length?`${ppl.length} ${ppl.length===1?"person":"people"} you met`:"people you met"}, your notes — into your first map of the place. Three quick things:</p>
+  <form id="hireForm">
+    <div class="form-2">
+      <div class="form-row"><label>Start date *</label><input type="date" name="startDate" required value="${esc((o.hired&&o.hired.startDate)||todayYMD())}"/></div>
+      <div class="form-row"><label>Job title</label><input name="title" value="${esc((o.hired&&o.hired.title)||o.role||"")}" placeholder="Head of GTM Operations"/></div>
+    </div>
+    <div class="form-row"><label>Your manager <span style="color:var(--faint);font-weight:500">— if you know</span></label>
+      <input name="manager" list="hireMgr" value="${esc((o.hired&&o.hired.manager)||"")}" placeholder="Name"/>
+      <datalist id="hireMgr">${ppl.map(p=>`<option value="${esc(p.name)}"></option>`).join("")}</datalist></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button type="submit" class="btn primary" style="flex:1">${I.check} Start 90-day mode</button>
+      <button type="button" class="btn ghost" data-act="cancel-editor">Not yet</button>
+    </div>
+  </form>`);
+  editorEl.dataset.hireId=opId;
+}
+function saveHire(form){
+  const d=fd(form); const o=opById(editorEl&&editorEl.dataset.hireId);
+  if(!o) return;
+  if(!d.startDate){ toast("Pick a start date"); return; }
+  const first=!o.hired;
+  o.hired=Object.assign({},o.hired,{startDate:d.startDate,title:d.title||o.role||"",manager:d.manager||"",acceptedAt:(o.hired&&o.hired.acceptedAt)||Date.now()});
+  o.status="hired"; o.updatedAt=Date.now();
+  // the manager becomes a real person record (reused if you already met them while interviewing)
+  if(d.manager){
+    o.people=o.people||[];
+    let m=o.people.find(p=>samePerson(p.name,d.manager));
+    if(!m){ m={id:uid(),name:d.manager,title:"My manager",linkedin:"",email:"",notes:""}; o.people.push(m); }
+    o.hired.managerId=m.id;
+  }
+  if(first){
+    wAdd("milestones",{opId:o.id,at:Date.now(),kind:"accepted",label:"Accepted the offer"});
+    wAdd("milestones",{opId:o.id,at:new Date(d.startDate+"T09:00").getTime()||Date.now(),kind:"started",label:`Started as ${o.hired.title||"employee"}`,date:d.startDate});
+  }
+  save(); closeEditor(); closeDrawer();
+  workOpId=o.id; workTab="overview"; view="work"; render();
+  toast(first?"Welcome to day "+(hireDay(o)||1)+" 🎉":"Updated");
+}
+
+/* ---- Career timeline: one chronology per company, pre-hire and post-hire in the same list ---- */
+function careerTimeline(o){
+  const ev=[];
+  const push=(date,ts,title,sub,col,ref)=>{ if(!date&&!ts) return; ev.push({date:date||ymdOf(ts), ts:ts||(new Date(date+"T12:00").getTime()||0), title, sub:sub||"", col:col||"var(--accent)", ref}); };
+  push(null,o.createdAt,`Discovered ${o.role||"the role"}`,o.source?`via ${o.source}`:"","#7c828f");
+  if(o.appliedDate) push(o.appliedDate,null,"Applied","","#5b86b3");
+  (o.rounds||[]).forEach(r=>{ if(r.date) push(r.date,null,r.name||r.type||"Interview",[r.interviewers?`with ${r.interviewers}`:"",r.status==="done"?"done":r.status==="cancelled"?"cancelled":""].filter(Boolean).join(" · "),"#6d72c4",{t:"round",id:r.id}); });
+  wOf("milestones",o.id).forEach(m=>push(m.date||null,m.at,m.label,"","#4ea381"));
+  wOf("captures",o.id).forEach(c=>push(null,c.at,capTitle(c),(c.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · "),"#7c828f",{t:"capture",id:c.id}));
+  ["project","problem","decision"].forEach(t=>wOf(ENT[t].list,o.id).forEach(r=>{
+    if(r.fromCapture) return; // already shown as the note that created it
+    push(null,r.at,`${ENT[t].label}: ${entName(t,r)}`,"",ENT[t].col,{t,id:r.id});
+  }));
+  return ev.sort((a,b)=>b.ts-a.ts);
+}
+function timelineHTML(o,limit){
+  let ev=careerTimeline(o); const total=ev.length;
+  if(limit) ev=ev.slice(0,limit);
+  if(!ev.length) return `<div class="ent-empty">Nothing on the timeline yet.</div>`;
+  return `<div class="tl">${ev.map(e=>`<div class="tl-item"${e.ref&&e.ref.t==="capture"?` data-cite="capture|${e.ref.id}" style="cursor:pointer"`:""}>
+    <span class="tl-dot" style="background:${e.col}"></span>
+    <div class="tl-d">${esc(fmtDate(e.date)||"")}</div>
+    <div class="tl-t">${esc(e.title)}</div>
+    ${e.sub?`<div class="tl-s">${esc(e.sub)}</div>`:""}
+  </div>`).join("")}</div>${limit&&total>limit?`<button class="btn ghost sm" data-wtab="timeline" style="margin-top:4px">See the full timeline (${total})</button>`:""}`;
+}
+
+/* ============================ QUICK CAPTURE ============================
+   The one thing the user has to do. Talk or type what happened; Meanwhile files it. */
+function capTitle(c){ const t=(c.text||"").trim().replace(/\s+/g," "); return t.length>62?t.slice(0,62)+"…":(t||"Note"); }
+let capOpId=null, capRec=null, capBase="";
+function openCapture(opId){
+  const emp=employers(); if(!emp.length){ toast("Mark a role as hired first"); return; }
+  capOpId = opId || (workOp()||emp[0]).id;
+  openEditor(captureBody());
+}
+function captureBody(){
+  const emp=employers(); const o=opById(capOpId)||emp[0];
+  const voice = !!(window.SpeechRecognition||window.webkitSpeechRecognition);
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.note}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">What happened?</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${emp.length>1?`at <select id="capOp" style="width:auto;display:inline-block;padding:2px 6px;font-size:12.5px;background:transparent;border:none;color:var(--accent3);font-weight:700">${emp.map(e=>`<option value="${e.id}" ${e.id===capOpId?"selected":""}>${esc(e.company)}</option>`).join("")}</select>`:esc(o?o.company:"")}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+  <textarea id="capText" class="cap-ta" placeholder="Met Mike today. He's the Salesforce guy. Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting…">${esc("")}</textarea>
+  ${voice?`<button class="cap-mic" id="capMic" data-act="cap-mic" style="margin-top:10px">${I.mic}<span>Dictate it instead</span></button>`:""}
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn primary" style="flex:1" data-act="cap-go">${I.ai} Save &amp; organize</button>
+    <button class="btn ghost" data-act="cap-raw" title="Save the note without AI extraction">Just save</button>
+  </div>
+  <div class="cap-hint">Write it how you'd say it. Meanwhile pulls out the people, systems, projects and problems — you review before anything is saved.</div>`;
+}
+function capStopVoice(){
+  if(capRec){ try{ capRec.stop(); }catch(e){} capRec=null; }
+  const b=document.getElementById("capMic"); if(b){ b.classList.remove("rec"); b.innerHTML=`${I.mic}<span>Dictate it instead</span>`; }
+}
+function capVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast("Voice isn't supported here — use your keyboard's mic key"); return; }
+  if(capRec){ capStopVoice(); return; }
+  const ta=document.getElementById("capText"); if(!ta) return;
+  capBase=ta.value?ta.value.replace(/\s*$/,"")+" ":"";
+  let r; try{ r=new SR(); }catch(e){ toast("Voice isn't available here"); return; }
+  r.continuous=true; r.interimResults=true; r.lang=navigator.language||"en-US";
+  let done="";
+  r.onresult=e=>{
+    let interim="";
+    for(let i=e.resultIndex;i<e.results.length;i++){ const t=e.results[i][0].transcript; if(e.results[i].isFinal) done+=t; else interim+=t; }
+    const box=document.getElementById("capText"); if(box) box.value=capBase+done+interim;
+  };
+  r.onerror=ev=>{ capStopVoice(); if(ev.error!=="aborted") toast(ev.error==="not-allowed"?"Microphone blocked — allow it in your browser settings":"Voice stopped"); };
+  r.onend=()=>{ if(capRec) capStopVoice(); };
+  try{ r.start(); }catch(e){ toast("Couldn't start the mic"); return; }
+  capRec=r;
+  const b=document.getElementById("capMic"); if(b){ b.classList.add("rec"); b.innerHTML=`<span class="pulse"></span><span>Listening — tap to stop</span>`; }
+}
+function capReadOp(){ const s=document.getElementById("capOp"); if(s) capOpId=s.value; }
+function capSaveRaw(){
+  capReadOp(); capStopVoice();
+  const ta=document.getElementById("capText"); const text=(ta?ta.value:"").trim();
+  if(!text){ toast("Nothing to save yet"); return; }
+  const c=wAdd("captures",{opId:capOpId,text,entities:[]});
+  save(); closeEditor(); if(view==="work") render();
+  toast("Note saved");
+  return c;
+}
+
+/* ============================ AI EXTRACTION ============================ */
+const CAPTURE_SCHEMA=`{
+ "summary": "",              // one short line describing what happened
+ "people":      [{"name":"","title":"","department":"","expertise":[""],"note":""}],
+ "departments": [{"name":""}],
+ "systems":     [{"name":"","note":""}],
+ "projects":    [{"name":"","status":"","note":""}],
+ "problems":    [{"title":"","status":"","note":""}],
+ "processes":   [{"name":"","note":""}],
+ "decisions":   [{"title":"","madeBy":"","date":"","reason":""}],
+ "questions":   [""],
+ "relationships":[{"from":"","fromType":"person","rel":"KNOWS","to":"","toType":"system","confidence":0.9}]
+}`;
+function knownEntitiesText(opId){
+  const L=[];
+  ENT_TYPES.filter(t=>t!=="capture"&&t!=="question").forEach(t=>{
+    const names=entAll(t,opId).map(r=>entName(t,r)).filter(Boolean);
+    if(names.length) L.push(`${ENT[t].plural.toUpperCase()} already on record: ${names.join(", ")}`);
+  });
+  return L.length?("\nUse these EXACT names when the note refers to one of them:\n"+L.join("\n")+"\n"):"";
+}
+function capturePrompt(o,text){
+  return `You turn a person's rough note about their workplace into structured records. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
+${knownEntitiesText(o.id)}
+Rules:
+- Only extract what the note actually says or clearly implies. Never invent people, systems, owners, reporting lines, project status or opinions.
+- Names: use the note's wording, but if it clearly refers to something in the lists above, reuse that exact name.
+- "status" for projects must be one of: ${PROJECT_STATUS.join(", ")}. For problems: ${PROBLEM_STATUS.join(", ")}.
+- questions: things the writer does not know yet — phrase each as a question.
+- relationships: fromType/toType must each be one of person, project, problem, department, system, process, decision. rel must be one of ${REL_TYPES.filter(r=>r!=="MENTIONS").join(", ")}. confidence 0-1: use 0.9+ only when the note states it outright, 0.5-0.8 when you're inferring it.
+- Leave arrays empty rather than guessing. Return ONLY the JSON object, no markdown.
+
+${CAPTURE_SCHEMA}
+
+--- THE NOTE ---
+${text}
+--- END ---`;
+}
+
+/* ---- Entity resolution. The hard part: "Mike", "Mike Smith" and an existing Mike Smith are
+   probably one person — but "probably" is not good enough to merge silently, so anything
+   short of a confident match is surfaced for the user to confirm. ---- */
+function norm(s){ return String(s==null?"":s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+const NICK={mike:"michael",mick:"michael",mickey:"michael",bob:"robert",bobby:"robert",rob:"robert",robbie:"robert",bill:"william",billy:"william",will:"william",jim:"james",jimmy:"james",jamie:"james",dave:"david",dan:"daniel",danny:"daniel",chris:"christopher",matt:"matthew",tom:"thomas",tommy:"thomas",tony:"anthony",nick:"nicholas",steve:"steven",stephen:"steven",sue:"susan",suzie:"susan",liz:"elizabeth",beth:"elizabeth",betty:"elizabeth",kate:"katherine",katie:"katherine",kathy:"katherine",cathy:"catherine",jen:"jennifer",jenny:"jennifer",becky:"rebecca",sam:"samuel",alex:"alexander",sasha:"alexander",andy:"andrew",drew:"andrew",ben:"benjamin",ed:"edward",eddie:"edward",greg:"gregory",joe:"joseph",joey:"joseph",ken:"kenneth",larry:"lawrence",pat:"patricia",patty:"patricia",pete:"peter",ray:"raymond",ron:"ronald",tim:"timothy",vicky:"victoria",abby:"abigail",maggie:"margaret",peggy:"margaret",meg:"margaret",nate:"nathaniel",gabe:"gabriel",zach:"zachary",jess:"jessica",mandy:"amanda",sandy:"sandra",terry:"terence",charlie:"charles",chuck:"charles",frank:"franklin",hank:"henry",jack:"john",johnny:"john",tina:"christina",christie:"christina"};
+function canonName(n){ return norm(n).split(" ").map(w=>NICK[w]||w).filter(Boolean); }
+// how confidently are these the same person? 1 = certain, 0 = no
+function personMatch(a,b){
+  const A=canonName(a), B=canonName(b);
+  if(!A.length||!B.length) return 0;
+  if(A.join(" ")===B.join(" ")) return 1;
+  const af=A[0], bf=B[0], al=A.length>1?A[A.length-1]:"", bl=B.length>1?B[B.length-1]:"";
+  if(af!==bf) return 0;                       // different first names → different people
+  if(al&&bl) return al===bl?1:0;              // both have surnames: they decide it
+  if(al&&bl==="") return 0.7;                 // "Mike" vs "Mike Smith" — likely, not certain
+  if(bl&&al==="") return 0.7;
+  return 0.7;
+}
+function samePerson(a,b){ return personMatch(a,b)>=1; }
+const SYS_ALIAS={sfdc:"salesforce","salesforce com":"salesforce","sales force":"salesforce",ns:"netsuite","net suite":"netsuite",gcal:"google calendar",gsheet:"google sheets",gsheets:"google sheets",teams:"microsoft teams","ms teams":"microsoft teams",hs:"hubspot",sf:"salesforce",ee:"employee engagement"};
+function canonThing(n){ const k=norm(n); return SYS_ALIAS[k]||k.replace(/\b(inc|llc|the|a|an)\b/g,"").replace(/s$/,"").trim(); }
+// → {rec, conf, candidates:[recs]} — conf 1 = certain match, 0.7 = probable (ask), 0 = new
+function resolveEnt(type,name,opId){
+  const pool=entAll(type,opId);
+  if(!name||!pool.length) return {rec:null,conf:0,candidates:[]};
+  if(type==="person"){
+    const scored=pool.map(p=>({p,s:personMatch(p.name,name)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);
+    if(!scored.length) return {rec:null,conf:0,candidates:[]};
+    if(scored[0].s>=1) return {rec:scored[0].p,conf:1,candidates:[scored[0].p]};
+    const probable=scored.filter(x=>x.s>=0.7).map(x=>x.p);
+    // more than one plausible Mike → never guess; make the user pick
+    return {rec:probable.length===1?probable[0]:null, conf:probable.length===1?0.7:0, candidates:probable};
+  }
+  const key=canonThing(name);
+  const hit=pool.find(r=>canonThing(entName(type,r))===key);
+  if(hit) return {rec:hit,conf:1,candidates:[hit]};
+  // "Salesforce reporting" vs "Salesforce": related, probably not the same record → suggest
+  const near=pool.filter(r=>{ const k=canonThing(entName(type,r)); return k&&key&&(k.startsWith(key+" ")||key.startsWith(k+" ")); });
+  return {rec:null,conf:0,candidates:near};
+}
+
+let capPlan=null;   // the reviewable extraction: {opId, text, summary, items:[], rels:[]}
+async function capExtract(){
+  capReadOp(); capStopVoice();
+  const ta=document.getElementById("capText"); const text=(ta?ta.value:"").trim();
+  if(!text){ toast("Write or dictate something first"); return; }
+  const o=opById(capOpId); if(!o) return;
+  if(aiEngine()==="paste"||aiEngine()==="off"){
+    capSaveRaw();
+    toast("Saved — connect an AI in Settings to auto-organize notes");
+    return;
+  }
+  const btn=editorEl&&editorEl.querySelector('[data-act="cap-go"]');
+  if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
+  try{
+    const out=await aiCall(capturePrompt(o,text),null,{maxTokens:2048});
+    capPlan=buildPlan(o,text,aiParse(out));
+    capReview();
+  }catch(err){
+    if(btn){ btn.innerHTML=`${I.ai} Save &amp; organize`; btn.disabled=false; }
+    toast("⚠ "+err.message);
+  }
+}
+// turn the model's JSON into a reviewable plan, resolved against what already exists
+function buildPlan(o,text,d){
+  const items=[]; const seen={};
+  const add=(type,name,rec,extra)=>{
+    if(!name||!String(name).trim()) return;
+    name=String(name).trim();
+    const key=type+"|"+canonThing(name);
+    if(seen[key]) return seen[key];
+    const r=resolveEnt(type,name,o.id);
+    // What the checkbox and the dropdown default to. A certain match just merges; a probable one
+    // merges but says so; a genuinely ambiguous person is left unticked until you pick.
+    let choice="new", on=true;
+    if(r.conf>=1) choice="id:"+r.rec.id;
+    else if(r.rec&&r.conf>=0.7) choice="id:"+r.rec.id;
+    else if(type==="person"&&r.candidates.length>1){ choice=""; on=false; }
+    const it={type,name,rec:r.rec,conf:r.conf,candidates:r.candidates,fields:rec||{},extra:extra||"",on,choice};
+    items.push(it); seen[key]=it; return it;
+  };
+  (d.people||[]).forEach(p=>add("person",p.name,{title:p.title||"",department:p.department||"",expertise:p.expertise||[],notes:p.note||""}));
+  (d.departments||[]).forEach(x=>add("department",x.name||x,{}));
+  (d.systems||[]).forEach(x=>add("system",x.name||x,{note:x.note||""}));
+  (d.projects||[]).forEach(x=>add("project",x.name||x,{status:x.status||"Unknown",note:x.note||""}));
+  (d.problems||[]).forEach(x=>add("problem",x.title||x.name||x,{status:x.status||"Discovered",description:x.note||""}));
+  (d.processes||[]).forEach(x=>add("process",x.name||x,{note:x.note||""}));
+  (d.decisions||[]).forEach(x=>add("decision",x.title||x,{madeBy:x.madeBy||"",date:x.date||"",reason:x.reason||""}));
+  (d.questions||[]).forEach(q=>{ const t=typeof q==="string"?q:(q.q||""); if(t.trim()) add("question",t.trim(),{status:"Open"}); });
+  // people mentioned only inside a relationship still deserve a record
+  const rels=(d.relationships||[]).filter(r=>r&&r.from&&r.to&&ENT[r.fromType]&&ENT[r.toType]&&REL_LABEL[r.rel]).map(r=>{
+    add(r.fromType,r.from,{}); add(r.toType,r.to,{});
+    return {from:r.from,fromType:r.fromType,to:r.to,toType:r.toType,rel:r.rel,conf:Math.max(0,Math.min(1,+r.confidence||0.7)),on:true};
+  });
+  return {opId:o.id,text,summary:(d.summary||"").trim(),items,rels};
+}
+function planItem(i){ return capPlan.items[i]; }
+function capReview(){
+  const p=capPlan; if(!p) return;
+  const groups={};
+  p.items.forEach((it,i)=>{ (groups[it.type]=groups[it.type]||[]).push(i); });
+  const order=["person","problem","project","system","department","process","decision","question"];
+  const nothing=!p.items.length&&!p.rels.length;
+  let h=`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${nothing?"Nothing to file":"Here's what I found"}</h2>
+      ${p.summary?`<div style="font-size:12.5px;color:var(--faint);line-height:1.4">${esc(p.summary)}</div>`:""}</div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>`;
+  if(nothing) h+=`<div class="ent-empty">I couldn't pull any people, systems or projects out of this one — it'll still be saved as a note you can search and ask about.</div>`;
+  order.forEach(type=>{
+    const idxs=groups[type]; if(!idxs||!idxs.length) return;
+    h+=`<div class="rev-group"><div class="rev-head">${ENT[type].icon}${esc(ENT[type].plural)}</div>`;
+    h+=idxs.map(i=>{
+      const it=p.items[i];
+      const exact=it.conf>=1&&it.rec;
+      const ambiguous=!exact&&it.candidates.length>0;
+      const sameWords = exact && canonThing(it.name)===canonThing(entName(it.type,it.rec));
+      const meta = exact ? (sameWords?"Already on record — I'll add to it":`Already on record as ${entName(it.type,it.rec)} — I'll add to it`)
+        : it.candidates.length ? "" : "New";
+      const mustPick = it.choice==="";
+      const extras=[it.fields.title,it.fields.department,(it.fields.expertise||[]).join(", "),it.fields.status,it.fields.note,it.fields.description,it.fields.reason].filter(Boolean).join(" · ");
+      return `<div class="rev-item ${it.on?"":"off"}" data-revrow="${i}">
+        <span class="rev-cb ${it.on?"on":""}" data-rev="${i}">${I.check}</span>
+        <div class="rev-b">
+          <div class="rev-n">${esc(it.name)}</div>
+          ${extras?`<div class="rev-m">${esc(extras.length>120?extras.slice(0,120)+"…":extras)}</div>`:""}
+          ${meta?`<div class="rev-m" style="color:var(--good)">${esc(meta)}</div>`:""}
+          ${ambiguous?`<div class="rev-flag">⚠ ${mustPick?"More than one this could be — you decide:":"Looks like one you already know — is it?"}</div>
+            <select data-revsel="${i}">
+              ${mustPick?`<option value="" selected>— which one? —</option>`:""}
+              ${it.candidates.map(c=>`<option value="id:${c.id}" ${it.choice==="id:"+c.id?"selected":""}>Same as ${esc(entName(it.type,c))}${it.type==="person"&&c.title?` (${esc(c.title)})`:""}</option>`).join("")}
+              <option value="new" ${it.choice==="new"?"selected":""}>Add "${esc(it.name)}" as new</option>
+            </select>`:""}
+        </div></div>`;
+    }).join("")+`</div>`;
+  });
+  if(p.rels.length){
+    h+=`<div class="rev-group"><div class="rev-head">${I.link}Connections</div><div class="rev-item"><div class="rev-b rev-rel">${
+      p.rels.map((r,i)=>`<div><b>${esc(r.from)}</b> <span class="r">${esc((REL_LABEL[r.rel]||r.rel).toUpperCase())}</span> <b>${esc(r.to)}</b>${r.conf<0.75?` <span style="color:var(--warn);font-size:11px">· inferred</span>`:""}</div>`).join("")
+    }</div></div></div>`;
+  }
+  h+=`<div style="display:flex;gap:10px;margin-top:6px">
+    <button class="btn primary" style="flex:1" data-act="cap-save">${I.check} Save ${nothing?"note":"all"}</button>
+    <button class="btn ghost" data-act="cap-back">← Edit note</button>
+  </div>`;
+  spSetBody(h);
+}
+function capApply(){
+  const p=capPlan; if(!p) return;
+  const o=opById(p.opId); if(!o) return;
+  const cap=wAdd("captures",{opId:o.id,text:p.text,summary:p.summary,entities:[]});
+  const resolved={};   // "type|canonname" → {t,id}
+  p.items.forEach(it=>{
+    if(!it.on||it.choice==="") return;   // unticked, or an ambiguous person you didn't resolve
+    const key=it.type+"|"+canonThing(it.name);
+    let rec=null;
+    const useId = it.choice&&it.choice.indexOf("id:")===0 ? it.choice.slice(3) : null;
+    if(useId) rec=entGet(it.type,useId);
+    // Re-resolve before creating: an earlier item in this same batch may have just created it
+    // (a person's department, say), and we're not about to file two copies of Finance.
+    if(!rec){ const again=resolveEnt(it.type,it.name,o.id); if(again.rec&&again.conf>=1) rec=again.rec; }
+    if(!rec) rec=createEnt(it.type,o.id,it.name,it.fields,cap.id);
+    else mergeEnt(it.type,rec,it.fields);
+    if(!rec) return;
+    resolved[key]={t:it.type,id:rec.id};
+    cap.entities.push({t:it.type,id:rec.id});
+    addLink(o.id,"capture",cap.id,"MENTIONS",it.type,rec.id,1,cap.id);
+  });
+  p.rels.forEach(r=>{
+    if(r.on===false) return;
+    const a=resolved[r.fromType+"|"+canonThing(r.from)], b=resolved[r.toType+"|"+canonThing(r.to)];
+    if(a&&b) addLink(o.id,a.t,a.id,r.rel,b.t,b.id,r.conf,cap.id);
+  });
+  o.updatedAt=Date.now();
+  save(); closeEditor(); capPlan=null;
+  if(view!=="work"){ view="work"; workOpId=o.id; workTab="overview"; }
+  render();
+  const n=cap.entities.length;
+  toast(n?`Filed ✓ ${n} ${n===1?"thing":"things"} updated`:"Note saved");
+}
+function createEnt(type,opId,name,f,viaCapture){
+  f=f||{};
+  if(type==="person"){
+    const o=opById(opId); if(!o) return null; o.people=o.people||[];
+    const p={id:uid(),at:Date.now(),name,title:f.title||"",linkedin:"",email:"",notes:f.notes||"",expertise:(f.expertise||[]).filter(Boolean),fromCapture:viaCapture||""};
+    o.people.push(p);
+    if(f.department){ const d=ensureEnt("department",opId,f.department,{},viaCapture); if(d){ p.deptId=d.id; addLink(opId,"person",p.id,"WORKS_IN","department",d.id,.9,viaCapture); } }
+    (p.expertise||[]).forEach(x=>{ const s=resolveEnt("system",x,opId); if(s.rec) addLink(opId,"person",p.id,"KNOWS","system",s.rec.id,.85,viaCapture); });
+    return p;
+  }
+  const base={opId,fromCapture:viaCapture||""};
+  const rec=Object.assign(base,
+    type==="project"   ? {name,description:f.note||f.description||"",status:PROJECT_STATUS.includes(f.status)?f.status:"Unknown",myRole:"",start:"",target:"",note:""} :
+    type==="problem"   ? {title:name,description:f.description||f.note||"",status:PROBLEM_STATUS.includes(f.status)?f.status:"Discovered",discovered:todayYMD(),attempts:"",solution:"",note:""} :
+    type==="department"? {name,note:f.note||""} :
+    type==="system"    ? {name,note:f.note||"",ownerId:""} :
+    type==="process"   ? {name,note:f.note||"",steps:""} :
+    type==="decision"  ? {title:name,madeBy:f.madeBy||"",date:f.date||"",reason:f.reason||"",alternatives:"",note:""} :
+    type==="question"  ? {q:name,status:"Open",answer:""} : {name});
+  return wAdd(ENT[type].list,rec);
+}
+function ensureEnt(type,opId,name,f,via){ const r=resolveEnt(type,name,opId); return r.rec&&r.conf>=1?r.rec:createEnt(type,opId,name,f,via); }
+// fill in blanks on an existing record — never overwrite what the user already wrote
+function mergeEnt(type,rec,f){
+  if(!f) return;
+  if(type==="person"){
+    if(f.title&&!rec.title) rec.title=f.title;
+    if(f.notes) rec.notes=rec.notes?(rec.notes.includes(f.notes)?rec.notes:rec.notes+"\n"+f.notes):f.notes;
+    if((f.expertise||[]).length){ rec.expertise=[...new Set((rec.expertise||[]).concat(f.expertise.filter(Boolean)))]; }
+    return;
+  }
+  const noteField = type==="problem"?"description":"note";
+  if(f.note&&!rec[noteField]) rec[noteField]=f.note;
+  if(f.description&&!rec.description) rec.description=f.description;
+  if(f.status&&(type==="project"||type==="problem")){
+    const valid=type==="project"?PROJECT_STATUS:PROBLEM_STATUS;
+    if(valid.includes(f.status)&&(rec.status==="Unknown"||rec.status==="Discovered"||!rec.status)){ rec.status=f.status; if(f.status==="Solved") rec.solvedAt=Date.now(); }
+  }
+  if(f.reason&&!rec.reason) rec.reason=f.reason;
+  if(f.madeBy&&!rec.madeBy) rec.madeBy=f.madeBy;
+}
+
+/* ============================ WORK VIEW (90-day mode / My Company) ============================ */
+const WORK_TABS=[["overview","Overview"],["people","People"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
+function renderWork(){
+  const emp=employers(); const o=workOp();
+  if(!o) return `<div class="empty"><div class="big">${I.building}</div><h3>No company yet</h3><p>When you land a role, open it and tap <b>I got the job</b>.</p></div>`;
+  let h="";
+  if(emp.length>1) h+=`<div class="w-switch">${emp.map(e=>`<span class="chip ${e.id===o.id?'tag-chip':''}" data-wop="${e.id}" style="cursor:pointer;white-space:nowrap">${esc(e.company)}</span>`).join("")}</div>`;
+  h+=workHero(o);
+  h+=`<div class="tabs">${WORK_TABS.map(([id,l])=>`<button class="tab ${workTab===id?'active':''}" data-wtab="${id}">${esc(l)}</button>`).join("")}</div>`;
+  if(workTab==="overview")      h+=workOverview(o);
+  else if(workTab==="people")   h+=workPeople(o);
+  else if(workTab==="projects") h+=workSimpleList(o,"project","Projects are context, not a task list — what's happening around you and who's involved.");
+  else if(workTab==="problems") h+=workSimpleList(o,"problem","What's broken, being looked at, or knowingly lived with.");
+  else if(workTab==="knowledge")h+=workKnowledge(o);
+  else if(workTab==="timeline") h+=`<div class="card panel">${timelineHTML(o)}</div>`;
+  else if(workTab==="ask")      h+=workAsk(o);
+  return h;
+}
+function workHero(o){
+  const day=hireDay(o), tint=colorFor(o.company);
+  const pct=day==null?0:Math.max(0,Math.min(1,day/90));
+  const R=32, C=2*Math.PI*R;
+  const ring = day==null?"" : `<div class="wh-ring">
+    <svg viewBox="0 0 76 76" width="76" height="76"><circle cx="38" cy="38" r="${R}" fill="none" stroke="var(--line)" stroke-width="6"/>
+      <circle cx="38" cy="38" r="${R}" fill="none" stroke="${day>90?"var(--good)":"var(--accent)"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct)).toFixed(1)}"/></svg>
+    <div style="text-align:center"><div class="rn">${day>0?day:"—"}</div><div class="rl">${day>90?"days in":day>0?"of 90":"soon"}</div></div></div>`;
+  const started = o.hired&&o.hired.startDate;
+  const sub = day==null ? "Add your start date to begin 90-day mode"
+    : day<=0 ? `Starting ${fmtDate(started)} — ${relDays(daysUntil(started))}`
+    : `${workTitle(o)} · started ${fmtDate(started)}`;
+  return `<div class="work-hero"><div class="wh-glow" style="background:radial-gradient(60% 80% at 20% 0%, ${tint}22, transparent 70%)"></div>
+    <div class="wh-top">${favHTML(o)}
+      <div style="min-width:0"><div class="wh-name">${esc(o.company)}</div><div class="wh-sub">${esc(sub)}</div></div>
+      ${ring}</div>
+    <div class="wh-actions">
+      <button class="btn primary sm" data-act="capture">${I.plus} Capture</button>
+      <button class="btn ghost sm" data-act="who-ask">${I.people} Who do I ask?</button>
+      <button class="btn ghost sm" data-act="work-gaps">${I.spark} What am I missing?</button>
+      <button class="btn ghost sm" data-open="${o.id}">Role details</button>
+    </div></div>`;
+}
+function workCounts(o){
+  const openQ=wOf("questions",o.id).filter(q=>q.status==="Open").length;
+  const openP=wOf("problems",o.id).filter(p=>p.status!=="Solved"&&p.status!=="Accepted").length;
+  return {
+    people:(o.people||[]).length, departments:wOf("departments",o.id).length,
+    projects:wOf("projects",o.id).length, problems:wOf("problems",o.id).length,
+    systems:wOf("systems",o.id).length, questions:openQ, openProblems:openP,
+    notes:wOf("captures",o.id).length,
+  };
+}
+function workOverview(o){
+  const c=workCounts(o);
+  const tile=(n,l,d,tab,col)=>`<div class="w-tile" data-wtab="${tab}"><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></div>`;
+  let h=`<div class="w-tiles">
+    ${tile(c.people,"People","you've met","people")}
+    ${tile(c.departments,"Departments","","knowledge","var(--warn)")}
+    ${tile(c.projects,"Projects","","projects")}
+    ${tile(c.problems,"Problems",c.openProblems+" open","problems",c.openProblems?"var(--hot)":"")}
+    ${tile(c.systems,"Systems","","knowledge")}
+    ${tile(c.questions,"Questions",c.questions?"still open":"","knowledge",c.questions?"var(--warn)":"")}
+  </div>`;
+
+  // a 30/60/90 report becomes available as you pass each mark
+  const day=hireDay(o);
+  const due=[90,60,30].find(d=>day!=null&&day>=d);
+  if(due){
+    const have=wOf("reports",o.id).find(r=>r.day===due);
+    h+=`<div class="ai-box" style="border-color:rgba(78,163,129,.35);background:linear-gradient(160deg,rgba(78,163,129,.1),rgba(78,163,129,.05))">
+      <div class="ai-head" style="color:var(--good)">${I.trophy} ${due===90?"You've hit day 90":`Day ${due} is behind you`}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${due===90?"Time for your 90-day map — everything you've learned about how this place actually works.":`See what you learned in your first ${due} days, and what's still fuzzy.`}</div>
+      <button class="btn primary sm" data-report="${due}">${I.map} ${have?"Open":"Generate"} the ${due===90?"90-day map":`day-${due} review`}</button>
+    </div>`;
+  }
+
+  // What am I missing — computed from the graph, so it never makes anything up
+  const gaps=knowledgeGaps(o);
+  if(gaps.length){
+    h+=`<div class="section-head"><h3>What you might be missing</h3><div class="line"></div><span class="tag">${gaps.length}</span></div>
+      <div class="card panel">${gaps.slice(0,3).map(gapHTML).join("")}
+      ${gaps.length>3?`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">See all ${gaps.length}</button>`:""}</div>`;
+  }
+
+  const wk=weekData(o);
+  if(wk.total){
+    h+=`<div class="section-head"><h3>Your week</h3><div class="line"></div></div>
+      <div class="card panel"><div style="font-size:13px;line-height:1.75;color:var(--muted)">${wk.lines.map(l=>`<div>${l}</div>`).join("")}</div>
+      ${wk.newQ.length?`<div class="sect-note" style="margin:12px 2px 0">Still open: ${wk.newQ.slice(0,3).map(q=>esc(entName("question",q))).join(" · ")}</div>`:""}</div>`;
+  }
+
+  const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>b.at-a.at);
+  if(openQs.length){
+    h+=`<div class="section-head"><h3>Open questions</h3><div class="line"></div><span class="tag">${openQs.length}</span></div>
+      <div class="card panel" style="padding:5px">${openQs.slice(0,5).map(q=>entRow("question",q,{tail:`<button class="btn sm ghost" data-qstat="${q.id}|Answered" title="Mark answered">✓</button>`})).join("")}</div>`;
+  }
+
+  const recent=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,4);
+  h+=`<div class="section-head"><h3>Recent notes</h3><div class="line"></div>${c.notes?`<span class="tag">${c.notes}</span>`:""}</div>`;
+  h+= recent.length
+    ? `<div class="card panel" style="padding:5px">${recent.map(cp=>entRow("capture",cp,{meta:(cp.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(cp.at)),tail:relDays(daysUntil(ymdOf(cp.at)))})).join("")}</div>`
+    : `<div class="card panel"><div class="ent-empty">Nothing captured yet.<br><br><button class="btn primary sm" data-act="capture">${I.plus} Capture what just happened</button></div></div>`;
+
+  h+=`<div class="section-head"><h3>Timeline</h3><div class="line"></div></div><div class="card panel">${timelineHTML(o,5)}</div>`;
+  return h;
+}
+function entRow(type,rec,opts){
+  opts=opts||{};
+  const meta=opts.meta!=null?opts.meta:entRowMeta(type,rec);
+  return `<div class="ent-row" data-ent="${type}|${rec.id}">
+    ${entIcoHTML(type,rec)}
+    <div class="ent-body"><div class="ent-name">${esc(entName(type,rec))}</div>${meta?`<div class="ent-meta">${esc(meta)}</div>`:""}</div>
+    ${opts.pill||""}
+    ${opts.tail?`<div class="ent-tail" style="display:flex;gap:6px;align-items:center">${opts.tail}</div>`:""}
+  </div>`;
+}
+function entRowMeta(type,r){
+  const opId=r.opId||entOpId(type,r.id);
+  if(type==="person"){
+    const dept=r.deptId?entLabel("department",r.deptId):"";
+    const knows=relatedOfType("person",r.id,"system",["KNOWS","OWNS"]).map(x=>entLabel("system",x.id));
+    const owns=relatedOfType("person",r.id,"process",["OWNS"]).concat(relatedOfType("person",r.id,"project",["OWNS"]));
+    const n=personInteractions(r).length;
+    return [r.title,dept,knows.length?"knows "+knows.slice(0,2).join(", "):"",owns.length?"owns "+owns.map(x=>entLabel(x.type,x.id)).slice(0,2).join(", "):"",n?`${n} ${n===1?"interaction":"interactions"}`:""].filter(Boolean).join(" · ");
+  }
+  if(type==="project") return [r.status,r.deptId?entLabel("department",r.deptId):"",r.ownerId?"owner "+entLabel("person",r.ownerId):"no owner recorded",r.description].filter(Boolean).join(" · ");
+  if(type==="problem") return [r.status,r.discovered?"found "+fmtDate(r.discovered):"",r.description].filter(Boolean).join(" · ");
+  if(type==="system")  return [r.ownerId?"owner "+entLabel("person",r.ownerId):"no owner recorded",r.note].filter(Boolean).join(" · ");
+  if(type==="question")return [r.status!=="Open"?r.status:"",r.answer||""].filter(Boolean).join(" · ")||fmtDate(ymdOf(r.at));
+  if(type==="capture") return (r.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(r.at));
+  if(type==="decision")return [r.madeBy?"by "+r.madeBy:"",r.date||"",r.reason].filter(Boolean).join(" · ");
+  if(type==="department"){ const n=entAll("person",opId).filter(p=>p.deptId===r.id).length; return [n?`${n} ${n===1?"person":"people"}`:"nobody yet",r.note].filter(Boolean).join(" · "); }
+  return r.note||"";
+}
+function statusPill(txt,col){ return `<span class="st-pill" style="background:${col}22;color:${col}">${esc(txt)}</span>`; }
+function projPill(s){ return statusPill(s||"Unknown",{Active:"#4ea381",Blocked:"#d06b6b",Complete:"#5b86b3",Cancelled:"#7c828f",Idea:"#8a72bd"}[s]||"#7c828f"); }
+function probPill(s){ return statusPill(s||"Discovered",{Discovered:"#c6a45c",Investigating:"#5b86b3",Solved:"#4ea381",Recurring:"#cf7273",Accepted:"#7c828f"}[s]||"#7c828f"); }
+function personInteractions(p){
+  // every note that mentions them, plus every interview round they sat in — one honest count
+  const caps=evidenceFor("person",p.id);
+  const o=opById(entOpId("person",p.id));
+  const rounds=o?(o.rounds||[]).filter(r=>r.interviewers&&String(r.interviewers).toLowerCase().includes((p.name||"").split(" ")[0].toLowerCase())):[];
+  return caps.map(c=>({t:"capture",at:c.at,rec:c})).concat(rounds.map(r=>({t:"round",at:r.date?new Date(r.date+"T12:00").getTime():0,rec:r}))).sort((a,b)=>b.at-a.at);
+}
+function workPeople(o){
+  const ppl=(o.people||[]).slice();
+  if(!ppl.length) return `<div class="card panel"><div class="ent-empty">Nobody yet. Capture a note about someone you met and they'll appear here — along with anyone you met while interviewing.</div></div>`;
+  ppl.sort((a,b)=>personInteractions(b).length-personInteractions(a).length||(a.name||"").localeCompare(b.name||""));
+  const depts=wOf("departments",o.id);
+  let h=`<div class="sect-note">Everyone you've met here — the same records you built while interviewing, now with what they know and who they work with.</div>`;
+  h+=`<div class="card panel" style="padding:5px">${ppl.map(p=>{
+    const last=(personInteractions(p)[0]||{}).at;
+    return entRow("person",p,{tail:last?esc(relDays(daysUntil(ymdOf(last)))):""});
+  }).join("")}</div>`;
+  h+=`<button class="add-sub" data-entadd="person" style="margin-top:12px">＋ Add someone</button>`;
+  if(depts.length){
+    h+=`<div class="section-head"><h3>Departments</h3><div class="line"></div></div>
+      <div class="card panel" style="padding:5px">${depts.map(d=>entRow("department",d)).join("")}</div>`;
+  }
+  return h;
+}
+function workSimpleList(o,type,note){
+  const list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
+  let h=`<div class="sect-note">${esc(note)}</div>`;
+  h+= list.length
+    ? `<div class="card panel" style="padding:5px">${list.map(r=>entRow(type,r,{pill:type==="project"?projPill(r.status):type==="problem"?probPill(r.status):""})).join("")}</div>`
+    : `<div class="card panel"><div class="ent-empty">Nothing here yet — capture a note and anything relevant lands here automatically.</div></div>`;
+  h+=`<button class="add-sub" data-entadd="${type}" style="margin-top:12px">＋ Add ${esc(ENT[type].label.toLowerCase())}</button>`;
+  return h;
+}
+function workKnowledge(o){
+  let h=`<div class="sect-note">How this place works: the systems you depend on, the processes around you, why things are the way they are — and what you still don't know.</div>`;
+  h+=`<div class="card panel" style="margin-bottom:16px"><div class="panel-title">${I.map} The map</div>${workGraph(o)}</div>`;
+  [["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["department","The org as you've encountered it."],["capture","Everything you've captured."]].forEach(([type,note])=>{
+    let list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
+    if(type==="question") list=list.sort((a,b)=>(a.status==="Open"?0:1)-(b.status==="Open"?0:1)||b.at-a.at);
+    h+=`<div class="section-head"><h3>${esc(ENT[type].plural)}</h3><div class="line"></div>${list.length?`<span class="tag">${list.length}</span>`:""}</div>`;
+    h+= list.length
+      ? `<div class="card panel" style="padding:5px">${list.slice(0,type==="capture"?12:50).map(r=>entRow(type,r,{
+          pill:type==="question"?statusPill(r.status,{Open:"#c6a45c",Answered:"#4ea381",Dismissed:"#7c828f"}[r.status]||"#7c828f"):"",
+          tail:type==="question"&&r.status==="Open"?`<button class="btn sm ghost" data-qstat="${r.id}|Answered" title="Mark answered">✓</button>`:""
+        })).join("")}</div>`
+      : `<div class="card panel"><div class="ent-empty">${esc(note)}</div></div>`;
+    if(type!=="capture") h+=`<button class="add-sub" data-entadd="${type}" style="margin-top:10px">＋ Add ${esc(ENT[type].label.toLowerCase())}</button>`;
+  });
+  return h;
+}
+
+/* ---- The map. A discovery tool, not the main interface: departments ring the company,
+   the people and systems you've linked to them hang off each one. Hand-rolled SVG. ---- */
+function workGraph(o){
+  const depts=wOf("departments",o.id);
+  const ppl=(o.people||[]), systems=wOf("systems",o.id);
+  if(!depts.length&&!ppl.length&&!systems.length) return `<div class="ent-empty">Capture a few notes and your map of the place appears here.</div>`;
+  const W=520,H=430,cx=W/2,cy=H/2;
+  const spokes=depts.length?depts.map(d=>({t:"department",r:d})):[{t:"none",r:{id:"_",name:"Unfiled"}}];
+  // anyone/anything with no department hangs off a catch-all spoke
+  const grouped=spokes.map(s=>({...s, kids:[
+    ...ppl.filter(p=>s.t==="department"?p.deptId===s.r.id:!p.deptId).map(p=>({t:"person",r:p})),
+    ...systems.filter(sy=>{ const d=relatedOfType("system",sy.id,"department"); return s.t==="department"?d.some(x=>x.id===s.r.id):!d.length; }).map(sy=>({t:"system",r:sy})),
+  ].slice(0,6)}));
+  const unfiled=ppl.filter(p=>!p.deptId).length+systems.filter(sy=>!relatedOfType("system",sy.id,"department").length).length;
+  if(depts.length&&unfiled) grouped.push({t:"none",r:{id:"_",name:"Unfiled"},kids:[
+    ...ppl.filter(p=>!p.deptId).map(p=>({t:"person",r:p})),
+    ...systems.filter(sy=>!relatedOfType("system",sy.id,"department").length).map(sy=>({t:"system",r:sy})),
+  ].slice(0,6)});
+  const n=grouped.length, R1=105, R2=178;
+  let edges="",nodes="";
+  const label=(x,y,txt,size,col)=>`<text x="${x}" y="${y}" text-anchor="middle" fill="${col}" font-size="${size}" font-weight="700">${esc(txt.length>16?txt.slice(0,15)+"…":txt)}</text>`;
+  grouped.forEach((g,i)=>{
+    const a=(i/n)*2*Math.PI-Math.PI/2;
+    const x=cx+R1*Math.cos(a), y=cy+R1*Math.sin(a);
+    const col=g.t==="department"?ENT.department.col:"#5a5f6a";
+    edges+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line2)" stroke-width="1.4"/>`;
+    g.kids.forEach((k,j)=>{
+      // fan the children out, and alternate their distance so labels never collide
+      const spread=Math.min(0.8, 0.34*(g.kids.length-1)||0.001);
+      const ka=a+(g.kids.length>1?(-spread/2+spread*(j/(g.kids.length-1))):0);
+      const kr=R2+(j%2)*38;
+      const kx=cx+kr*Math.cos(ka), ky=cy+kr*Math.sin(ka);
+      edges+=`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${kx.toFixed(1)}" y2="${ky.toFixed(1)}" stroke="var(--line)" stroke-width="1.2"/>`;
+      const kc=k.t==="person"?colorFor(k.r.name||"?"):ENT[k.t].col;
+      nodes+=`<g class="wg-node" data-ent="${k.t}|${k.r.id}"><circle cx="${kx.toFixed(1)}" cy="${ky.toFixed(1)}" r="13" fill="${kc}" opacity=".92"/>
+        <text x="${kx.toFixed(1)}" y="${(ky+3.5).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="800">${esc(k.t==="person"?initials(k.r.name):entName(k.t,k.r).slice(0,2).toUpperCase())}</text>
+        ${label(kx,ky+27,entName(k.t,k.r),9,"var(--muted)")}</g>`;
+    });
+    nodes+=`<g class="wg-node"${g.t==="department"?` data-ent="department|${g.r.id}"`:""}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="19" fill="${col}" opacity=".9"/>
+      ${label(x,y+3.5,(g.r.name||"").slice(0,3).toUpperCase(),10,"#fff")}${label(x,y+33,g.r.name||"",10,"var(--txt)")}</g>`;
+  });
+  return `<div class="wgraph"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="max-width:${W}px">
+    ${edges}
+    <circle cx="${cx}" cy="${cy}" r="30" fill="var(--accent)" opacity=".9"/>
+    <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#fff" font-size="12" font-weight="850">${esc(initials(o.company))}</text>
+    ${nodes}
+  </svg></div><div class="sect-note" style="margin:10px 2px 0">Tap any node to open it. Departments ring the company; the people and systems you've linked to each one hang off it.</div>`;
+}
+
+/* ============================ ENTITY DETAIL + FORMS ============================ */
+function openEnt(type,id){
+  const rec=entGet(type,id); if(!rec){ toast("That's been deleted"); return; }
+  openEditor(entDetailBody(type,rec));
+}
+function entDetailBody(type,rec){
+  const opId=entOpId(type,rec.id), o=opById(opId);
+  const c=ENT[type];
+  let h=`<div style="display:flex;align-items:flex-start;gap:11px;margin-bottom:14px">
+    ${entIcoHTML(type,rec,true)}
+    <div style="flex:1;min-width:0"><h2 style="margin:0;font-size:17.5px;font-weight:850;line-height:1.35">${esc(entName(type,rec))}</h2>
+      <div style="font-size:12px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px">${esc(c.label)}${o?` · ${esc(o.company)}`:""}</div></div>
+    <button class="x-btn" data-act="cancel-editor">${I.x}</button></div>`;
+
+  const rows=[];
+  if(type==="person"){
+    const ints=personInteractions(rec);
+    // expertise that isn't already a linked System — the graph shows those below, no need twice
+    const linked=relatedOfType("person",rec.id,"system",["KNOWS","OWNS"]).map(x=>canonThing(entLabel("system",x.id)));
+    rows.push(["Title",rec.title],["Department",rec.deptId?entLabel("department",rec.deptId):""],
+      ["Knows",(rec.expertise||[]).filter(x=>!linked.includes(canonThing(x))).join(", ")],
+      ["Interactions",ints.length?`${ints.length} recorded${ints[0]&&ints[0].at?` · last ${fmtDate(ymdOf(ints[0].at))}`:""}`:"none recorded"],
+      ["Email",rec.email],["LinkedIn",rec.linkedin?`<a href="${esc(rec.linkedin)}" target="_blank" rel="noopener">profile ↗</a>`:""]);
+    const rounds=ints.filter(x=>x.t==="round");
+    if(rounds.length) rows.push(["Met while interviewing",rounds.map(r=>esc(r.rec.name||r.rec.type||"round")).join(", ")]);
+  }
+  else if(type==="project") rows.push(["Status",projPill(rec.status)],["Owner",rec.ownerId?entLabel("person",rec.ownerId):"— not recorded"],["Department",rec.deptId?entLabel("department",rec.deptId):""],["My role",rec.myRole],["Started",rec.start?fmtDate(rec.start):""],["Target",rec.target?fmtDate(rec.target):""],["What it is",rec.description]);
+  else if(type==="problem") rows.push(["Status",probPill(rec.status)],["Discovered",rec.discovered?fmtDate(rec.discovered):""],["What's wrong",rec.description],["Tried so far",rec.attempts],["Solution",rec.solution]);
+  else if(type==="system") rows.push(["Owner",rec.ownerId?entLabel("person",rec.ownerId):"— not recorded"],["Notes",rec.note]);
+  else if(type==="process") rows.push(["How it works",rec.steps],["Notes",rec.note]);
+  else if(type==="decision") rows.push(["Made by",rec.madeBy],["When",rec.date],["Why",rec.reason],["Alternatives considered",rec.alternatives],["Notes",rec.note]);
+  else if(type==="department") rows.push(["Notes",rec.note]);
+  else if(type==="question") rows.push(["Status",statusPill(rec.status,{Open:"#c6a45c",Answered:"#4ea381",Dismissed:"#7c828f"}[rec.status]||"#7c828f")],["Answer",rec.answer]);
+  else if(type==="capture") rows.push(["Captured",fmtDate(ymdOf(rec.at))],["Summary",rec.summary]);
+
+  const shown=rows.filter(r=>r[1]);
+  if(shown.length) h+=`<dl class="kv">${shown.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${/^<(a|span)/.test(String(v))?v:esc(v)}</dd>`).join("")}</dl>`;
+  if(type==="capture") h+=`<div class="note-block" style="white-space:pre-wrap">${esc(rec.text||"")}</div>`;
+  else if(rec.notes) h+=`<div class="note-block">${esc(rec.notes)}</div>`;
+
+  // everything this connects to, grouped by relationship — the graph, read out loud
+  const rel=relatedTo(type,rec.id,true);
+  if(rel.length){
+    const by={};
+    rel.forEach(r=>{ const k=(r.dir==="out"?"":"← ")+(REL_LABEL[r.rel]||r.rel); (by[k]=by[k]||[]).push(r); });
+    h+=`<div class="ai-subhead">${I.link} Connections</div>`;
+    h+=Object.entries(by).map(([k,list])=>`<div style="margin-bottom:9px"><div style="font-size:11px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">${esc(k)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${list.map(r=>`<span class="chip" data-ent="${r.type}|${r.id}" style="cursor:pointer;border-color:${ENT[r.type].col}55;color:${ENT[r.type].col}">${esc(entLabel(r.type,r.id))}${r.conf<0.75?" ·?":""}</span>`).join("")}</div></div>`).join("");
+  }
+  if(type==="department"){
+    const ppl=(o&&o.people||[]).filter(p=>p.deptId===rec.id);
+    if(ppl.length) h+=`<div class="ai-subhead">${I.user} People</div><div style="display:flex;gap:6px;flex-wrap:wrap">${ppl.map(p=>`<span class="chip" data-ent="person|${p.id}" style="cursor:pointer">${esc(p.name)}</span>`).join("")}</div>`;
+  }
+
+  const ev=evidenceFor(type,rec.id);
+  if(ev.length&&type!=="capture"){ h+=`<div class="ai-subhead">${I.note} Where this came from</div>${evidenceHTML(ev)}`; }
+
+  h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">
+    ${type!=="capture"?`<button class="btn ghost sm" data-entedit="${type}|${rec.id}">${I.edit} Edit</button>`:""}
+    ${type==="question"&&rec.status==="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Answered">✓ Answered</button><button class="btn ghost sm" data-qstat="${rec.id}|Dismissed">Dismiss</button>`:""}
+    ${type==="question"&&rec.status!=="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Open">↺ Reopen</button>`:""}
+    ${type==="person"?`<button class="btn ghost sm" data-whoabout="${rec.id}">${I.ai} What do I know?</button>`:""}
+    <button class="btn ghost sm danger" data-entdel="${type}|${rec.id}">${I.trash} Delete</button>
+  </div>`;
+  return h;
+}
+
+/* One form builder for every entity type — same look as the rest of the app, a fraction of the code.
+   [name, label, kind, required, options] where kind is text|textarea|date|select|ent:<type> */
+function entFields(type){
+  return {
+    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
+    project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
+    problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
+    department:[["name","Name","text",1],["note","Notes","textarea"]],
+    system:    [["name","Name","text",1],["ownerId","Owner","ent:person"],["note","Notes","textarea"]],
+    process:   [["name","Name","text",1],["steps","How it works","textarea"],["note","Notes","textarea"]],
+    decision:  [["title","Decision","text",1],["madeBy","Made by","text"],["date","When","text"],["reason","Why","textarea"],["alternatives","Alternatives considered","textarea"],["note","Notes","textarea"]],
+    question:  [["q","Question","text",1],["status","Status","select",0,QUESTION_STATUS],["answer","Answer","textarea"]],
+  }[type]||[];
+}
+function openEntForm(type,rec,opId){
+  opId=opId||(rec&&(rec.opId||entOpId(type,rec.id)))||(workOp()||{}).id;
+  const fields=entFields(type);
+  const body=fields.map(([n,l,kind,req,opts])=>{
+    const v=rec?rec[n]:"";
+    let input;
+    if(kind==="textarea") input=`<textarea name="${n}">${esc(v||"")}</textarea>`;
+    else if(kind==="date") input=`<input type="date" name="${n}" value="${esc(v||"")}"/>`;
+    else if(kind==="tags") input=`<input name="${n}" value="${esc((v||[]).join?(v||[]).join(", "):(v||""))}" placeholder="Salesforce, forecasting"/>`;
+    else if(kind==="select") input=`<select name="${n}">${(opts||[]).map(x=>`<option ${v===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
+    else if(kind&&kind.indexOf("ent:")===0){
+      const t=kind.slice(4);
+      input=`<select name="${n}"><option value="">— none —</option>${entAll(t,opId).map(r=>`<option value="${r.id}" ${v===r.id?"selected":""}>${esc(entName(t,r))}</option>`).join("")}</select>`;
+    }
+    else input=`<input name="${n}" value="${esc(v||"")}" ${req?"required":""}/>`;
+    return `<div class="form-row"><label>${esc(l)}${req?" *":""}</label>${input}</div>`;
+  }).join("");
+  openEditor(`<h2 style="margin:0 0 16px;font-size:18px;font-weight:850">${rec?"Edit":"Add"} ${esc(ENT[type].label.toLowerCase())}</h2>
+    <form id="entForm">${body}
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button type="submit" class="btn primary" style="flex:1">${I.check} Save</button>
+      <button type="button" class="btn ghost" data-act="cancel-editor">Cancel</button>
+    </div></form>`);
+  editorEl.dataset.entType=type; editorEl.dataset.entId=rec?rec.id:""; editorEl.dataset.entOp=opId;
+}
+function saveEntForm(form){
+  const type=editorEl.dataset.entType, id=editorEl.dataset.entId, opId=editorEl.dataset.entOp;
+  const d=fd(form);
+  entFields(type).forEach(([n,l,kind])=>{ if(kind==="tags") d[n]=(d[n]||"").split(",").map(s=>s.trim()).filter(Boolean); });
+  const nameField=entFields(type)[0][0];
+  if(!d[nameField]){ toast("Give it a name"); return; }
+  let rec=id?entGet(type,id):null;
+  if(rec){ if(type==="problem"&&d.status==="Solved"&&rec.status!=="Solved") d.solvedAt=Date.now(); Object.assign(rec,d); }
+  else if(type==="person"){
+    const o=opById(opId); if(!o) return; o.people=o.people||[];
+    rec=Object.assign({id:uid(),linkedin:"",email:"",notes:""},d); o.people.push(rec); o.updatedAt=Date.now();
+  }
+  else rec=wAdd(ENT[type].list,Object.assign({opId},d));
+  // department / owner picks are relationships too, so the graph stays the single source of truth
+  if(d.deptId) addLink(opId,type,rec.id,type==="person"?"WORKS_IN":"PART_OF","department",d.deptId,1);
+  if(d.ownerId) addLink(opId,"person",d.ownerId,"OWNS",type,rec.id,1);
+  (d.expertise||[]).forEach(x=>{ const s=resolveEnt("system",x,opId); if(s.rec&&s.conf>=1) addLink(opId,"person",rec.id,"KNOWS","system",s.rec.id,1); });
+  save(); closeEditor(); render(); toast("Saved");
+}
+
+/* ============================ ASK MEANWHILE ============================
+   Not a general chatbot: it answers from your records, cites the note each claim came from,
+   and is told to say "I don't have anything on that" rather than fill the gap with invention. */
+function workRefs(o){
+  const refs={}; const L=[]; let n={};
+  const key=t=>({person:"p",project:"pr",problem:"pb",department:"d",system:"s",process:"pc",decision:"dc",question:"q",capture:"c"})[t];
+  const reg=(t,rec)=>{ const k=key(t); n[k]=(n[k]||0)+1; const id=k+n[k]; refs[id]={t,id:rec.id}; return id; };
+  ["person","department","system","project","problem","process","decision","question"].forEach(t=>{
+    const list=entAll(t,o.id); if(!list.length) return;
+    L.push("",ENT[t].plural.toUpperCase()+":");
+    list.forEach(rec=>{
+      const id=reg(t,rec);
+      let line=`[${id}] ${entName(t,rec)}`;
+      const m=entRowMeta(t,rec); if(m) line+=` — ${m}`;
+      L.push(line.length>240?line.slice(0,240)+"…":line);
+    });
+  });
+  const caps=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,40);
+  if(caps.length){
+    L.push("","MY NOTES (newest first):");
+    caps.forEach(c=>{ const id=reg("capture",c); const t=(c.text||"").replace(/\s+/g," "); L.push(`[${id}] ${fmtDate(ymdOf(c.at))}: ${t.length>420?t.slice(0,420)+"…":t}`); });
+  }
+  const links=W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS");
+  if(links.length){
+    L.push("","WHAT I'VE RECORDED ABOUT HOW THINGS CONNECT:");
+    links.slice(0,120).forEach(l=>{
+      const a=entGet(l.st,l.sid), b=entGet(l.tt,l.tid); if(!a||!b) return;
+      L.push(`- ${entName(l.st,a)} ${REL_LABEL[l.rel]||l.rel} ${entName(l.tt,b)}${l.conf<0.75?" (inferred, low confidence)":""}`);
+    });
+  }
+  return {refs,text:L.join("\n")};
+}
+function askWorkPrompt(o,q,ctx){
+  const day=hireDay(o);
+  return `You are the organizational memory of one person — ${getProfile().name||"the user"}${o.hired&&o.hired.title?`, ${o.hired.title}`:""} at ${o.company}${day>0?`, ${day} days in`:""}. Everything below is what THEY have personally recorded. Today is ${todayYMD()}.
+
+${ctx.text}
+
+---
+Answer their question using only the records above.
+
+Hard rules:
+- Cite your sources inline with the bracket ids exactly as they appear, e.g. [p2] or [c7]. Every specific claim needs at least one.
+- Distinguish what is recorded from what you're inferring. Say "You recorded…", "Based on three notes…", "This appears to be…".
+- If the records don't cover it, say so plainly and suggest who they could ask or what to find out. Never invent people, owners, reporting lines, dates, project status, company politics or anyone's opinions.
+- Be concise and concrete. Lead with the answer. No preamble, no headings unless it genuinely helps.
+
+Question: ${q}`;
+}
+let askRefs={};
+// a citation reads as a name for a record and as a date for a note — never a wall of note text
+function citeLabel(t,id){
+  if(t==="capture"){ const c=wFind("captures",id); return c?`${fmtDate(ymdOf(c.at))} note`:""; }
+  return entLabel(t,id);
+}
+function citeHTML(text){
+  return esc(text).replace(/\[([a-z]{1,2}\d{1,3})\]/g,(m,id)=>{
+    const r=askRefs[id]; if(!r) return m;
+    const label=citeLabel(r.t,r.id); if(!label) return m;
+    return `<span class="cite" data-cite="${r.t}|${r.id}">${esc(label)}</span>`;
+  });
+}
+function workAsk(o){
+  const live=aiEngine()!=="paste"&&aiEngine()!=="off";
+  const sugg=["Who should I talk to about forecasting?","What do I know about our systems?","Why do we do it this way?","What did I learn this week?","What problems keep coming up?"];
+  return `<div class="ai-box ask-box">
+    <div class="ai-head">${I.ai} Ask Meanwhile</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${live?`Answers from your notes about ${esc(o.company)} — every claim links back to where you recorded it.`:`Builds a prompt with everything you know about ${esc(o.company)}. <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">Connect an AI</span> for answers in one tap.`}</div>
+    <div class="ask-chips">${sugg.map(s=>`<span class="chip" data-wask="${esc(s)}">${esc(s)}</span>`).join("")}</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="wAskInput" placeholder="Ask about people, projects, systems…" autocomplete="off" style="flex:1"/>
+      <button class="btn primary" data-act="work-ask">${I.ai} Ask</button>
+    </div>
+    <div id="wAskAnswer" class="ai-answer" style="display:none;margin-top:12px"></div>
+    <div id="wAskActions" style="display:none;margin-top:8px"><button class="btn ghost sm" data-act="aigen-copy">${I.copy} Copy</button></div>
+  </div>
+  <div class="section-head"><h3>Shortcuts</h3><div class="line"></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn ghost sm" data-act="who-ask">${I.people} Who do I ask?</button>
+    <button class="btn ghost sm" data-act="work-gaps">${I.spark} What am I missing?</button>
+    <button class="btn ghost sm" data-report="30">${I.map} Day-30 review</button>
+    <button class="btn ghost sm" data-report="90">${I.trophy} 90-day map</button>
+  </div>`;
+}
+async function runWorkAsk(q){
+  const o=workOp(); if(!o) return;
+  const inp=$("#wAskInput"); q=(q||(inp?inp.value:"")||"").trim();
+  if(!q){ toast("Type a question"); return; }
+  if(inp&&q!==inp.value) inp.value=q;
+  const ctx=workRefs(o); askRefs=ctx.refs;
+  if(aiEngine()==="paste"||aiEngine()==="off"){ copy(askWorkPrompt(o,q,ctx),"Prompt copied — paste into any AI"); return; }
+  const ans=$("#wAskAnswer"), acts=$("#wAskActions");
+  if(ans){ ans.style.display="block"; ans.textContent="Looking through your notes…"; } if(acts) acts.style.display="none";
+  try{
+    const out=await aiCall(askWorkPrompt(o,q,ctx),null,{json:false,maxTokens:1600});
+    aiGenText=(out||"").trim();
+    if(ans) ans.innerHTML=citeHTML(aiGenText||"(no response)");
+    if(acts) acts.style.display="block";
+  }catch(e){ if(ans) ans.textContent="⚠ "+e.message; }
+}
+
+/* ---- "Who do I ask?" — ranked in JS from the graph so the evidence is always real.
+   The AI only phrases the recommendation; it can't add a person who isn't in your records. ---- */
+const STOP=new Set("the a an of for to in on at is are was were do does did i my me we our you your it this that what who how why when which and or but with about into from can should would could".split(" "));
+function terms(q){ return norm(q).split(" ").filter(w=>w.length>2&&!STOP.has(w)); }
+function whoToAsk(o,q){
+  const T=terms(q); if(!T.length) return [];
+  const hit=s=>{ const n=norm(s); return T.filter(t=>n.includes(t)).length; };
+  const out=[];
+  (o.people||[]).forEach(p=>{
+    let score=0; const why=[];
+    const rel=relatedTo("person",p.id,true);
+    rel.forEach(r=>{
+      const nm=entLabel(r.type,r.id); const h=hit(nm); if(!h) return;
+      const w=({OWNS:5,KNOWS:4,HELPED_SOLVE:5,INVOLVED_IN:3,WORKS_IN:2,USES:2}[r.rel]||2)*(r.conf||1);
+      score+=w*h;
+      why.push(`${r.dir==="out"?(REL_LABEL[r.rel]||r.rel):"linked to"} ${nm}${r.conf<0.75?" — though that one's inferred":""}`);
+    });
+    (p.expertise||[]).forEach(x=>{ const h=hit(x); if(h){ score+=3*h; why.push(`you recorded them as knowing ${x}`); } });
+    if(p.title&&hit(p.title)){ score+=2; why.push(`their title is ${p.title}`); }
+    if(p.deptId&&hit(entLabel("department",p.deptId))){ score+=2; why.push(`they're in ${entLabel("department",p.deptId)}`); }
+    const caps=evidenceFor("person",p.id).filter(c=>hit(c.text));
+    if(caps.length){ score+=1.6*caps.length; why.push(caps.length===1?"one of your notes mentions them alongside this":`${caps.length} of your notes mention them alongside this`); }
+    if(score>0) out.push({p,score,why:[...new Set(why)],caps});
+  });
+  return out.sort((a,b)=>b.score-a.score).slice(0,4);
+}
+function openWhoAsk(preset){
+  const o=workOp(); if(!o) return;
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Who do I ask?</h2><div style="font-size:12.5px;color:var(--faint)">Describe what you're stuck on</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <textarea id="whoQ" style="min-height:70px" placeholder="Our territory numbers are wrong.">${esc(preset||"")}</textarea>
+  <button class="btn primary" data-act="who-run" style="margin-top:10px;width:100%">${I.ai} Find the right people</button>
+  <div id="whoOut" style="margin-top:14px"></div>`);
+  if(preset) setTimeout(runWhoAsk,60);
+}
+async function runWhoAsk(){
+  const o=workOp(); const ta=document.getElementById("whoQ"); const q=(ta?ta.value:"").trim();
+  const box=document.getElementById("whoOut"); if(!o||!box) return;
+  if(!q){ toast("Describe the problem first"); return; }
+  const ranked=whoToAsk(o,q);
+  if(!ranked.length){
+    box.innerHTML=`<div class="ent-empty">Nothing in your records points to anyone for this yet.<br><br>That's useful too — it's a gap. Capture a note next time it comes up, or add it as an open question.</div>
+      <button class="btn ghost sm" data-entadd="question" style="width:100%">＋ Add "${esc(q.length>44?q.slice(0,44)+"…":q)}" as an open question</button>`;
+    return;
+  }
+  box.innerHTML=`<div class="rev-head">${I.people}Likely contacts</div>`+ranked.map((r,i)=>`
+    <div class="who-card">
+      <div class="who-h"><span class="who-rank">${i+1}</span>${entIcoHTML("person",r.p)}
+        <div style="min-width:0"><div class="ent-name" data-ent="person|${r.p.id}" style="cursor:pointer">${esc(r.p.name)}</div>
+        <div class="ent-meta">${esc(r.p.title||"")}</div></div></div>
+      <ul class="who-why">${r.why.slice(0,4).map(w=>`<li>${esc(w)}</li>`).join("")}</ul>
+      ${evidenceHTML(r.caps,"From:")}
+    </div>`).join("")+`<div id="whoRec" style="font-size:13px;color:var(--muted);line-height:1.65"></div>`;
+  // a one-line recommendation, constrained to the people we just ranked
+  if(aiEngine()==="paste"||aiEngine()==="off"){
+    document.getElementById("whoRec").innerHTML=`<b style="color:var(--txt)">Start with ${esc(ranked[0].p.name)}</b> — ${esc(ranked[0].why[0]||"the strongest match in your records")}.`;
+    return;
+  }
+  const rec=document.getElementById("whoRec"); rec.textContent="Thinking it through…";
+  const prompt=`I work at ${o.company}. I'm stuck on: "${q}"
+
+These are the only people I know here who might be relevant, with what I've recorded about each:
+${ranked.map((r,i)=>`${i+1}. ${r.p.name}${r.p.title?` (${r.p.title})`:""} — ${r.why.join("; ")}`).join("\n")}
+
+In 2-3 sentences, tell me who to start with and why, and who to bring in if it turns out to be something else. Only mention people from the list. Plain text, no preamble.`;
+  try{ const out=await aiCall(prompt,null,{json:false,maxTokens:400}); rec.textContent=(out||"").trim(); }
+  catch(e){ rec.innerHTML=`<b style="color:var(--txt)">Start with ${esc(ranked[0].p.name)}</b> — ${esc(ranked[0].why[0]||"the strongest match in your records")}.`; }
+}
+
+/* ---- "What am I missing?" — every gap below is computed from the records, so each one is
+   a fact about your notes, not a guess about the company. ---- */
+function knowledgeGaps(o){
+  const g=[]; const ppl=(o.people||[]);
+  const add=(icon,col,title,why,act)=>g.push({icon,col,title,why,act});
+  wOf("systems",o.id).forEach(s=>{
+    const knowers=relatedOfType("system",s.id,"person",["KNOWS","OWNS"]).length
+      + linksOf("system",s.id).filter(l=>l.st==="person"&&(l.rel==="KNOWS"||l.rel==="OWNS")).length;
+    if(!s.ownerId&&!knowers) add(I.system,ENT.system.col,`Nobody owns ${entName("system",s)}`,`You've referenced ${entName("system",s)} but haven't recorded who owns it or who knows it well.`,{t:"who",q:entName("system",s)});
+  });
+  wOf("projects",o.id).forEach(p=>{
+    if(!p.ownerId&&!relatedOfType("project",p.id,"person",["OWNS"]).length)
+      add(I.project,ENT.project.col,`${entName("project",p)} has no clear owner`,`You've mentioned this project but haven't recorded who owns it.`,{t:"who",q:entName("project",p)});
+  });
+  wOf("problems",o.id).filter(p=>p.status==="Discovered"||p.status==="Investigating").forEach(p=>{
+    const age=daysSince(p.at);
+    if(age>=14) add(I.problem,ENT.problem.col,`"${entName("problem",p)}" has been open ${age} days`,`Still ${p.status.toLowerCase()} with no recorded outcome.`,{t:"ent",type:"problem",id:p.id});
+  });
+  // departments your work depends on but you barely talk to
+  wOf("departments",o.id).forEach(d=>{
+    const people=ppl.filter(p=>p.deptId===d.id).length;
+    const deps=W().links.filter(l=>l.opId===o.id&&((l.st==="department"&&l.sid===d.id)||(l.tt==="department"&&l.tid===d.id))&&l.rel!=="MENTIONS"&&l.rel!=="WORKS_IN").length;
+    if(deps>=2&&people===0) add(I.people,ENT.department.col,`You don't know anyone in ${entName("department",d)}`,`${deps} things you've recorded touch ${entName("department",d)}, but you haven't met anyone there.`,{t:"who",q:entName("department",d)});
+  });
+  const openQ=wOf("questions",o.id).filter(q=>q.status==="Open"&&daysSince(q.at)>=7);
+  if(openQ.length>=3) add(I.question,ENT.question.col,`${openQ.length} questions have been open over a week`,`Oldest: "${entName("question",openQ.sort((a,b)=>a.at-b.at)[0])}"`,{t:"tab",tab:"knowledge"});
+  // interview contacts who've gone quiet since you joined
+  const started=o.hired&&o.hired.startDate?new Date(o.hired.startDate+"T00:00").getTime():0;
+  const quiet=ppl.filter(p=>{ const ints=personInteractions(p).filter(x=>x.at>started); return started&&!ints.length; });
+  if(quiet.length&&hireDay(o)>=14) add(I.user,"#6d8bc4",`${quiet.length} ${quiet.length===1?"person":"people"} from your interviews you haven't caught up with`,quiet.slice(0,4).map(p=>p.name).join(", "),{t:"tab",tab:"people"});
+  if(hireDay(o)>=7&&wOf("captures",o.id).length<3) add(I.note,"#7c828f","Your map is still mostly empty",`A note after each meeting is all it takes — that's what everything else here is built from.`,{t:"cap"});
+  return g;
+}
+function gapHTML(g){
+  const act = g.act.t==="who" ? `data-whoq="${esc(g.act.q)}"` : g.act.t==="ent" ? `data-ent="${g.act.type}|${g.act.id}"` : g.act.t==="tab" ? `data-wtab="${g.act.tab}"` : `data-act="capture"`;
+  const label = g.act.t==="who" ? "Who do I ask? →" : g.act.t==="ent" ? "Open →" : g.act.t==="cap" ? "Capture a note →" : "Take a look →";
+  return `<div class="gap-item"><div class="gap-ico" style="background:${g.col}22;color:${g.col}">${g.icon}</div>
+    <div style="min-width:0"><b>${esc(g.title)}</b><div style="color:var(--muted);font-size:12.5px">${esc(g.why)}</div>
+    <span class="gap-do" ${act}>${label}</span></div></div>`;
+}
+function openGaps(){
+  const o=workOp(); if(!o) return;
+  const gaps=knowledgeGaps(o);
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.spark}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">What am I missing?</h2><div style="font-size:12.5px;color:var(--faint)">Gaps in what you've recorded — not a to-do list</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${gaps.length?gaps.map(gapHTML).join(""):`<div class="ent-empty">Nothing obvious is missing from your records right now. Keep capturing and check back.</div>`}`);
+}
+
+/* ---- Weekly briefing + what changed ---- */
+function weekData(o){
+  const since=Date.now()-7*86400000;
+  const caps=wOf("captures",o.id).filter(c=>c.at>=since);
+  const newOf=t=>wOf(ENT[t].list,o.id).filter(r=>r.at>=since);
+  const ppl=(o.people||[]).filter(p=>{ const i=personInteractions(p); return i.length&&i[0].at>=since; });
+  const solved=wOf("problems",o.id).filter(p=>p.status==="Solved"&&(p.solvedAt||p.at)>=since);
+  const newQ=newOf("question").filter(q=>q.status==="Open");
+  const lines=[];
+  const li=(n,s,p)=>{ if(n) lines.push(`<b style="color:var(--txt)">${n}</b> ${esc(n===1?s:p)}`); };
+  li(caps.length,"note captured","notes captured");
+  li(ppl.length,"person you talked to","people you talked to");
+  li(newOf("project").length,"new project","new projects");
+  li(newOf("problem").length,"problem discovered","problems discovered");
+  li(solved.length,"problem solved","problems solved");
+  li(newOf("system").length,"new system","new systems");
+  li(newOf("decision").length,"decision recorded","decisions recorded");
+  li(newQ.length,"new open question","new open questions");
+  return {total:caps.length+ppl.length+newOf("project").length+newOf("problem").length,lines,newQ,caps,ppl};
+}
+
+/* ---- 30 / 60 / 90-day reviews. The numbers and lists are computed; the AI writes the read
+   on top of them. Saved so you can look back at who you were on day 30. ---- */
+function reportData(o,day){
+  const start=o.hired&&o.hired.startDate?new Date(o.hired.startDate+"T00:00").getTime():o.createdAt;
+  const until=start+day*86400000;
+  const inWin=r=>r.at<=until;
+  const d={day,people:(o.people||[]).filter(p=>!p.at||p.at<=until),caps:wOf("captures",o.id).filter(inWin)};
+  ["project","problem","department","system","process","decision","question"].forEach(t=>{ d[t]=wOf(ENT[t].list,o.id).filter(inWin); });
+  d.solved=d.problem.filter(p=>p.status==="Solved");
+  d.openQ=d.question.filter(q=>q.status==="Open");
+  d.gaps=knowledgeGaps(o);
+  return d;
+}
+function reportText(o,day){
+  const d=reportData(o,day);
+  const L=[`# Day ${day} at ${o.company}`,``,
+    `Role: ${workTitle(o)}${o.hired&&o.hired.startDate?` · started ${fmtDate(o.hired.startDate)}`:""}`,
+    `Notes captured: ${d.caps.length}`,``,
+    `## People (${d.people.length})`,
+    ...d.people.map(p=>`- ${p.name}${p.title?` — ${p.title}`:""}${p.deptId?` · ${entLabel("department",p.deptId)}`:""}${(p.expertise||[]).length?` · knows ${p.expertise.join(", ")}`:""} · ${personInteractions(p).length} interactions`),
+    ``,`## Departments (${d.department.length})`, ...d.department.map(x=>`- ${entName("department",x)}`),
+    ``,`## Projects (${d.project.length})`, ...d.project.map(x=>`- ${entName("project",x)} [${x.status}]${x.ownerId?` · owner ${entLabel("person",x.ownerId)}`:" · owner not recorded"}`),
+    ``,`## Problems (${d.problem.length}, ${d.solved.length} solved)`, ...d.problem.map(x=>`- ${entName("problem",x)} [${x.status}]`),
+    ``,`## Systems (${d.system.length})`, ...d.system.map(x=>`- ${entName("system",x)}${x.ownerId?` · owner ${entLabel("person",x.ownerId)}`:""}`),
+    ``,`## Processes (${d.process.length})`, ...d.process.map(x=>`- ${entName("process",x)}`),
+    ``,`## Decisions recorded (${d.decision.length})`, ...d.decision.map(x=>`- ${entName("decision",x)}${x.reason?` — ${x.reason}`:""}`),
+    ``,`## Still open (${d.openQ.length})`, ...d.openQ.map(x=>`- ${entName("question",x)}`),
+    ``,`## Gaps in what I've recorded`, ...d.gaps.map(g=>`- ${g.title}: ${g.why}`),
+  ];
+  return L.join("\n");
+}
+function reportPrompt(o,day){
+  const ninety = day>=90;
+  return `${reportText(o,day)}
+
+---
+Everything above is what I personally recorded during my first ${day} days at ${o.company}. Write my ${ninety?"90-day map":`day-${day} review`} from it — plain text, no markdown headers heavier than a single line, warm but direct, written to me as "you".
+
+${ninety?`Cover, in this order: how I understand the organization; the people who matter most to my role and what each knows; how the departments actually interact; how important work gets done; the systems I depend on and who owns them; the major projects affecting me; the problems I found; what I helped solve; where I could have impact; what I still don't understand; and what I should focus on next.`
+: `Cover: what I've learned, who I now know and how well, what I've discovered about how the place works, what I'm still missing, which relationships to strengthen, and what to focus on in the next 30 days.`}
+
+Rules: use only what's above. Don't invent people, projects, problems or opinions. Where my records are thin, say so — "you haven't recorded anything about X yet" is a useful finding. Be specific: name the actual people, systems and projects.`;
+}
+async function openReport(day){
+  const o=workOp(); if(!o) return;
+  day=+day;
+  const saved=wOf("reports",o.id).find(r=>r.day===day);
+  const title=day>=90?"Your 90-day map":`Day ${day} review`;
+  const shell=body=>`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${day>=90?I.trophy:I.map}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${esc(title)}</h2><div style="font-size:12.5px;color:var(--faint)">${esc(o.company)} · ${esc(workTitle(o))}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>${body}`;
+  const d=reportData(o,day);
+  const numbers=`<div class="w-tiles" style="margin-bottom:14px">
+    ${[[d.people.length,"People"],[d.department.length,"Departments"],[d.project.length,"Projects"],[d.problem.length,"Problems"],[d.system.length,"Systems"],[d.openQ.length,"Open questions"]]
+      .map(([n,l])=>`<div class="w-tile" style="cursor:default"><div class="n">${n}</div><div class="l">${esc(l)}</div></div>`).join("")}</div>`;
+  if(saved){
+    openEditor(shell(numbers+`<div class="ai-pre" style="white-space:pre-wrap;max-height:none">${esc(saved.text)}</div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost sm" data-act="report-copy">${I.copy} Copy</button><button class="btn ghost sm" data-report-regen="${day}">↻ Regenerate</button></div>`));
+    aiGenText=saved.text; return;
+  }
+  if(aiEngine()==="paste"||aiEngine()==="off"){
+    openEditor(shell(numbers+`<div class="ai-pre" style="white-space:pre-wrap;max-height:none">${esc(reportText(o,day))}</div>
+      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost sm" data-act="report-copy">${I.copy} Copy the full prompt</button></div>
+      <div class="cap-hint">Paste that into any AI to get the written review — or connect one in Settings for a single tap.</div>`));
+    aiGenText=reportPrompt(o,day); return;
+  }
+  openEditor(shell(numbers+`<div id="repBody" class="ai-pre" style="white-space:pre-wrap;min-height:140px;max-height:none">Reading back through your ${day} days…</div><div id="repFoot" style="display:flex;gap:8px;margin-top:12px"></div>`));
+  try{
+    const out=await aiCall(reportPrompt(o,day),null,{json:false,maxTokens:2600});
+    const text=(out||"").trim(); aiGenText=text;
+    wAdd("reports",{opId:o.id,day,text}); save();
+    const b=document.getElementById("repBody"); if(b) b.textContent=text||"(no response)";
+    const f=document.getElementById("repFoot"); if(f) f.innerHTML=`<button class="btn ghost sm" data-act="report-copy">${I.copy} Copy</button><button class="btn ghost sm" data-act="cancel-editor">Close</button>`;
+  }catch(e){
+    const b=document.getElementById("repBody"); if(b) b.textContent="⚠ "+e.message+"\n\nThe raw numbers are above — try again, or switch engine in Settings.";
+    const f=document.getElementById("repFoot"); if(f) f.innerHTML=`<button class="btn ghost sm" data-act="cancel-editor">Close</button>`;
+  }
+}
+function regenReport(day){
+  const o=workOp(); if(!o) return;
+  W().reports=W().reports.filter(r=>!(r.opId===o.id&&r.day===+day));
+  save(); openReport(day);
+}
+/* What do I know about this person — a focused Ask, prefilled */
+function askAboutPerson(id){
+  const p=entGet("person",id); if(!p) return;
+  closeEditor(); view="work"; workTab="ask"; render();
+  setTimeout(()=>{ const i=$("#wAskInput"); if(i) i.value=`What do I know about ${p.name}?`; runWorkAsk(`What do I know about ${p.name}, and what have they helped me with?`); },80);
+}
+
 /* ============================ DRAWER: DETAIL ============================ */
 function openDetail(id){
   openId=id; drawerTab="overview";
@@ -1613,6 +3021,23 @@ function renderDrawer(){
 function tabOverview(o){
   const e=nextEvent(o);
   let h="";
+  // The hand-off from job search to job. Same record, same people — nothing is left behind.
+  if(o.status==="hired"){
+    const day=hireDay(o);
+    h+=`<div class="ai-box" style="border-color:rgba(78,163,129,.4);background:linear-gradient(160deg,rgba(78,163,129,.12),rgba(78,163,129,.05))">
+      <div class="ai-head" style="color:var(--good)">${I.building} You work here${day>0?` · day ${day}`:""}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${esc(workTitle(o))}${o.hired&&o.hired.startDate?` · started ${fmtDate(o.hired.startDate)}`:""}${o.hired&&o.hired.manager?` · reports to ${esc(o.hired.manager)}`:""}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary sm" data-wtab="overview">${I.building} ${day!=null&&day<=90?"Open 90-day mode":"Open My Company"}</button>
+        <button class="btn ghost sm" data-act="capture">${I.plus} Capture</button>
+        <button class="btn ghost sm" data-act="hire">${I.edit} Edit start details</button>
+      </div></div>`;
+  } else if(o.status==="offer"||["onsite","technical","hm"].includes(o.status)){
+    h+=`<div class="ai-box" style="border-color:rgba(78,163,129,.32)">
+      <div class="ai-head" style="color:var(--good)">${I.trophy} Did you get it?</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Everything you've learned here — ${(o.people||[]).length?`the ${(o.people||[]).length} ${(o.people||[]).length===1?"person":"people"} you met, `:""}your notes, the company brief — becomes your first map of the place.</div>
+      <button class="btn primary sm" data-act="hire">${I.check} I got the job</button></div>`;
+  }
   if(e){ const cls=e.du<=0?"var(--bad)":e.du<=2?"var(--warn)":"var(--accent2)";
     h+=`<div class="ai-box" style="border-color:${cls}55;background:${cls}14">
       <div style="display:flex;align-items:center;gap:10px"><div style="font-size:13px;font-weight:800;color:${cls}">⏱ ${esc(e.label)} · ${relDays(e.du)}</div></div>
@@ -1905,7 +3330,7 @@ function openEditor(html){
   editorEl.addEventListener("click",e=>{ if(e.target===editorEl) closeEditor(); }); // only background closes
   const f=editorEl.querySelector("input,textarea,select"); if(f) setTimeout(()=>f.focus(),50);
 }
-function closeEditor(){ if(editorEl){ editorEl.remove(); editorEl=null; } }
+function closeEditor(){ if(typeof capStopVoice==="function") capStopVoice(); if(editorEl){ editorEl.remove(); editorEl=null; } }
 
 /* ---------------- SETTINGS / SYNC PANEL ---------------- */
 const SYNC_SQL = `-- Run this once in Supabase: Dashboard > SQL Editor > New query > paste > Run
@@ -2631,7 +4056,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask]");
   if(!t) return;
 
   // nav
@@ -2663,7 +4088,13 @@ document.addEventListener("click",e=>{
   if(act==="edit-op"){ const o=getOp(); if(!o) return; openEditor(opForm(o)); editorEl.dataset.editId=o.id; return; }
   if(act==="close-drawer"){ closeDrawer(); return; }
   if(act==="cancel-editor"){ closeEditor(); return; }
-  if(act==="del-op"){ if(confirm("Delete "+getOp().company+" and all its rounds/people? This can't be undone.")){ const id=openId; state.opportunities=state.opportunities.filter(o=>o.id!==id); if(state.scorecard&&state.scorecard.scores) delete state.scorecard.scores[id]; save(); closeDrawer(); render(); toast("Deleted"); } return; }
+  if(act==="del-op"){ const op=getOp(); const work=wOf("captures",op.id).length+wOf("projects",op.id).length+wOf("problems",op.id).length;
+    if(confirm(`Delete ${op.company} and all its rounds/people${work?", plus everything you've captured about working there":""}? This can't be undone.`)){
+      const id=openId; state.opportunities=state.opportunities.filter(o=>o.id!==id);
+      if(state.scorecard&&state.scorecard.scores) delete state.scorecard.scores[id];
+      // don't leave the post-hire records and graph edges behind as orphans
+      WORK_LISTS.forEach(k=>{ W()[k]=W()[k].filter(r=>r.opId!==id); });
+      save(); closeDrawer(); render(); toast("Deleted"); } return; }
   if(act==="add-round"){ openEditor(roundForm(null)); return; }
   if(act==="add-person"){ openEditor(personForm(null)); return; }
   if(act==="export"){ exportData(); return; }
@@ -2764,6 +4195,42 @@ document.addEventListener("click",e=>{
   if(t.dataset.storyDel){ if(confirm("Delete this story?")){ state.stories=getStories().filter(x=>x.id!==t.dataset.storyDel); save(); openPrepBank(); } return; }
   if(t.dataset.qEdit){ openQuestionForm(getQuestions().find(x=>x.id===t.dataset.qEdit)); return; }
   if(t.dataset.qDel){ if(confirm("Delete this question?")){ state.questions=getQuestions().filter(x=>x.id!==t.dataset.qDel); save(); openPrepBank(); } return; }
+  /* ---- post-hire: 90-day mode, capture, the map ---- */
+  if(t.dataset.wtab){ workTab=t.dataset.wtab; view="work";
+    const wo=getOp(); if(wo&&wo.status==="hired") workOpId=wo.id;
+    closeEditor(); closeDrawer(); render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if(t.dataset.wop){ workOpId=t.dataset.wop; if(view!=="work"){ view="work"; workTab="overview"; } render(); return; }
+  if(act==="hire"){ openHire(openId||t.dataset.hire); return; }
+  if(act==="capture"){ openCapture(); return; }
+  if(act==="cap-mic"){ capVoice(); return; }
+  if(act==="cap-go"){ capExtract(); return; }
+  if(act==="cap-raw"){ capSaveRaw(); return; }
+  if(act==="cap-save"){ capApply(); return; }
+  if(act==="cap-back"){ const txt=capPlan?capPlan.text:""; spSetBody(captureBody()); const ta=document.getElementById("capText"); if(ta) ta.value=txt; return; }
+  if(t.dataset.rev!=null&&capPlan){ const it=planItem(+t.dataset.rev);
+    if(it){ if(!it.on&&it.choice===""){ toast("Choose which one it is first"); return; } it.on=!it.on; capReview(); } return; }
+  if(t.dataset.ent){ const [ty,id]=t.dataset.ent.split("|"); openEnt(ty,id); return; }
+  if(t.dataset.cite){ const [ty,id]=t.dataset.cite.split("|"); openEnt(ty,id); return; }
+  if(t.dataset.entadd){ openEntForm(t.dataset.entadd,null,(workOp()||{}).id); return; }
+  if(t.dataset.entedit){ const [ty,id]=t.dataset.entedit.split("|"); openEntForm(ty,entGet(ty,id)); return; }
+  if(t.dataset.entdel){ const [ty,id]=t.dataset.entdel.split("|");
+    if(confirm(`Delete "${entLabel(ty,id)}"? Its connections go too. This can't be undone.`)){ entDelete(ty,id); save(); closeEditor(); render(); toast("Deleted"); } return; }
+  if(t.dataset.qstat){ const [id,st]=t.dataset.qstat.split("|"); const q=wFind("questions",id);
+    if(q){ q.status=st; if(st==="Answered") q.answeredAt=Date.now(); save();
+      const detailOpen=!!(editorEl&&editorEl.querySelector(`[data-entdel="question|${id}"]`));
+      render(); if(detailOpen) openEnt("question",id); else closeEditor();
+      toast(st==="Open"?"Reopened":st); } return; }
+  if(act==="work-ask"){ runWorkAsk(); return; }
+  if(t.dataset.wask){ runWorkAsk(t.dataset.wask); return; }
+  if(act==="who-ask"){ openWhoAsk(); return; }
+  if(t.dataset.whoq){ openWhoAsk(t.dataset.whoq); return; }
+  if(act==="who-run"){ runWhoAsk(); return; }
+  if(t.dataset.whoabout){ askAboutPerson(t.dataset.whoabout); return; }
+  if(act==="work-gaps"){ openGaps(); return; }
+  if(t.dataset.report){ openReport(t.dataset.report); return; }
+  if(t.dataset.reportRegen){ regenReport(t.dataset.reportRegen); return; }
+  if(act==="report-copy"){ copy(aiGenText,"Copied"); return; }
+
   if(t.dataset.taskDone){ const o=state.opportunities.find(x=>x.id===t.dataset.taskDone); if(o){ o.nextActionLabel=""; o.nextActionDate=""; o.updatedAt=Date.now(); save(); render(); toast("Done ✓"); } return; }
   if(t.dataset.thanked){ for(const o of state.opportunities){ const r=(o.rounds||[]).find(x=>x.id===t.dataset.thanked); if(r){ r.thanked=true; o.updatedAt=Date.now(); save(); render(); toast("Marked sent ✓"); break; } } return; }
 });
@@ -2773,7 +4240,14 @@ $("#overlay").addEventListener("click",closeDrawer);
 
 // stage select in drawer footer
 document.addEventListener("change",e=>{
-  if(e.target.id==="stageSel"){ const o=getOp(); o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
+  if(e.target.id==="stageSel"){ const o=getOp();
+    // "Hired" isn't just a status — it starts 90-day mode, so collect the three things it needs
+    if(e.target.value==="hired"&&!(o.hired&&o.hired.startDate)){ e.target.value=o.status; openHire(o.id); return; }
+    o.status=e.target.value; o.updatedAt=Date.now(); save(); renderDrawer(); render(); }
+  if(e.target.id==="capOp"){ capOpId=e.target.value; }
+  if(e.target.dataset&&e.target.dataset.revsel!=null&&capPlan){
+    const it=planItem(+e.target.dataset.revsel);
+    if(it){ it.choice=e.target.value; if(it.choice!=="") it.on=true; capReview(); } }
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
   if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
     if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="groq"||v==="google")?"block":"none";
@@ -2795,6 +4269,8 @@ document.addEventListener("submit",e=>{
   else if(e.target.id==="personForm"){ savePersonForm(e.target); }
   else if(e.target.id==="storyForm"){ saveStory(e.target); }
   else if(e.target.id==="qForm"){ saveQuestion(e.target); }
+  else if(e.target.id==="hireForm"){ saveHire(e.target); }
+  else if(e.target.id==="entForm"){ saveEntForm(e.target); }
 });
 
 function fd(form){ const d={}; new FormData(form).forEach((v,k)=>d[k]=typeof v==="string"?v.trim():v); return d; }
@@ -2847,7 +4323,7 @@ function savePersonForm(form){
 }
 
 // search
-$("#search").addEventListener("input",e=>{ searchQ=e.target.value; if(view==="dashboard"||view==="insights") view="cards"; render(); });
+$("#search").addEventListener("input",e=>{ searchQ=e.target.value; if(view==="dashboard"||view==="insights"||view==="work") view="cards"; render(); });
 
 /* ---------------- Drag & drop (desktop kanban) ---------------- */
 let dragId=null;
@@ -2916,7 +4392,76 @@ function loadSample(){
   ];
   demo.forEach(d=> state.opportunities.push({id:uid(),createdAt:Date.now()-86400000*Math.floor(Math.random()*20),updatedAt:Date.now()-86400000*(d.status==="rejected"?20:Math.floor(Math.random()*9)),offer:{},rounds:[],people:[],...d}));
   migrate(state); // give demo rounds/people stable ids
+  loadSampleWork(iso);
   save(); view="dashboard"; render(); toast("Demo data loaded — explore away!");
+}
+/* A company you already joined, so 90-day mode has something to show on first run */
+function loadSampleWork(iso){
+  const o={id:uid(),createdAt:Date.now()-86400000*150,updatedAt:Date.now()-86400000*2,offer:{},rounds:[],people:[],
+    company:"Halden Systems",role:"Head of GTM Operations",status:"hired",source:"Referral",workMode:"Hybrid",location:"Chicago",
+    excitement:4,compMin:"195000",compMax:"195000",appliedDate:iso(-138),tags:["revops"],
+    product:"Industrial software company, ~2,000 people. I run GTM operations for the North America business.",
+    hired:{startDate:iso(-42),title:"Head of GTM Operations",manager:"Dana Reyes",acceptedAt:Date.now()-86400000*55},
+    rounds:[{id:uid(),name:"Recruiter screen",type:"Recruiter screen",date:iso(-130),status:"done",rating:4},
+            {id:uid(),name:"Panel w/ Sarah + Dana",type:"Panel",date:iso(-118),status:"done",rating:5,interviewers:"Sarah Johnson, Dana Reyes",debrief:"Talked forecasting and territory design the whole time."}]};
+  state.opportunities.push(o);
+  wAdd("milestones",{opId:o.id,at:Date.now()-86400000*55,kind:"accepted",label:"Accepted the offer"});
+  wAdd("milestones",{opId:o.id,at:Date.now()-86400000*42,kind:"started",label:"Started as Head of GTM Operations",date:iso(-42)});
+  const mk=(t,n,f)=>createEnt(t,o.id,n,f||{},"");
+  const sales=mk("department","Sales"), fin=mk("department","Finance"), it=mk("department","IT"), rev=mk("department","RevOps");
+  const sf=mk("system","Salesforce",{note:"Source of truth for pipeline. Reporting is a mess."});
+  const ns=mk("system","NetSuite"), clari=mk("system","Clari");
+  const fc=mk("process","Forecasting"), lr=mk("process","Lead Routing");
+  const proj=mk("project","Forecast Redesign",{status:"Active",note:"Rebuilding how the weekly forecast is produced."});
+  const proj2=mk("project","Territory Realignment FY26",{status:"Blocked",note:"Waiting on clean account hierarchy."});
+  const prob=mk("problem","Salesforce and NetSuite report different bookings",{status:"Investigating",description:"Revenue recognition rules differ, so the two systems never agree."});
+  const prob2=mk("problem","Nobody owns the territory hierarchy",{status:"Discovered"});
+  mk("decision","Forecast methodology changed to conservative recognition",{madeBy:"Finance leadership",date:"Last year",reason:"The board wanted bookings recognized only after contract countersign."});
+  mk("question","Why do Salesforce and NetSuite recognize bookings differently?");
+  mk("question","Who administers CPQ?");
+  const sarah=createEnt("person",o.id,"Sarah Johnson",{title:"VP Sales",department:"Sales",expertise:["forecasting","territory management"]},"");
+  const mike=createEnt("person",o.id,"Mike Okafor",{title:"Salesforce admin",department:"IT",expertise:["Salesforce","reporting"]},"");
+  const john=createEnt("person",o.id,"John Alvarez",{title:"Controller",department:"Finance"},"");
+  const dana=createEnt("person",o.id,"Dana Reyes",{title:"My manager · VP RevOps",department:"RevOps"},"");
+  o.hired.managerId=dana.id;
+  const c1=wAdd("captures",{opId:o.id,at:Date.now()-86400000*30,summary:"Met Mike; found the bookings discrepancy",
+    text:"Met Mike today. He's apparently the Salesforce guy — built most of the reporting. He said Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting on the business side, but John in Finance has been fighting this for months.",
+    entities:[{t:"person",id:mike.id},{t:"person",id:sarah.id},{t:"person",id:john.id},{t:"system",id:sf.id},{t:"system",id:ns.id},{t:"problem",id:prob.id}]});
+  const c2=wAdd("captures",{opId:o.id,at:Date.now()-86400000*11,summary:"Forecast review with Sarah",
+    text:"Forecast review. Sarah walked me through the new methodology. Leadership actually looks at Clari, not Salesforce — which explains why the numbers in the QBR never matched what I was pulling.",
+    entities:[{t:"person",id:sarah.id},{t:"system",id:clari.id},{t:"process",id:fc.id}]});
+  const c3=wAdd("captures",{opId:o.id,at:Date.now()-86400000*3,summary:"Territory work is blocked",
+    text:"Tried to kick off territory realignment. Blocked — no one can tell me who owns the account hierarchy in Salesforce. Mike thinks it used to be a Finance thing.",
+    entities:[{t:"project",id:proj2.id},{t:"problem",id:prob2.id},{t:"person",id:mike.id}]});
+  [[c1,[[mike,"person"],[sarah,"person"],[john,"person"],[sf,"system"],[ns,"system"],[prob,"problem"]]],
+   [c2,[[sarah,"person"],[clari,"system"],[fc,"process"]]],
+   [c3,[[proj2,"project"],[prob2,"problem"],[mike,"person"]]]]
+    .forEach(([c,list])=>list.forEach(([r,t])=>addLink(o.id,"capture",c.id,"MENTIONS",t,r.id,1,c.id)));
+  addLink(o.id,"person",mike.id,"KNOWS","system",sf.id,.96,c1.id);
+  addLink(o.id,"person",mike.id,"KNOWS","system",ns.id,.7,c1.id);
+  addLink(o.id,"person",sarah.id,"OWNS","process",fc.id,.85,c1.id);
+  addLink(o.id,"person",john.id,"INVOLVED_IN","problem",prob.id,.9,c1.id);
+  addLink(o.id,"person",mike.id,"INVOLVED_IN","problem",prob.id,.8,c1.id);
+  addLink(o.id,"problem",prob.id,"AFFECTS","project",proj.id,.8,c1.id);
+  addLink(o.id,"problem",prob2.id,"AFFECTS","project",proj2.id,1,c3.id);
+  addLink(o.id,"project",proj.id,"USES","system",sf.id,1,c1.id);
+  addLink(o.id,"project",proj.id,"USES","system",clari.id,.8,c2.id);
+  addLink(o.id,"department",fin.id,"OWNS","system",ns.id,.9,c1.id);
+  addLink(o.id,"department",fin.id,"DEPENDS_ON","project",proj.id,.8,c1.id);
+  addLink(o.id,"department",sales.id,"DEPENDS_ON","project",proj2.id,.9,c3.id);
+  addLink(o.id,"system",clari.id,"PART_OF","department",rev.id,.8,c2.id);
+  addLink(o.id,"process",fc.id,"USES","system",sf.id,.9,c2.id);
+  addLink(o.id,"process",lr.id,"USES","system",sf.id,.8,c1.id);
+  // backdate the records to when they'd actually have been learned, so the timeline and the
+  // weekly briefing read like a real 6 weeks rather than everything landing today
+  const age=(d,list)=>list.forEach(r=>{ r.at=Date.now()-86400000*d; });
+  age(38,[sales,fin,it,rev,sarah,dana]);
+  age(30,[sf,ns,mike,john,prob,fc,lr]);
+  age(24,[proj]);
+  age(11,[clari]);
+  age(3,[proj2,prob2]);
+  wOf("questions",o.id).forEach((q,i)=>{ q.at=Date.now()-86400000*(i?9:29); });
+  wOf("decisions",o.id).forEach(d=>{ d.at=Date.now()-86400000*20; });
 }
 
 /* ============================ FILES (JD / résumé attachments) ============================ */

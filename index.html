@@ -500,6 +500,21 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .brief-meta{font-size:10px;color:var(--faint);margin-top:9px;text-transform:uppercase;letter-spacing:.06em;font-weight:800}
 .brief-empty{font-size:12px;color:var(--faint);margin-top:10px;line-height:1.5}
 
+/* ---------- Storage alarm + data-at-risk banner ---------- */
+#storageAlarm{position:fixed;top:0;left:0;right:0;z-index:120;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+  padding:calc(9px + env(safe-area-inset-top)) 16px 9px;background:#4a1f22;border-bottom:1px solid #7d3339;color:#ffd9da;font-size:13px}
+#storageAlarm .btn{background:#ffd9da;color:#4a1f22;font-weight:800}
+.risk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(160deg,rgba(198,164,92,.14),rgba(198,164,92,.06));
+  border:1px solid rgba(198,164,92,.34);border-radius:var(--radius);padding:13px 15px;margin-bottom:16px}
+.risk-ico{width:32px;height:32px;border-radius:10px;flex:0 0 32px;display:grid;place-items:center;background:rgba(198,164,92,.18);color:var(--warn)}
+.risk-ico svg{width:17px;height:17px}
+.risk-b{flex:1 1 220px;min-width:0}
+.risk-t{font-weight:800;font-size:13.5px;line-height:1.4}
+.risk-s{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.risk-a{display:flex;gap:7px;flex:0 0 auto;flex-wrap:wrap}
+.meter{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:8px}
+.meter i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+
 /* ---------- Post-hire: 90-day mode / My Company ---------- */
 .fab{position:fixed;right:22px;bottom:26px;z-index:45;display:flex;align-items:center;gap:9px;padding:14px 20px;border-radius:999px;
   background:var(--grad);color:#fff;font-weight:800;font-size:14.5px;box-shadow:0 12px 30px -8px rgba(94,106,210,.7),0 2px 6px rgba(0,0,0,.4);transition:.15s}
@@ -738,7 +753,59 @@ function migrate(s){
   if(s.rev==null) s.rev = s.opportunities.reduce((m,o)=>Math.max(m,+o.updatedAt||0),0);
   return s;
 }
-function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ toast("⚠ Couldn't save — storage full?"); } }
+/* Device-local prefs — how THIS device is doing, not what's in your data. Never synced:
+   "I have a backup file" is a fact about a device, not about the vault. */
+const DEV_KEY = "meanwhile_device_v1";
+let devPrefs = (function(){ try{ return JSON.parse(localStorage.getItem(DEV_KEY))||{}; }catch(e){ return {}; } })();
+function saveDev(){ try{ localStorage.setItem(DEV_KEY, JSON.stringify(devPrefs)); }catch(e){} }
+
+/* localStorage is ~5MB and the whole vault is one key. A failed write used to toast and let you
+   carry on typing into a copy that would never survive a reload — the quickest way to lose an
+   afternoon. Now the previous good copy stays intact and the app says so until it's fixed. */
+let storageBlocked = false;
+const STORAGE_LIMIT = 5 * 1024 * 1024;
+function persist(){
+  let json;
+  try{ json = JSON.stringify(state); }catch(e){ return false; }
+  try{
+    localStorage.setItem(LS_KEY, json);
+    devPrefs.bytes = json.length; saveDev();
+    if(storageBlocked){ storageBlocked=false; renderStorageAlarm(); }
+    return true;
+  }catch(e){
+    storageBlocked = true; devPrefs.bytes = json.length; saveDev();
+    renderStorageAlarm(); return false;
+  }
+}
+function dataHealth(){
+  const bytes = devPrefs.bytes || 0;
+  return { bytes, pct: Math.min(100, Math.round(bytes/STORAGE_LIMIT*100)), tight: bytes > STORAGE_LIMIT*0.7, blocked: storageBlocked };
+}
+function renderStorageAlarm(){
+  let bar = document.getElementById("storageAlarm");
+  if(!storageBlocked){ if(bar) bar.remove(); return; }
+  if(bar) return;
+  bar = el(`<div id="storageAlarm"><b>⚠ Out of space — your last change wasn't saved.</b>
+    <button class="btn sm" data-act="storage-help">What to do</button></div>`);
+  document.body.appendChild(bar);
+  openStorageHelp();
+}
+function openStorageHelp(){
+  const h=dataHealth();
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:rgba(208,107,107,.18);color:var(--bad);display:grid;place-items:center">${I.bell}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">This device is out of space</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${fileSizeStr(h.bytes)} of about 5 MB</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:4px 0 14px">Your browser gives each site about 5 MB. Everything you had before is still safe — but <b>new changes can't be written</b> until there's room, and they'll be lost when you close the tab.</p>
+  <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0 0 14px">Do one of these now:</p>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="btn primary" data-act="export">${I.copy} Export a backup first</button>
+    ${syncOn()?`<button class="btn ghost" data-act="sync-pull">☁ Sync is on — push to the cloud</button>`:`<button class="btn ghost" data-act="settings">☁ Turn on cloud sync</button>`}
+    <button class="btn ghost" data-act="cancel-editor">I'll free up space myself</button>
+  </div>
+  <div class="note-block" style="margin-top:14px;font-size:12.5px">Attached files are almost always the cause. Open a role → Edit → remove the attached job description, or Settings → My résumé → remove the file. The text of everything stays.</div>`);
+}
 // save() = a real user change: bump revision, persist, and push to cloud
 function save(){ state.rev = Date.now(); persist(); schedulePush(); if(typeof scheduleRemindersSoon==="function") scheduleRemindersSoon(); }
 
@@ -985,7 +1052,7 @@ function renderDashboard(){
 
   const stat=(num,lbl,icon,cls,tile)=>`<div class="stat ${cls||''}" ${tile?`data-tile="${tile}" role="button" tabindex="0"`:""}><div class="ico">${icon}</div><div class="num">${num}</div><div class="lbl">${lbl}</div>${tile?`<div class="tile-go">→</div>`:""}</div>`;
 
-  let html=dashHero(ops);
+  let html=riskBanner()+dashHero(ops);
   html+=`<div class="grid stat-grid">
     ${stat(interviewing,"Interviewing",I.user,"","interviewing")}
     ${stat(offers,"Offers",I.trophy,"","offers")}
@@ -1108,6 +1175,56 @@ function dashHero(ops){
       </div>
     </div>`;
   return heroShell(inner);
+}
+
+/* ---- "Is this actually safe?" — the app should answer that without being asked ----
+   Everything lives in this browser's storage. Clearing site data wipes it, and iOS Safari bins
+   script storage for sites you haven't opened in 7 days unless they're on the home screen. So if
+   there's no cloud sync and no recent backup, say so plainly instead of letting a year of notes
+   sit one tap from gone. */
+function backupRisk(){
+  if(!state.opportunities.length) return null;          // nothing to lose yet
+  if(syncOn()) return null;                             // synced to a database they own
+  if((devPrefs.riskSnoozed||0) > Date.now()-7*86400000) return null;
+  const last=devPrefs.lastExport||0;
+  const days=last?Math.floor((Date.now()-last)/86400000):null;
+  if(days!=null && days<14) return null;
+  const notes=W().captures.length, ppl=state.opportunities.reduce((n,o)=>n+(o.people||[]).length,0);
+  return {days, never:!last, notes, ppl};
+}
+function riskBanner(){
+  const r=backupRisk(); if(!r) return "";
+  const what=[state.opportunities.length+" "+(state.opportunities.length===1?"role":"roles"), r.ppl?r.ppl+" people":"", r.notes?r.notes+" notes":""].filter(Boolean).join(", ");
+  return `<div class="risk">
+    <div class="risk-ico">${I.bell}</div>
+    <div class="risk-b">
+      <div class="risk-t">${r.never?"Nothing is backed up":`Your last backup was ${r.days} days ago`}</div>
+      <div class="risk-s">${esc(what)} live only in this browser. Clearing your browsing data — or leaving the site untouched for a week on an iPhone — would take it with them.</div>
+    </div>
+    <div class="risk-a">
+      <button class="btn primary sm" data-act="export">${I.copy} Back up now</button>
+      <button class="btn ghost sm" data-act="settings">☁ Turn on sync</button>
+      <button class="btn ghost sm" data-act="risk-snooze" title="Remind me in a week">Later</button>
+    </div></div>`;
+}
+function dataStatusBox(){
+  const h=dataHealth(), last=devPrefs.lastExport||0;
+  const lastTxt=last?`${daysSince(last)===0?"today":daysSince(last)+"d ago"}`:"never";
+  const files=allFileRecords().length;
+  return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.system} Your data <span style="margin-left:auto;font-size:12px;font-weight:700;color:${syncOn()?"var(--good)":"var(--warn)"}">${syncOn()?"Synced + on this device":"This device only"}</span></div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.65;margin-bottom:10px">
+      Everything is stored in this browser's local storage${files?` (attachments in this browser's file store)`:""}. It's yours and it's private — but clearing your browsing data deletes it, and on iPhone Safari clears storage for sites left untouched for a week unless the app is on your home screen.
+      ${syncOn()?"<b>Cloud sync is on</b>, so your own database holds a copy — that's your safety net.":"<b>Cloud sync is off.</b> A backup file or sync is the only thing standing between you and a cleared browser."}
+    </div>
+    <div style="font-size:12.5px;color:var(--muted)">Using <b>${fileSizeStr(h.bytes)||"—"}</b> of about 5 MB${files?` · ${files} attached ${files===1?"file":"files"} stored separately`:""}</div>
+    <div class="meter"><i style="width:${Math.max(2,h.pct)}%;background:${h.pct>85?"var(--bad)":h.pct>70?"var(--warn)":"var(--accent)"}"></i></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-top:10px">Last backup file: <b>${esc(lastTxt)}</b></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary sm" data-act="export">${I.copy} Export backup</button>
+      <button class="btn ghost sm" data-act="import">↑ Import backup</button>
+    </div>
+  </div>`;
 }
 
 /* The Home hero, employed edition: how far into the job you are and one tap to capture.
@@ -1968,28 +2085,34 @@ function timelineHTML(o,limit){
 /* ============================ QUICK CAPTURE ============================
    The one thing the user has to do. Talk or type what happened; Meanwhile files it. */
 function capTitle(c){ const t=(c.text||"").trim().replace(/\s+/g," "); return t.length>62?t.slice(0,62)+"…":(t||"Note"); }
-let capOpId=null, capRec=null, capBase="";
-function openCapture(opId){
+let capOpId=null, capRec=null, capBase="", capEditId=null, capPrefill="";
+function openCapture(opId, editId){
   const emp=employers(); if(!emp.length){ toast("Mark a role as hired first"); return; }
-  capOpId = opId || (workOp()||emp[0]).id;
+  capEditId = editId || null;
+  const ex = capEditId ? wFind("captures",capEditId) : null;
+  capPrefill = ex ? (ex.text||"") : "";
+  capOpId = (ex && ex.opId) || opId || (workOp()||emp[0]).id;
   openEditor(captureBody());
 }
 function captureBody(){
   const emp=employers(); const o=opById(capOpId)||emp[0];
   const voice = !!(window.SpeechRecognition||window.webkitSpeechRecognition);
+  const editing = !!capEditId;
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.note}</div>
-    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">What happened?</h2>
-      <div style="font-size:12.5px;color:var(--faint)">${emp.length>1?`at <select id="capOp" style="width:auto;display:inline-block;padding:2px 6px;font-size:12.5px;background:transparent;border:none;color:var(--accent3);font-weight:700">${emp.map(e=>`<option value="${e.id}" ${e.id===capOpId?"selected":""}>${esc(e.company)}</option>`).join("")}</select>`:esc(o?o.company:"")}</div></div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${editing?"Edit this note":"What happened?"}</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${editing||emp.length<2?esc(o?o.company:""):`at <select id="capOp" style="width:auto;display:inline-block;padding:2px 6px;font-size:12.5px;background:transparent;border:none;color:var(--accent3);font-weight:700">${emp.map(e=>`<option value="${e.id}" ${e.id===capOpId?"selected":""}>${esc(e.company)}</option>`).join("")}</select>`}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
-  <textarea id="capText" class="cap-ta" placeholder="Met Mike today. He's the Salesforce guy. Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting…">${esc("")}</textarea>
-  ${voice?`<button class="cap-mic" id="capMic" data-act="cap-mic" style="margin-top:10px">${I.mic}<span>Dictate it instead</span></button>`:""}
+  <textarea id="capText" class="cap-ta" placeholder="Met Mike today. He's the Salesforce guy. Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting…">${esc(capPrefill)}</textarea>
+  ${voice?`<button class="cap-mic" id="capMic" data-act="cap-mic" style="margin-top:10px">${I.mic}<span>${editing?"Add to it by voice":"Dictate it instead"}</span></button>`:""}
   <div style="display:flex;gap:10px;margin-top:12px">
-    <button class="btn primary" style="flex:1" data-act="cap-go">${I.ai} Save &amp; organize</button>
-    <button class="btn ghost" data-act="cap-raw" title="Save the note without AI extraction">Just save</button>
+    <button class="btn primary" style="flex:1" data-act="cap-go">${I.ai} ${editing?"Save &amp; re-read it":"Save &amp; organize"}</button>
+    <button class="btn ghost" data-act="cap-raw" title="${editing?"Keep the wording change, leave the records alone":"Save the note without AI extraction"}">${editing?"Text only":"Just save"}</button>
   </div>
-  <div class="cap-hint">Write it how you'd say it. Meanwhile pulls out the people, systems, projects and problems — you review before anything is saved.</div>`;
+  <div class="cap-hint">${editing
+    ? "Re-reading picks up anything new. What it already filed from this note stays put — nothing gets duplicated."
+    : "Write it how you'd say it. Meanwhile pulls out the people, systems, projects and problems — you review before anything is saved."}</div>`;
 }
 function capStopVoice(){
   if(capRec){ try{ capRec.stop(); }catch(e){} capRec=null; }
@@ -2020,9 +2143,10 @@ function capSaveRaw(){
   capReadOp(); capStopVoice();
   const ta=document.getElementById("capText"); const text=(ta?ta.value:"").trim();
   if(!text){ toast("Nothing to save yet"); return; }
-  const c=wAdd("captures",{opId:capOpId,text,entities:[]});
+  const ex=capEditId?wFind("captures",capEditId):null;
+  const c=ex ? Object.assign(ex,{text,editedAt:Date.now()}) : wAdd("captures",{opId:capOpId,text,entities:[]});
   save(); closeEditor(); if(view==="work") render();
-  toast("Note saved");
+  toast(ex?"Note updated":"Note saved");
   return c;
 }
 
@@ -2159,7 +2283,7 @@ function buildPlan(o,text,d){
     add(r.fromType,r.from,{}); add(r.toType,r.to,{});
     return {from:r.from,fromType:r.fromType,to:r.to,toType:r.toType,rel:r.rel,conf:Math.max(0,Math.min(1,+r.confidence||0.7)),on:true};
   });
-  return {opId:o.id,text,summary:(d.summary||"").trim(),items,rels};
+  return {opId:o.id,captureId:capEditId||null,text,summary:(d.summary||"").trim(),items,rels};
 }
 function planItem(i){ return capPlan.items[i]; }
 function capReview(){
@@ -2215,7 +2339,10 @@ function capReview(){
 function capApply(){
   const p=capPlan; if(!p) return;
   const o=opById(p.opId); if(!o) return;
-  const cap=wAdd("captures",{opId:o.id,text:p.text,summary:p.summary,entities:[]});
+  const existing=p.captureId?wFind("captures",p.captureId):null;
+  const cap=existing
+    ? Object.assign(existing,{text:p.text,summary:p.summary||existing.summary,editedAt:Date.now(),entities:existing.entities||[]})
+    : wAdd("captures",{opId:o.id,text:p.text,summary:p.summary,entities:[]});
   const resolved={};   // "type|canonname" → {t,id}
   p.items.forEach(it=>{
     if(!it.on||it.choice==="") return;   // unticked, or an ambiguous person you didn't resolve
@@ -2230,7 +2357,7 @@ function capApply(){
     else mergeEnt(it.type,rec,it.fields);
     if(!rec) return;
     resolved[key]={t:it.type,id:rec.id};
-    cap.entities.push({t:it.type,id:rec.id});
+    if(!cap.entities.some(e=>e.t===it.type&&e.id===rec.id)) cap.entities.push({t:it.type,id:rec.id});
     addLink(o.id,"capture",cap.id,"MENTIONS",it.type,rec.id,1,cap.id);
   });
   p.rels.forEach(r=>{
@@ -2243,7 +2370,7 @@ function capApply(){
   if(view!=="work"){ view="work"; workOpId=o.id; workTab="overview"; }
   render();
   const n=cap.entities.length;
-  toast(n?`Filed ✓ ${n} ${n===1?"thing":"things"} updated`:"Note saved");
+  toast(existing?"Note updated ✓":n?`Filed ✓ ${n} ${n===1?"thing":"things"} updated`:"Note saved");
 }
 function createEnt(type,opId,name,f,viaCapture){
   f=f||{};
@@ -2294,7 +2421,7 @@ function renderWork(){
   if(!o) return `<div class="empty"><div class="big">${I.building}</div><h3>No company yet</h3><p>When you land a role, open it and tap <b>I got the job</b>.</p></div>`;
   let h="";
   if(emp.length>1) h+=`<div class="w-switch">${emp.map(e=>`<span class="chip ${e.id===o.id?'tag-chip':''}" data-wop="${e.id}" style="cursor:pointer;white-space:nowrap">${esc(e.company)}</span>`).join("")}</div>`;
-  h+=workHero(o);
+  h+=riskBanner()+workHero(o);
   h+=`<div class="tabs">${WORK_TABS.map(([id,l])=>`<button class="tab ${workTab===id?'active':''}" data-wtab="${id}">${esc(l)}</button>`).join("")}</div>`;
   if(workTab==="overview")      h+=workOverview(o);
   else if(workTab==="people")   h+=workPeople(o);
@@ -2370,12 +2497,7 @@ function workOverview(o){
       ${gaps.length>3?`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">See all ${gaps.length}</button>`:""}</div>`;
   }
 
-  const wk=weekData(o);
-  if(wk.total){
-    h+=`<div class="section-head"><h3>Your week</h3><div class="line"></div></div>
-      <div class="card panel"><div style="font-size:13px;line-height:1.75;color:var(--muted)">${wk.lines.map(l=>`<div>${l}</div>`).join("")}</div>
-      ${wk.newQ.length?`<div class="sect-note" style="margin:12px 2px 0">Still open: ${wk.newQ.slice(0,3).map(q=>esc(entName("question",q))).join(" · ")}</div>`:""}</div>`;
-  }
+  h+=changedCard(o);
 
   const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>b.at-a.at);
   if(openQs.length){
@@ -2440,7 +2562,9 @@ function workPeople(o){
     const last=(personInteractions(p)[0]||{}).at;
     return entRow("person",p,{tail:last?esc(relDays(daysUntil(ymdOf(last)))):""});
   }).join("")}</div>`;
-  h+=`<button class="add-sub" data-entadd="person" style="margin-top:12px">＋ Add someone</button>`;
+  h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <button class="btn ghost sm" data-act="meeting-prep">${I.cal} Prep for a meeting</button>
+    <button class="btn ghost sm" data-entadd="person">${I.plus} Add someone</button></div>`;
   if(depts.length){
     h+=`<div class="section-head"><h3>Departments</h3><div class="line"></div></div>
       <div class="card panel" style="padding:5px">${depts.map(d=>entRow("department",d)).join("")}</div>`;
@@ -2581,10 +2705,13 @@ function entDetailBody(type,rec){
   if(ev.length&&type!=="capture"){ h+=`<div class="ai-subhead">${I.note} Where this came from</div>${evidenceHTML(ev)}`; }
 
   h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px">
-    ${type!=="capture"?`<button class="btn ghost sm" data-entedit="${type}|${rec.id}">${I.edit} Edit</button>`:""}
+    ${type!=="capture"?`<button class="btn ghost sm" data-entedit="${type}|${rec.id}">${I.edit} Edit</button>`
+      :`<button class="btn ghost sm" data-capedit="${rec.id}">${I.edit} Edit note</button><button class="btn ghost sm" data-capreex="${rec.id}">${I.ai} Re-read it</button>`}
     ${type==="question"&&rec.status==="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Answered">✓ Answered</button><button class="btn ghost sm" data-qstat="${rec.id}|Dismissed">Dismiss</button>`:""}
     ${type==="question"&&rec.status!=="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Open">↺ Reopen</button>`:""}
-    ${type==="person"?`<button class="btn ghost sm" data-whoabout="${rec.id}">${I.ai} What do I know?</button>`:""}
+    ${type==="person"?`<button class="btn ghost sm" data-whoabout="${rec.id}">${I.ai} What do I know?</button>
+      <button class="btn ghost sm" data-mpprep="${rec.id}">${I.cal} Prep to meet</button>
+      <button class="btn ghost sm" data-mergewith="${rec.id}">${I.people} Merge…</button>`:""}
     <button class="btn ghost sm danger" data-entdel="${type}|${rec.id}">${I.trash} Delete</button>
   </div>`;
   return h;
@@ -2636,7 +2763,10 @@ function saveEntForm(form){
   const nameField=entFields(type)[0][0];
   if(!d[nameField]){ toast("Give it a name"); return; }
   let rec=id?entGet(type,id):null;
-  if(rec){ if(type==="problem"&&d.status==="Solved"&&rec.status!=="Solved") d.solvedAt=Date.now(); Object.assign(rec,d); }
+  if(rec){
+    if(d.status&&rec.status&&d.status!==rec.status){ d.prevStatus=rec.status; d.statusAt=Date.now(); }
+    if(type==="problem"&&d.status==="Solved"&&rec.status!=="Solved") d.solvedAt=Date.now();
+    Object.assign(rec,d); }
   else if(type==="person"){
     const o=opById(opId); if(!o) return; o.people=o.people||[];
     rec=Object.assign({id:uid(),linkedin:"",email:"",notes:""},d); o.people.push(rec); o.updatedAt=Date.now();
@@ -2647,6 +2777,206 @@ function saveEntForm(form){
   if(d.ownerId) addLink(opId,"person",d.ownerId,"OWNS",type,rec.id,1);
   (d.expertise||[]).forEach(x=>{ const s=resolveEnt("system",x,opId); if(s.rec&&s.conf>=1) addLink(opId,"person",rec.id,"KNOWS","system",s.rec.id,1); });
   save(); closeEditor(); render(); toast("Saved");
+}
+
+/* ---- Merging two people. Resolution stops most duplicates at the door, but you can still
+   end up with two records (you picked "add new", or you met someone twice under two names).
+   Merging has to move the graph too, or the evidence trail breaks. ---- */
+function dedupeLinks(){
+  const w=W(), seen={}, out=[];
+  w.links.forEach(l=>{
+    if(l.st===l.tt&&l.sid===l.tid) return;                 // self-link left over from a merge
+    const k=[l.opId,l.st,l.sid,l.rel,l.tt,l.tid].join("|");
+    if(seen[k]){ const e=seen[k];
+      e.conf=Math.max(e.conf||0,l.conf||0);
+      e.via=[...new Set((e.via||[]).concat(l.via||[]))];
+      e.seen=(e.seen||1)+(l.seen||1);
+      return; }
+    seen[k]=l; out.push(l);
+  });
+  w.links=out;
+}
+function mergePeople(keepId,dropId){
+  const keep=entGet("person",keepId), drop=entGet("person",dropId);
+  if(!keep||!drop||keepId===dropId) return false;
+  const o=opById(entOpId("person",keepId)); if(!o) return false;
+  // keep what you've already curated; take the rest from the record being folded in
+  ["title","email","linkedin","photo","deptId"].forEach(k=>{ if(!keep[k]&&drop[k]) keep[k]=drop[k]; });
+  keep.expertise=[...new Set((keep.expertise||[]).concat(drop.expertise||[]))];
+  if(drop.notes&&!(keep.notes||"").includes(drop.notes)) keep.notes=(keep.notes?keep.notes+"\n":"")+drop.notes;
+  if(drop.at&&(!keep.at||drop.at<keep.at)) keep.at=drop.at;   // met them as early as the earlier record says
+  const w=W();
+  w.links.forEach(l=>{ if(l.st==="person"&&l.sid===dropId) l.sid=keepId; if(l.tt==="person"&&l.tid===dropId) l.tid=keepId; });
+  dedupeLinks();
+  w.captures.forEach(c=>{
+    if(!c.entities) return;
+    c.entities.forEach(e=>{ if(e.t==="person"&&e.id===dropId) e.id=keepId; });
+    const seen={}; c.entities=c.entities.filter(e=>{ const k=e.t+"|"+e.id; if(seen[k]) return false; seen[k]=1; return true; });
+  });
+  w.projects.concat(w.systems).forEach(r=>{ if(r.ownerId===dropId) r.ownerId=keepId; });
+  if(o.hired&&o.hired.managerId===dropId) o.hired.managerId=keepId;
+  o.people=(o.people||[]).filter(p=>p.id!==dropId);
+  o.updatedAt=Date.now();
+  return true;
+}
+function openMergePicker(keepId){
+  const keep=entGet("person",keepId); const opId=entOpId("person",keepId);
+  const others=entAll("person",opId).filter(p=>p.id!==keepId).sort((a,b)=>personMatch(b.name,keep.name)-personMatch(a.name,keep.name));
+  if(!others.length){ toast("Nobody else to merge with"); return; }
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Same person?</h2>
+      <div style="font-size:12.5px;color:var(--faint)">Fold another record into ${esc(keep.name)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="sect-note">Everything from the record you pick — notes, expertise, connections and the notes that mention them — moves onto <b>${esc(keep.name)}</b>. The other record goes away.</div>
+  <div class="card panel" style="padding:5px">${others.map(p=>{
+    const likely=personMatch(p.name,keep.name)>0;
+    return entRow("person",p,{tail:`${likely?`<span class="st-pill" style="background:rgba(198,164,92,.18);color:var(--warn)">likely</span>`:""}<button class="btn sm ghost" data-mergeinto="${keepId}|${p.id}">Merge in</button>`});
+  }).join("")}</div>`);
+}
+
+/* ---- Prep for a meeting, with no calendar anywhere near it. You know who you're seeing;
+   Meanwhile knows what you've recorded about them and what's unresolved between you. ---- */
+let mpSel=[];
+function openMeetingPrep(preId){
+  const o=workOp(); if(!o){ toast("No company yet"); return; }
+  mpSel = preId ? [preId] : [];
+  openEditor(meetingPrepBody());
+}
+function meetingPrepBody(){
+  const o=workOp(), ppl=(o.people||[]).slice().sort((a,b)=>personInteractions(b).length-personInteractions(a).length);
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.cal}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Prep for a meeting</h2>
+      <div style="font-size:12.5px;color:var(--faint)">Who are you seeing?</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="card panel" style="padding:5px;max-height:230px;overflow:auto">${
+    ppl.length?ppl.map(p=>`<div class="rev-item ${mpSel.includes(p.id)?"":"off"}" style="background:transparent;border:none;padding:7px 6px;margin:0">
+      <span class="rev-cb ${mpSel.includes(p.id)?"on":""}" data-mp="${p.id}">${I.check}</span>
+      <div class="rev-b" data-mp="${p.id}" style="cursor:pointer"><div class="rev-n">${esc(p.name)}</div>
+      <div class="rev-m">${esc([p.title,p.deptId?entLabel("department",p.deptId):""].filter(Boolean).join(" · "))}</div></div></div>`).join("")
+    :`<div class="ent-empty">No people recorded yet.</div>`}</div>
+  <div class="form-row" style="margin-top:12px"><label>What's it about? <span style="color:var(--faint);font-weight:500">— optional</span></label>
+    <input id="mpTopic" placeholder="Forecast redesign" autocomplete="off"/></div>
+  <button class="btn primary" style="width:100%" data-act="mp-run">${I.ai} What do I know?</button>
+  <div id="mpOut" style="margin-top:14px"></div>`;
+}
+// everything you've recorded that's relevant to these people, computed — not generated
+function meetingBrief(o,ids,topic){
+  const T=terms(topic||"");
+  const hit=s=>T.length?T.some(t=>norm(s).includes(t)):false;
+  const people=ids.map(id=>entGet("person",id)).filter(Boolean);
+  const per=people.map(p=>{
+    const rel=relatedTo("person",p.id,true);
+    const ints=personInteractions(p);
+    return {p, rel, ints, last:ints[0]?ints[0].at:0,
+      owns:rel.filter(r=>r.rel==="OWNS"), knows:rel.filter(r=>r.rel==="KNOWS"),
+      inv:rel.filter(r=>["INVOLVED_IN","HELPED_SOLVE","USES"].includes(r.rel))};
+  });
+  // things more than one of them is attached to — the actual common ground
+  const tally={};
+  per.forEach(x=>x.rel.forEach(r=>{ const k=r.type+"|"+r.id; (tally[k]=tally[k]||{r,who:[]}).who.push(x.p.name); }));
+  const shared=Object.values(tally).filter(x=>x.who.length>1);
+  const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").map(q=>{
+    const byTopic=hit(q.q);
+    const byPerson=per.some(x=>x.rel.some(r=>norm(q.q).includes(norm(entLabel(r.type,r.id)))));
+    return {q, score:(byTopic?2:0)+(byPerson?1:0)};
+  }).filter(x=>x.score>0||T.length===0).sort((a,b)=>b.score-a.score).slice(0,6).map(x=>x.q);
+  const ids2=new Set(ids);
+  const notes=wOf("captures",o.id)
+    .filter(c=>(c.entities||[]).some(e=>e.t==="person"&&ids2.has(e.id)) || (T.length&&hit(c.text)))
+    .sort((a,b)=>b.at-a.at).slice(0,5);
+  const topicHits=T.length?["project","problem","system","process","decision"].flatMap(t=>
+    entAll(t,o.id).filter(r=>hit(entName(t,r))).map(r=>({t,r}))):[];
+  return {per, shared, openQs, notes, topicHits};
+}
+function runMeetingPrep(){
+  const o=workOp(); const box=document.getElementById("mpOut"); if(!o||!box) return;
+  if(!mpSel.length){ toast("Pick who you're meeting"); return; }
+  const topic=(document.getElementById("mpTopic")||{}).value||"";
+  const b=meetingBrief(o,mpSel,topic);
+  const chip=(t,id)=>`<span class="chip" data-ent="${t}|${id}" style="cursor:pointer;border-color:${ENT[t].col}55;color:${ENT[t].col}">${esc(entLabel(t,id))}</span>`;
+  let h="";
+  b.per.forEach(x=>{
+    const bits=[];
+    if(x.owns.length) bits.push(`owns ${x.owns.map(r=>entLabel(r.type,r.id)).join(", ")}`);
+    if(x.knows.length) bits.push(`knows ${x.knows.map(r=>entLabel(r.type,r.id)).join(", ")}`);
+    if(x.inv.length) bits.push(`involved in ${x.inv.map(r=>entLabel(r.type,r.id)).join(", ")}`);
+    h+=`<div class="who-card">
+      <div class="who-h">${entIcoHTML("person",x.p)}<div style="min-width:0">
+        <div class="ent-name" data-ent="person|${x.p.id}" style="cursor:pointer">${esc(x.p.name)}</div>
+        <div class="ent-meta">${esc([x.p.title,x.p.deptId?entLabel("department",x.p.deptId):""].filter(Boolean).join(" · "))}</div></div></div>
+      <div class="who-why" style="padding-left:0;margin-top:8px">${bits.length?bits.map(t=>`<div>${esc(t)}</div>`).join(""):`<div style="color:var(--faint)">You haven't recorded what they own or know yet.</div>`}
+        <div style="color:var(--faint);margin-top:3px">${x.ints.length?`${x.ints.length} ${x.ints.length===1?"interaction":"interactions"} · last ${fmtDate(ymdOf(x.last))}`:"no interactions recorded"}</div></div>
+    </div>`;
+  });
+  if(b.shared.length) h+=`<div class="rev-head" style="margin-top:12px">${I.link}Common ground</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${b.shared.map(x=>chip(x.r.type,x.r.id)).join("")}</div>`;
+  if(b.topicHits.length) h+=`<div class="rev-head" style="margin-top:14px">${I.spark}On this topic</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${b.topicHits.map(x=>chip(x.t,x.r.id)).join("")}</div>`;
+  if(b.openQs.length) h+=`<div class="rev-head" style="margin-top:14px">${I.question}Worth asking</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.8">${b.openQs.map(q=>`<div data-ent="question|${q.id}" style="cursor:pointer">• ${esc(q.q)}</div>`).join("")}</div>`;
+  if(b.notes.length) h+=`<div class="rev-head" style="margin-top:14px">${I.note}Last time</div>${evidenceHTML(b.notes)}
+    <div class="note-block" style="margin-top:8px;font-size:12.5px">${esc((b.notes[0].text||"").slice(0,240))}${(b.notes[0].text||"").length>240?"…":""}</div>`;
+  h+=`<div id="mpAI" style="font-size:13px;color:var(--muted);line-height:1.7;margin-top:12px"></div>`;
+  box.innerHTML=h;
+  if(aiEngine()==="paste"||aiEngine()==="off") return;
+  const ai=document.getElementById("mpAI"); ai.textContent="Thinking about what to watch for…";
+  const ctx=b.per.map(x=>`${x.p.name}${x.p.title?` (${x.p.title})`:""}: ${[x.owns.map(r=>"owns "+entLabel(r.type,r.id)).join(", "),x.knows.map(r=>"knows "+entLabel(r.type,r.id)).join(", "),x.inv.map(r=>"involved in "+entLabel(r.type,r.id)).join(", ")].filter(Boolean).join("; ")||"nothing recorded"}`).join("\n");
+  const prompt=`I work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}. I'm about to meet:\n${ctx}\n${topic?`\nThe meeting is about: ${topic}`:""}
+${b.openQs.length?`\nQuestions I've recorded as still open:\n${b.openQs.map(q=>"- "+q.q).join("\n")}`:""}
+${b.notes.length?`\nMy most recent note involving them:\n${b.notes[0].text.slice(0,600)}`:""}
+
+In 2-4 sentences: what should I get out of this meeting, and what's the one thing worth raising? Use only what's above — if my records are thin, say so. Plain text, no preamble.`;
+  aiCall(prompt,null,{json:false,maxTokens:400}).then(out=>{ ai.textContent=(out||"").trim(); }).catch(()=>{ ai.remove(); });
+}
+
+/* ---- What changed. The company map moves under you; this is the diff. Everything here is
+   derived from timestamps already on the records, so it's a fact, not a summary. ---- */
+let changeRange=7;
+function changesSince(o,days){
+  const since=Date.now()-days*86400000;
+  const fresh=r=>(r.at||0)>=since;
+  const d={days,since};
+  ["project","problem","system","department","process","decision","question"].forEach(t=>{ d[t]=wOf(ENT[t].list,o.id).filter(fresh); });
+  d.people=(o.people||[]).filter(fresh);
+  d.notes=wOf("captures",o.id).filter(c=>fresh(c)||(c.editedAt||0)>=since);
+  d.talked=(o.people||[]).filter(p=>{ const i=personInteractions(p); return i.length&&i[0].at>=since; });
+  d.status=wOf("projects",o.id).concat(wOf("problems",o.id)).filter(r=>(r.statusAt||0)>=since&&r.prevStatus);
+  d.answered=wOf("questions",o.id).filter(q=>(q.answeredAt||0)>=since);
+  d.links=W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS"&&(l.at||0)>=since);
+  d.total=d.notes.length+d.people.length+d.status.length+d.answered.length+d.project.length+d.problem.length+d.system.length+d.decision.length;
+  return d;
+}
+function changedCard(o){
+  const d=changesSince(o,changeRange);
+  const ranges=[[7,"week"],[30,"month"],[90,"90 days"]];
+  const chips=ranges.map(([n,l])=>`<span class="chip ${changeRange===n?'tag-chip':''}" data-range="${n}" style="cursor:pointer">Past ${l}</span>`).join("");
+  const head=`<div class="section-head"><h3>What changed</h3><div class="line"></div></div>
+    <div class="cards-sorts" style="padding-bottom:10px">${chips}</div>`;
+  if(!d.total) return head+`<div class="card panel"><div class="ent-empty">Nothing new in the past ${changeRange===7?"week":changeRange===30?"month":"90 days"}.<br><br><button class="btn primary sm" data-act="capture">${I.plus} Capture something</button></div></div>`;
+  const line=(n,one,many,extra)=>n?`<div><b style="color:var(--txt)">${n}</b> ${esc(n===1?one:many)}${extra?` — ${extra}`:""}</div>`:"";
+  const names=(list,t)=>list.slice(0,4).map(r=>`<span class="cite" data-ent="${t}|${r.id}">${esc(entName(t,r))}</span>`).join(", ")+(list.length>4?` +${list.length-4}`:"");
+  let h=head+`<div class="card panel"><div style="font-size:13px;line-height:1.85;color:var(--muted)">`;
+  h+=line(d.notes.length,"note","notes");
+  h+=line(d.talked.length,"person you talked to","people you talked to",names(d.talked,"person"));
+  h+=line(d.people.length,"new person","new people",names(d.people,"person"));
+  h+=line(d.project.length,"new project","new projects",names(d.project,"project"));
+  h+=line(d.problem.length,"problem discovered","problems discovered",names(d.problem,"problem"));
+  h+=line(d.system.length,"new system","new systems",names(d.system,"system"));
+  h+=line(d.decision.length,"decision recorded","decisions recorded",names(d.decision,"decision"));
+  h+=line(d.answered.length,"question answered","questions answered",names(d.answered,"question"));
+  h+=line(d.question.length,"new open question","new open questions");
+  h+=line(d.links.length,"new connection","new connections");
+  h+=`</div>`;
+  if(d.status.length){
+    h+=`<div class="ai-subhead">${I.spark} Moved</div><div style="font-size:13px;line-height:1.8;color:var(--muted)">${
+      d.status.map(r=>{ const t=r.title!==undefined?"problem":"project";
+        return `<div><span class="cite" data-ent="${t}|${r.id}">${esc(entName(t,r))}</span> — ${esc(r.prevStatus)} → <b style="color:var(--txt)">${esc(r.status)}</b></div>`; }).join("")}</div>`;
+  }
+  const stillOpen=wOf("questions",o.id).filter(q=>q.status==="Open");
+  if(stillOpen.length) h+=`<div class="sect-note" style="margin:12px 2px 0">Still open: ${stillOpen.slice(0,3).map(q=>esc(entName("question",q))).join(" · ")}${stillOpen.length>3?` +${stillOpen.length-3}`:""}</div>`;
+  return h+`</div>`;
 }
 
 /* ============================ ASK MEANWHILE ============================
@@ -2728,6 +3058,7 @@ function workAsk(o){
   <div class="section-head"><h3>Shortcuts</h3><div class="line"></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn ghost sm" data-act="who-ask">${I.people} Who do I ask?</button>
+    <button class="btn ghost sm" data-act="meeting-prep">${I.cal} Prep for a meeting</button>
     <button class="btn ghost sm" data-act="work-gaps">${I.spark} What am I missing?</button>
     <button class="btn ghost sm" data-report="30">${I.map} Day-30 review</button>
     <button class="btn ghost sm" data-report="90">${I.trophy} 90-day map</button>
@@ -2869,27 +3200,6 @@ function openGaps(){
     <div><h2 style="margin:0;font-size:18px;font-weight:850">What am I missing?</h2><div style="font-size:12.5px;color:var(--faint)">Gaps in what you've recorded — not a to-do list</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
   ${gaps.length?gaps.map(gapHTML).join(""):`<div class="ent-empty">Nothing obvious is missing from your records right now. Keep capturing and check back.</div>`}`);
-}
-
-/* ---- Weekly briefing + what changed ---- */
-function weekData(o){
-  const since=Date.now()-7*86400000;
-  const caps=wOf("captures",o.id).filter(c=>c.at>=since);
-  const newOf=t=>wOf(ENT[t].list,o.id).filter(r=>r.at>=since);
-  const ppl=(o.people||[]).filter(p=>{ const i=personInteractions(p); return i.length&&i[0].at>=since; });
-  const solved=wOf("problems",o.id).filter(p=>p.status==="Solved"&&(p.solvedAt||p.at)>=since);
-  const newQ=newOf("question").filter(q=>q.status==="Open");
-  const lines=[];
-  const li=(n,s,p)=>{ if(n) lines.push(`<b style="color:var(--txt)">${n}</b> ${esc(n===1?s:p)}`); };
-  li(caps.length,"note captured","notes captured");
-  li(ppl.length,"person you talked to","people you talked to");
-  li(newOf("project").length,"new project","new projects");
-  li(newOf("problem").length,"problem discovered","problems discovered");
-  li(solved.length,"problem solved","problems solved");
-  li(newOf("system").length,"new system","new systems");
-  li(newOf("decision").length,"decision recorded","decisions recorded");
-  li(newQ.length,"new open question","new open questions");
-  return {total:caps.length+ppl.length+newOf("project").length+newOf("problem").length,lines,newQ,caps,ppl};
 }
 
 /* ---- 30 / 60 / 90-day reviews. The numbers and lists are computed; the AI writes the read
@@ -3405,6 +3715,7 @@ function openSettings(){
   </div>
 
   ${aiIntegrationBox()}
+  ${dataStatusBox()}
 
   <div class="section-head"><h3>Pipeline & data</h3><div class="line"></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -4049,14 +4360,16 @@ async function pullContactInto(){
     set("title",(hit.organization&&(hit.organization.company||hit.organization.jobTitle))||"");
     set("linkedin",(hit.urls&&hit.urls[0]&&(hit.urls[0].url||hit.urls[0].value))||"");
     const img=(hit.image&&(hit.image.base64String||hit.image.base64))||hit.photoThumbnail||"";
-    if(img){ const ph=document.querySelector('#personForm [name="photo"]'); if(ph) ph.value=img.startsWith("data:")?img:("data:image/jpeg;base64,"+img); }
+    // photos render inline all over the app, so they stay in state — as a thumbnail, not a 3MB original
+    if(img){ const ph=document.querySelector('#personForm [name="photo"]');
+      if(ph) ph.value=await shrinkImage(img.startsWith("data:")?img:("data:image/jpeg;base64,"+img),128); }
     toast("Pulled from Contacts ✓");
   }catch(e){ toast("⚠ Contacts: "+e.message); }
 }
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range]");
   if(!t) return;
 
   // nav
@@ -4098,6 +4411,8 @@ document.addEventListener("click",e=>{
   if(act==="add-round"){ openEditor(roundForm(null)); return; }
   if(act==="add-person"){ openEditor(personForm(null)); return; }
   if(act==="export"){ exportData(); return; }
+  if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
+  if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="import"){ $("#fileInput").click(); return; }
   if(act==="sample"){ loadSample(); return; }
   if(act==="settings"){ openSettings(); return; }
@@ -4227,6 +4542,20 @@ document.addEventListener("click",e=>{
   if(act==="who-run"){ runWhoAsk(); return; }
   if(t.dataset.whoabout){ askAboutPerson(t.dataset.whoabout); return; }
   if(act==="work-gaps"){ openGaps(); return; }
+  if(t.dataset.capedit){ openCapture(null,t.dataset.capedit); return; }
+  if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
+  if(t.dataset.mergewith){ openMergePicker(t.dataset.mergewith); return; }
+  if(t.dataset.mergeinto){ const [keep,drop]=t.dataset.mergeinto.split("|");
+    if(confirm(`Merge "${entLabel("person",drop)}" into "${entLabel("person",keep)}"? Everything moves across and the other record is removed.`)){
+      if(mergePeople(keep,drop)){ save(); closeEditor(); render(); openEnt("person",keep); toast("Merged ✓"); } }
+    return; }
+  if(act==="meeting-prep"){ openMeetingPrep(); return; }
+  if(t.dataset.mpprep){ closeEditor(); openMeetingPrep(t.dataset.mpprep); return; }
+  if(t.dataset.mp){ const id=t.dataset.mp; mpSel=mpSel.includes(id)?mpSel.filter(x=>x!==id):mpSel.concat(id);
+    const topic=(document.getElementById("mpTopic")||{}).value||"";
+    spSetBody(meetingPrepBody()); const ti=document.getElementById("mpTopic"); if(ti) ti.value=topic; return; }
+  if(act==="mp-run"){ runMeetingPrep(); return; }
+  if(t.dataset.range){ changeRange=+t.dataset.range; render(); return; }
   if(t.dataset.report){ openReport(t.dataset.report); return; }
   if(t.dataset.reportRegen){ regenReport(t.dataset.reportRegen); return; }
   if(act==="report-copy"){ copy(aiGenText,"Copied"); return; }
@@ -4333,19 +4662,33 @@ document.addEventListener("dragover",e=>{ const col=e.target.closest(".col[data-
 document.addEventListener("drop",e=>{ const col=e.target.closest(".col[data-stage]"); if(col&&dragId){ const o=state.opportunities.find(x=>x.id===dragId); if(o&&o.status!==col.dataset.stage){ o.status=col.dataset.stage; o.updatedAt=Date.now(); save(); render(); } dragId=null; } });
 
 /* ============================ IMPORT / EXPORT ============================ */
-function exportData(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+// A backup has to be the whole thing, so attachments are re-inlined into the file on the way out
+async function exportData(){
+  const snap=JSON.parse(JSON.stringify(state));
+  const pairs=[[snap.resume&&snap.resume.file, state.resume&&state.resume.file]];
+  snap.opportunities.forEach((o,i)=>pairs.push([o.jdFile, state.opportunities[i]&&state.opportunities[i].jdFile]));
+  for(const [copy,orig] of pairs){
+    if(!copy||!orig||copy.data) continue;
+    const bytes=await fileBytes(orig);
+    if(bytes){ copy.data=bytes; delete copy.ref; }
+  }
+  const blob=new Blob([JSON.stringify(snap,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   const d=new Date(); a.download=`meanwhile-backup-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
-  a.click(); toast("Backup downloaded");
+  a.click();
+  devPrefs.lastExport=Date.now(); saveDev();
+  if(view==="dashboard"||view==="work") render();
+  toast("Backup downloaded");
 }
 function importFile(file){
   if(!file) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ const data=JSON.parse(r.result);
+  r.onload=async()=>{ try{ const data=JSON.parse(r.result);
     if(!data.opportunities) throw 0;
     if(state.opportunities.length && !confirm("Replace your current data with this backup? (Export first if unsure.)")) return;
-    state=migrate(data); save(); render(); toast("Imported "+data.opportunities.length+" roles");
+    state=migrate(data); persist();
+    await migrateFilesToIDB();   // put any inlined attachments back in the file vault
+    save(); render(); toast("Imported "+data.opportunities.length+" roles");
   }catch(e){ toast("⚠ That file didn't look like a Meanwhile backup"); } };
   r.readAsText(file);
 }
@@ -4464,20 +4807,107 @@ function loadSampleWork(iso){
   wOf("decisions",o.id).forEach(d=>{ d.at=Date.now()-86400000*20; });
 }
 
-/* ============================ FILES (JD / résumé attachments) ============================ */
-function fileToData(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res({name:file.name,type:file.type||"application/octet-stream",size:file.size,data:r.result}); r.onerror=rej; r.readAsDataURL(file); }); }
-function downloadData(f){ if(!f||!f.data) return; const a=document.createElement("a"); a.href=f.data; a.download=f.name||"file"; document.body.appendChild(a); a.click(); a.remove(); }
+/* ============================ FILES (JD / résumé attachments) ============================
+   Attachments used to be base64 inside the one localStorage key, where a single 2MB PDF ate
+   more than half the 5MB budget and got pushed to the cloud on every keystroke-triggered save.
+   The bytes now live in IndexedDB (hundreds of MB, same origin, same device) and `state` keeps
+   only {name,type,size,ref}. Records with a legacy inline `data` still work and are migrated on
+   boot. Exports re-inline the bytes so a backup file is still a complete backup. */
+const IDB_NAME="meanwhile_files", IDB_STORE="files";
+let idbPromise=null;
+function idb(){
+  if(idbPromise) return idbPromise;
+  idbPromise=new Promise((res,rej)=>{
+    if(!window.indexedDB) return rej(new Error("no IndexedDB"));
+    const r=indexedDB.open(IDB_NAME,1);
+    r.onupgradeneeded=()=>{ const db=r.result; if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error||new Error("IndexedDB blocked"));
+  });
+  return idbPromise;
+}
+function idbTx(mode,fn){ return idb().then(db=>new Promise((res,rej)=>{
+  const t=db.transaction(IDB_STORE,mode), q=fn(t.objectStore(IDB_STORE));
+  t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error);
+})); }
+const idbPut=(k,v)=>idbTx("readwrite",s=>s.put(v,k));
+const idbGet=k=>idbTx("readonly",s=>s.get(k));
+const idbDel=k=>idbTx("readwrite",s=>s.delete(k));
+const idbKeys=()=>idbTx("readonly",s=>s.getAllKeys());
+
+function readAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+// → {name,type,size,ref} with the bytes in IndexedDB; falls back to inline if IDB is unavailable
+async function fileToData(file){
+  const dataURL=await readAsDataURL(file);
+  const meta={name:file.name,type:file.type||"application/octet-stream",size:file.size};
+  try{ const ref="f_"+uid(); await idbPut(ref,dataURL); return Object.assign(meta,{ref}); }
+  catch(e){ return Object.assign(meta,{data:dataURL}); }
+}
+// the actual bytes for a file record, wherever they live
+async function fileBytes(f){
+  if(!f) return "";
+  if(f.data) return f.data;
+  if(f.ref){ try{ return (await idbGet(f.ref))||""; }catch(e){ return ""; } }
+  return "";
+}
+async function downloadData(f){
+  const data=await fileBytes(f);
+  if(!data){ toast("That file was attached on another device"); return; }
+  const a=document.createElement("a"); a.href=data; a.download=(f&&f.name)||"file"; document.body.appendChild(a); a.click(); a.remove();
+}
 function fileSizeStr(n){ if(!n) return ""; return n<1024?n+" B":n<1048576?(n/1024).toFixed(0)+" KB":(n/1048576).toFixed(1)+" MB"; }
-// generic file picker that stashes the chosen file's data into a hidden form input (name=field) + shows the filename
+// every file record currently referenced anywhere in state
+function allFileRecords(){
+  const out=[];
+  if(state.resume&&state.resume.file) out.push(state.resume.file);
+  state.opportunities.forEach(o=>{ if(o.jdFile) out.push(o.jdFile); });
+  return out.filter(Boolean);
+}
+// one-time move of legacy inline attachments into IndexedDB, then drop the fat from state
+async function migrateFilesToIDB(){
+  const legacy=allFileRecords().filter(f=>f.data&&!f.ref);
+  if(!legacy.length) return;
+  let moved=0;
+  for(const f of legacy){
+    try{ const ref="f_"+uid(); await idbPut(ref,f.data); f.ref=ref; delete f.data; moved++; }catch(e){ break; }
+  }
+  if(moved){ persist(); schedulePush(); }
+}
+// blobs whose record is gone (a cancelled form, a deleted role) don't get to squat forever
+async function sweepOrphanFiles(){
+  try{
+    const keys=await idbKeys(); if(!keys||!keys.length) return;
+    const live=new Set(allFileRecords().map(f=>f.ref).filter(Boolean));
+    for(const k of keys){ if(!live.has(k)) await idbDel(k); }
+  }catch(e){}
+}
+// generic file picker: bytes go to IndexedDB, the hidden form input carries only the metadata
 async function pickFileInto(field, accept){
   const inp=document.createElement("input"); inp.type="file"; if(accept) inp.accept=accept;
   inp.onchange=async()=>{ const file=inp.files[0]; if(!file) return;
-    if(file.size>4*1024*1024){ toast("⚠ File too big (max ~4MB)"); return; }
+    if(file.size>12*1024*1024){ toast("⚠ File too big (max 12MB)"); return; }
     const f=await fileToData(file);
     const hidden=document.querySelector(`[name="${field}"]`); if(hidden) hidden.value=JSON.stringify(f);
     const lbl=document.querySelector(`[data-filename="${field}"]`); if(lbl) lbl.innerHTML=`📎 ${esc(f.name)} <span style="color:var(--faint)">${fileSizeStr(f.size)}</span> · <span data-clearfile="${field}" style="color:var(--bad);cursor:pointer">remove</span>`;
   };
   inp.click();
+}
+// contact photos stay inline (they're rendered in a dozen places) so they get shrunk to a thumbnail
+function shrinkImage(dataURL, max){
+  max=max||128;
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const s=Math.min(1,max/Math.max(img.width,img.height));
+        const c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(img.width*s)); c.height=Math.max(1,Math.round(img.height*s));
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",0.72));
+      }catch(e){ res(dataURL); }
+    };
+    img.onerror=()=>res(dataURL);
+    img.src=dataURL;
+  });
 }
 
 /* ============================ RÉSUMÉ (global) ============================ */
@@ -4607,13 +5037,13 @@ async function rsAIParse(text, doc){
 function rsUpload(){
   const inp=document.createElement("input"); inp.type="file"; inp.accept=".pdf,.txt,.md,.markdown,.json,.doc,.docx,.rtf";
   inp.onchange=async()=>{ const file=inp.files[0]; if(!file) return;
-    if(file.size>5*1024*1024){ toast("⚠ File too big (max ~5MB)"); return; }
+    if(file.size>12*1024*1024){ toast("⚠ File too big (max 12MB)"); return; }
     const fd=await fileToData(file); state.resume=state.resume||{}; state.resume.file=fd; save();
     const name=file.name.toLowerCase();
     const isText=/\.(txt|md|markdown|json)$/.test(name)||/^text\//.test(file.type);
     const isPDF=name.endsWith(".pdf")||file.type==="application/pdf";
     if(isText){ const txt=await file.text(); rsAIParse(txt,null); }
-    else if(isPDF){ const b64=(fd.data.split(",")[1])||""; rsAIParse(null,{data:b64,mime:"application/pdf"}); }
+    else if(isPDF){ const b64=((await fileBytes(fd)).split(",")[1])||""; rsAIParse(null,{data:b64,mime:"application/pdf"}); }
     else { toast("Stored the file. For DOCX, paste the text or export to PDF to auto-structure."); if(editorEl) spSetBody(resumeStudioBody()); }
   };
   inp.click();
@@ -4749,6 +5179,8 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 render();
 initSync();
 initNative();
+// attachments: move any legacy inline blobs into the file vault, then bin unreferenced ones
+setTimeout(()=>{ migrateFilesToIDB().then(sweepOrphanFiles).catch(()=>{}); }, 1200);
 // dismiss the branded launch splash (only visible when installed/standalone)
 (function(){ const s=document.getElementById("splash"); if(!s) return;
   setTimeout(()=>{ s.classList.add("hide"); setTimeout(()=>s.remove(),500); }, 700); })();

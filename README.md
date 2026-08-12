@@ -16,8 +16,22 @@ same company and people you built while interviewing become your map of the plac
 one-tap capture of what just happened, and answers about who to ask and why things work the way
 they do — each one citing the note you learned it from.
 
-No build step, no dependencies, no accounts. Your data lives in your browser (with JSON
-export/import for backup, and optional cloud sync to a database you own).
+No build step, no dependencies, no accounts.
+
+## Where your data lives
+Everything is stored **in your browser**, on your device — no account, no server of ours, nothing
+sent anywhere you didn't choose. That also means it can be deleted: clearing your browsing data
+takes it with it, and iPhone Safari clears storage for sites you haven't opened in a week unless
+the app is on your home screen. Attachments are kept in the browser's file store (IndexedDB) so
+big PDFs don't crowd out everything else.
+
+So pick a safety net:
+- **Cloud sync** (Settings → Cloud sync) keeps a copy in a free Supabase project **you** own and
+  control, and keeps your phone and laptop in step. This is the recommended one.
+- **Export backup** writes a complete JSON file — attachments included — that you can keep in
+  iCloud Drive or anywhere else and import on any device.
+
+Meanwhile tells you when neither is in place rather than letting you find out the hard way.
 
 ## Use it
 Open `index.html` — that's it. Hosted via GitHub Pages, then **Add to Home Screen** on mobile
@@ -53,6 +67,9 @@ for a full-screen, installable app (works offline).
 - **Ask Meanwhile** — questions about your company answered from your notes, with every claim
   linked back to where you recorded it. It says "you haven't recorded that" instead of guessing.
 - **30 / 60 / 90-day reviews** — what you learned, who you know, what's still fuzzy.
+- **Prep for a meeting** — pick who you're seeing and get what you know about them, what you have in
+  common, and what's still unresolved. No calendar connection required.
+- **What changed** — a diff of your company map over the past week, month or quarter.
 - **The map** — people, departments and systems as a visual graph, plus a career timeline that runs
   from the day you found the job to last week's meeting.
 

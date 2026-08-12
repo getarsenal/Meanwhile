@@ -33,6 +33,11 @@ you paste into a new AI chat to prep for interviews.
 ## How `index.html` is organized (search for these section banners)
 - `MODEL` — `DEFAULT_STAGES`, `CLOSED_STAGES`, `activeStages()/allStages()/stage()`, `SOURCES`, `ROUND_TYPES`, global `state`.
 - `STORAGE` — `load()/migrate()/persist()/save()`. **`save()` bumps `state.rev` and triggers cloud push.** Use `persist()` (no push) only when writing data that came *from* the cloud.
+  `persist()` returns false and raises a **persistent alarm** (`renderStorageAlarm`/`openStorageHelp`) when
+  localStorage is full — the previous good copy stays intact rather than the app pretending the write worked.
+  `devPrefs` (localStorage `meanwhile_device_v1`, never synced) holds device facts: `lastExport`, `bytes`,
+  `riskSnoozed`. `backupRisk()/riskBanner()` warn on Home and Work when there's no sync and no recent backup;
+  `dataStatusBox()` is the Settings panel that says plainly where the data lives.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
 - `renderDashboard` leads with `dashHero()` (hero), 4 KPI tiles, then `renderMovesHub()` — the
@@ -105,7 +110,11 @@ you paste into a new AI chat to prep for interviews.
 - `POST-HIRE (90-day mode → My Company)` — everything that happens *after* you get the job. See the
   dedicated section below; it's the largest addition to the app.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
-- `FILES` — JD/résumé attachments as base64 (`fileToData`, `downloadData`, `pickFileInto`).
+- `FILES` — attachment **bytes live in IndexedDB** (`meanwhile_files`), not in the synced document.
+  A file record on `state` is `{name,type,size,ref}`; `fileBytes(f)` resolves `ref` → bytes (and still reads a
+  legacy inline `data`). `migrateFilesToIDB()` moves old inline blobs out on boot, `sweepOrphanFiles()` bins
+  unreferenced ones, and **`exportData()` re-inlines the bytes so a backup file is still a complete backup**.
+  Contact photos stay inline but are downscaled by `shrinkImage()`. Never put base64 back on `state`.
 - `CALENDAR` — `.ics` + Google Calendar links for ANY event (rounds, next-step tasks, offer
   deadlines) via `eventFromKey()` (round id, or `opId|task` / `opId|offer`) → `buildICS`/
   `downloadEventICS`/`googleCalEventUrl`; `icsEsc()` escapes per RFC 5545.
@@ -159,6 +168,15 @@ never a silent merge. Non-people go through `canonThing()` + `SYS_ALIAS` (sfdc�
 `capApply` re-resolves before creating so entities made earlier in the same batch (a person's
 department) aren't duplicated.
 
+**Notes are editable** — `openCapture(opId, editId)` reopens a capture; `buildPlan` carries `captureId` so
+re-reading merges into the same note instead of filing a second one, and `capApply` dedups `cap.entities`.
+**Merging people** (`mergePeople`) is the repair tool for duplicates that resolution didn't catch: it unions
+the fields, repoints every link/capture-reference/`ownerId`/`managerId`, then `dedupeLinks()` collapses the
+duplicates and drops self-links. **Meeting prep** (`openMeetingPrep`/`meetingBrief`) assembles what you know
+about the people you're about to see — computed from the graph, no calendar integration anywhere near it.
+**What changed** (`changesSince`/`changedCard`) diffs the map over 7/30/90 days from timestamps already on the
+records; `saveEntForm` stamps `prevStatus`/`statusAt` so transitions are real rather than inferred.
+
 **Ask Meanwhile** (`workRefs`/`askWorkPrompt`/`runWorkAsk`) dumps the structured records with bracket
 ids, requires inline citations, and renders `[p2]` back as clickable chips (`citeHTML`/`citeLabel`).
 **Who do I ask?** (`whoToAsk`) is ranked *in JS from the graph* so the evidence is always real — the
@@ -202,6 +220,8 @@ edit/delete work. Don't create rounds/people without ids.
 
 ## Conventions / rules
 - **Escape all user content** with `esc()` in any HTML string.
+- **Nothing large goes on `state`.** It's one localStorage key (~5MB) that gets pushed to the cloud on every
+  save. Bytes belong in IndexedDB behind a `ref`; `state` holds ids, text and metadata.
 - **Mobile = no horizontal scrolling, ever.** Pipeline stacks vertically on mobile; the table
   becomes `renderRoleCards()`. Test that `document.documentElement.scrollWidth <= innerWidth`.
 - Respect iOS safe areas (`env(safe-area-inset-*)`) for top bar / bottom nav / drawer.
@@ -263,8 +283,9 @@ present. Bump `CACHE` in `sw.js` to force-invalidate.
 - Per-user digest config (currently one vault via env; fine for personal use).
 - Post-hire, deliberately not built yet (the brief's Tier 4 — don't start these until the capture →
   extract → ask loop has been lived in for a while): calendar/email/Slack/Teams ingestion feeding
-  the same graph, meeting transcript import, and a "what changed at my company this week?" diff
-  against the previous map. The weekly briefing (`weekData`) is the seed of that last one.
+  the same graph and meeting transcript import. ("What changed?" is built — see `changesSince`.)
+- Native iOS build for durability: in a Capacitor wrapper the same storage sits in the app sandbox, so it
+  survives "clear browsing data" and Safari's 7-day eviction and rides along in iCloud device backups.
 - Semantic/vector search for Ask Meanwhile. Today retrieval is the full structured record set plus
   the 40 most recent notes, which is plenty at personal scale and needs no new infrastructure.
 

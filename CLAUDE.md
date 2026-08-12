@@ -289,9 +289,37 @@ edit/delete work. Don't create rounds/people without ids.
   notes", cite their sources, and are told to answer "you haven't recorded anything about that"
   rather than fill a gap. Anything ranked or counted (who to ask, gaps, report numbers) is computed
   in JS from the records so the evidence is real; the model only does wording.
+- **`esc()` is for text; markup is not the only escaping context.** Two more helpers exist because
+  `esc()` alone doesn't cover them: `cssCol(c)` for anything landing inside `style="…"` (a colour is
+  the one a user can set, and `;`/`)` break out of a declaration, which `esc()` doesn't touch), and
+  `safeUrl(u)` / `safeImg(u)` for `href`/`src` (`esc()` happily preserves `javascript:`). Every
+  user-typed or AI-extracted URL goes through `safeUrl`; contact photos and logos through `safeImg`.
+- **`save()` keeps `rev` strictly climbing** (`Math.max(Date.now(), rev+1)`). `rev` is the entire
+  conflict story for cloud sync — a bare `Date.now()` ties inside one millisecond and runs backwards
+  on a lagging clock, either of which silently drops an edit.
+- **Drawer buttons outlive their record.** The drawer is hidden with a class, not removed, so the
+  delegated click handler bails early (`t.closest("#drawer") && !getOp()`) rather than letting a
+  dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-There's no test suite; verify in a real browser via the preview tools:
+The app has been through a full audit — static (AST) plus runtime — and there are **539 browser
+assertions** across twelve Playwright suites. They live in the scratchpad, not the repo (the app
+stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
+and what a future change should not regress:
+- **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,
+  modal and entity form and assert nothing was parsed as markup. The whole surface once traced back
+  to stage `name`/`color` — see `cssCol`/`safeUrl` above.
+- **Resilience**: links and `deptId`/`managerId`/`ownerId` pointing at deleted records, a reporting
+  line that loops, records with no ids, `null` where arrays belong, a status no stage defines,
+  nonsense dates, corrupt localStorage. Nothing may throw; nothing may blank the screen.
+- **Clicks**: every `data-*` control in every view is clicked and the console must stay silent.
+- **Layout**: no horizontal scroll at 320–1024px, on every view and every work tab.
+- **Weight**: 60 people / 120 notes / 300 links / 30 roles still renders each view in ~20ms.
+- **Durability**: a refused write keeps the last good copy and raises the alarm; a backup round-trips
+  including IndexedDB attachment bytes; free AI keys sync and paid ones never enter the document;
+  a half-typed form survives a backdrop tap or Escape.
+
+Day to day, verify in a real browser via the preview tools:
 1. Serve the folder and open it (a `.claude/launch.json` with a static server already exists in
    the local setup; on the web sandbox just open `index.html`).
 2. Drive it with `preview_eval`: call render functions, simulate `.click()`, assert DOM/state.

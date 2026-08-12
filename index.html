@@ -922,7 +922,11 @@ function openStorageHelp(){
   <div class="note-block" style="margin-top:14px;font-size:12.5px">Attached files are almost always the cause. Open a role → Edit → remove the attached job description, or Settings → My résumé → remove the file. The text of everything stays.</div>`);
 }
 // save() = a real user change: bump revision, persist, and push to cloud
-function save(){ state.rev = Date.now(); persist(); schedulePush(); if(typeof scheduleRemindersSoon==="function") scheduleRemindersSoon(); }
+/* rev is the whole conflict story: the higher document wins. A plain Date.now() ties when two saves
+   land in the same millisecond, and goes *backwards* if a device's clock is behind — either way an
+   edit can be silently discarded by the other device. Forcing it to climb means an edit is always
+   newer than the document it was made from. */
+function save(){ state.rev = Math.max(Date.now(), (+state.rev||0)+1); persist(); schedulePush(); if(typeof scheduleRemindersSoon==="function") scheduleRemindersSoon(); }
 
 /* ============================ CLOUD SYNC (Supabase) ============================ */
 const SYNC_KEY = "callback_sync_cfg_v1";
@@ -1004,6 +1008,13 @@ function daysSince(ts){ if(!ts) return null; return Math.floor((Date.now()-ts)/8
 function relDays(n){ if(n==null) return ""; if(n===0) return "Today"; if(n===1) return "Tomorrow"; if(n===-1) return "Yesterday"; if(n>1) return "in "+n+"d"; return Math.abs(n)+"d ago"; }
 
 function colorFor(str){ const colors=["#6d72c4","#5b86b3","#8a72bd","#4ea381","#5b9c97","#a874a0","#bf8a4f","#7c828f","#6d8bc4","#52a08f"]; let h=0; for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h); return colors[Math.abs(h)%colors.length]; }
+// esc() is for text; a colour lands inside style="" where ; and ) are the dangerous characters.
+// Stage colours are the one colour a user (or a synced/imported file) can set, so they go through here.
+function cssCol(c){ c=String(c==null?"":c).trim(); return /^#[0-9a-fA-F]{3,8}$|^[a-zA-Z]{3,20}$/.test(c) ? c : "#5e6ad2"; }
+// a link the user typed: anything but http(s)/mailto/tel is refused, so javascript: can never be clicked
+function safeUrl(u){ u=String(u==null?"":u).trim(); return /^(https?:\/\/|mailto:|tel:|\/|#)/i.test(u) ? u : ""; }
+// contact photos are legitimately data: URLs, so images allow those and nothing else
+function safeImg(u){ u=String(u==null?"":u).trim(); return /^(https?:\/\/|data:image\/[a-z+]+;base64,|\/)/i.test(u) ? u : ""; }
 function initials(s){ return (s||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase(); }
 function favHTML(o,cls){
   const c=colorFor(o.company||"?"); const dom=domainOf(o);
@@ -1011,8 +1022,8 @@ function favHTML(o,cls){
   const primary = o.logo || (dom?"https://logo.clearbit.com/"+encodeURIComponent(dom):"");
   // try the real logo, fall back to the favicon, then to colored initials (the absolute span behind)
   const img = primary
-    ? `<img src="${esc(primary)}" loading="lazy" data-fb="${esc(fav)}" onload="this.parentNode.classList.add('has-img')" onerror="if(this.dataset.tried){this.parentNode.classList.remove('has-img');this.remove()}else{this.dataset.tried=1;this.src=this.dataset.fb}" alt=""/>`
-    : (dom?`<img src="${esc(fav)}" loading="lazy" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()" alt=""/>`:"");
+    ? `<img src="${esc(safeImg(primary))}" loading="lazy" data-fb="${esc(safeImg(fav))}" onload="this.parentNode.classList.add('has-img')" onerror="if(this.dataset.tried){this.parentNode.classList.remove('has-img');this.remove()}else{this.dataset.tried=1;this.src=this.dataset.fb}" alt=""/>`
+    : (dom?`<img src="${esc(safeImg(fav))}" loading="lazy" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()" alt=""/>`:"");
   return `<div class="fav ${cls||''}" style="background:${c}"><span style="position:absolute">${esc(initials(o.company))}</span>${img}</div>`;
 }
 function domainOf(o){ if(o.domain) return o.domain.replace(/^https?:\/\//,'').replace(/\/.*$/,''); if(o.jobUrl){ try{ return new URL(o.jobUrl).hostname.replace(/^www\./,''); }catch(e){} } return ""; }
@@ -1248,7 +1259,7 @@ function dashHero(ops){
         <div class="hero-actions">
           <button class="btn primary sm" data-open="${o.id}">Open role</button>
           <button class="btn ghost sm hero-btn" data-gen-hero="${o.id}">${I.ai} Prep me</button>
-          ${e.link?`<a class="btn ghost sm hero-btn" href="${esc(e.link)}" target="_blank" rel="noopener">${I.link} Join</a>`:""}
+          ${e.link?`<a class="btn ghost sm hero-btn" href="${esc(safeUrl(e.link))}" target="_blank" rel="noopener">${I.link} Join</a>`:""}
         </div>
       </div>
       <div class="hero-count" ${countAttr}>${countInner}</div>`;
@@ -1471,7 +1482,7 @@ function renderPipeline(){
   activeStages().forEach(s=>{
     const items=list.filter(o=>o.status===s.id);
     const col=el(`<div class="col" data-stage="${s.id}">
-      <div class="col-head"><span class="dot" style="background:${s.color}"></span><span class="nm">${esc(s.name)}</span><span class="ct">${items.length}</span></div>
+      <div class="col-head"><span class="dot" style="background:${cssCol(s.color)}"></span><span class="nm">${esc(s.name)}</span><span class="ct">${items.length}</span></div>
       <div class="col-body scroll"></div></div>`);
     const body=col.querySelector(".col-body");
     items.sort((a,b)=>{ const ea=nextEvent(a),eb=nextEvent(b); if(ea&&eb) return ea.du-eb.du; if(ea)return -1; if(eb)return 1; return (b.excitement||0)-(a.excitement||0); });
@@ -1524,7 +1535,7 @@ function compRange(o){ if(!o.compMin&&!o.compMax) return ""; if(o.compMin&&o.com
 function jcContacts(o){
   const ppl=o.people||[];
   if(!ppl.length) return `<div class="jc-contacts"><span style="color:var(--faint);font-weight:600;font-size:13px">None yet</span></div>`;
-  const avs=ppl.slice(0,3).map(p=>`<span class="jc-av" style="background:${colorFor(p.name)}">${p.photo?`<img src="${esc(p.photo)}" alt=""/>`:esc(initials(p.name))}</span>`).join("");
+  const avs=ppl.slice(0,3).map(p=>`<span class="jc-av" style="background:${colorFor(p.name)}">${p.photo?`<img src="${esc(safeImg(p.photo))}" alt=""/>`:esc(initials(p.name))}</span>`).join("");
   const label = ppl.length===1 ? esc((ppl[0].name||"").split(" ")[0]||"1 contact") : esc(ppl.length+" people");
   return `<div class="jc-contacts"><div class="jc-avs">${avs}${ppl.length>3?`<span class="jc-av more">+${ppl.length-3}</span>`:""}</div><span class="jc-cnames">${label}</span></div>`;
 }
@@ -1537,7 +1548,7 @@ function jobCard(o){
   return `<div class="job-card${stage(o.status).active||o.status==="hired"?"":" closed"}" data-open="${o.id}">
     <div class="jc-head">${favHTML(o)}<div class="jc-id"><div class="jc-co">${esc(o.company)}</div><div class="jc-role">${esc(o.role||"—")}</div>${o.tagline?`<div class="jc-tagline">${esc(o.tagline)}</div>`:""}</div>${flag}</div>
     <div class="jc-grid">
-      <div class="jc-stat"><div class="k">Stage</div><div class="v"><span class="pill" style="background:${st.color}22;color:${st.color}"><span class="dot" style="background:${st.color}"></span>${esc(st.name)}</span></div></div>
+      <div class="jc-stat"><div class="k">Stage</div><div class="v"><span class="pill" style="background:${cssCol(st.color)}22;color:${cssCol(st.color)}"><span class="dot" style="background:${cssCol(st.color)}"></span>${esc(st.name)}</span></div></div>
       <div class="jc-stat"><div class="k">Next call</div>${nextV}</div>
       <div class="jc-stat"><div class="k">Salary</div><div class="v">${comp?esc(comp):'<span style="color:var(--faint);font-weight:600">—</span>'}</div></div>
       <div class="jc-stat"><div class="k">Contacts</div>${jcContacts(o)}</div>
@@ -1619,7 +1630,7 @@ function renderCalendar(){
       <div style="width:1px;align-self:stretch;background:var(--line)"></div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px"><span class="chip" style="color:${col};border-color:${col}44">${e.type}</span><span style="font-weight:800;font-size:13.5px">${esc(e.label)}</span></div>
-        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""} ${ck&&d>=0?`· <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}${ck?` · <span data-cal-edit="${ck}" style="color:var(--accent3);cursor:pointer;font-weight:700">edit</span> · <span data-cal-del="${ck}" style="color:var(--bad);cursor:pointer;font-weight:700">delete</span>`:""}</div>
+        <div style="color:var(--muted);font-size:12.5px;margin-top:3px">${esc(e.o.company)} ${e.time?"· "+fmtDateTime(e.date,e.time).split("· ")[1]:""} ${e.link?`· <a href="${esc(safeUrl(e.link))}" target="_blank" rel="noopener">join</a>`:""} ${ck&&d>=0?`· <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ calendar</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}${ck?` · <span data-cal-edit="${ck}" style="color:var(--accent3);cursor:pointer;font-weight:700">edit</span> · <span data-cal-del="${ck}" style="color:var(--bad);cursor:pointer;font-weight:700">delete</span>`:""}</div>
       </div>
       <span class="chip" style="color:${d<0?'var(--faint)':d<=2?'var(--warn)':'var(--accent2)'}">${d===0?"Today":relDays(d)}</span>
     </div>`;
@@ -1653,7 +1664,7 @@ function renderMonth(){
     const ds=ymd(y,m,dn), list=(byDay[ds]||[]);
     const chips=list.slice(0,3).map(e=>{ const c=e.type==="Interview"?"#a6abe6":e.type==="Deadline"?"#cf7273":"#8b93de"; return `<div class="cal-ev" style="background:${c}22;color:${c}" title="${esc(e.o.company)} · ${esc(e.type)}: ${esc(e.label)}">${esc(e.o.company)}</div>`; }).join("");
     const more=list.length>3?`<div class="cal-more">+${list.length-3} more</div>`:"";
-    const dots=list.slice(0,5).map(e=>`<span class="cal-dot" style="background:${stage(e.o.status).color}"></span>`).join("");
+    const dots=list.slice(0,5).map(e=>`<span class="cal-dot" style="background:${cssCol(stage(e.o.status).color)}"></span>`).join("");
     cells+=`<div class="cal-cell${ds===tStr?' today':''}${ds===calSel?' sel':''}${list.length?' has':''}" data-calday="${ds}">
       <div class="cal-dnum">${dn}</div>
       <div class="cal-evs">${chips}${more}</div>
@@ -1680,7 +1691,7 @@ function renderMonth(){
       return `<div class="sub-item" data-open="${e.o.id}" style="cursor:pointer;display:flex;align-items:center;gap:11px">
         <span class="pill" style="background:${c}22;color:${c}"><span class="dot" style="background:${c}"></span>${e.type}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:800;font-size:13.5px">${esc(e.label)}</div>
-          <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(e.link)}" target="_blank" rel="noopener">join</a>`:""}${ck&&d>=0?` · <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ cal</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}${ck?` · <span data-cal-edit="${ck}" style="color:var(--accent3);cursor:pointer;font-weight:700">edit</span> · <span data-cal-del="${ck}" style="color:var(--bad);cursor:pointer;font-weight:700">delete</span>`:""}</div>
+          <div style="color:var(--muted);font-size:12px;margin-top:2px">${esc(e.o.company)}${e.time?" · "+fmtDateTime(e.date,e.time).split("· ")[1]:""}${e.link?` · <a href="${esc(safeUrl(e.link))}" target="_blank" rel="noopener">join</a>`:""}${ck&&d>=0?` · <span data-ics="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">+ cal</span> · <span data-gcal="${ck}" style="color:var(--accent2);cursor:pointer;font-weight:700">Google ↗</span>`:""}${ck?` · <span data-cal-edit="${ck}" style="color:var(--accent3);cursor:pointer;font-weight:700">edit</span> · <span data-cal-del="${ck}" style="color:var(--bad);cursor:pointer;font-weight:700">delete</span>`:""}</div>
         </div></div>`;
     }).join("")+`</div>`;
   } else {
@@ -1747,7 +1758,7 @@ function renderTimeline(){
         <span class="tl-swatch" style="background:${c}"></span>
         <span class="tl-co" data-open="${o.id}">${esc(o.company)}</span>
         ${o.role?`<span class="tl-role">${esc(o.role)}</span>`:""}
-        <span class="pill" style="margin-left:auto;background:${st.color}22;color:${st.color}"><span class="dot" style="background:${st.color}"></span>${esc(st.name)}</span>
+        <span class="pill" style="margin-left:auto;background:${cssCol(st.color)}22;color:${cssCol(st.color)}"><span class="dot" style="background:${cssCol(st.color)}"></span>${esc(st.name)}</span>
       </div>
       <div class="tl-track">${lines}${dots}</div>
     </div>`;
@@ -1846,7 +1857,7 @@ function renderInsights(){
     html+=`<div class="section-head"><h3>Comp</h3><div class="line"></div></div>`;
     html+=`<div class="card panel">`+withComp.sort((a,b)=>(+b.compMax||+b.compMin)-(+a.compMax||+a.compMin)).map(o=>{
       const hi=+o.compMax||+o.compMin; const lo=+o.compMin||hi; const max=Math.max(...withComp.map(x=>+x.compMax||+x.compMin));
-      return `<div class="bar-row" data-open="${o.id}" style="cursor:pointer"><div class="nm">${esc(o.company)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(hi/max*100)}%;background:var(--grad)">${fmtMoney(lo)}${hi!==lo?"–"+fmtMoney(hi):""}</div></div><div style="width:90px;font-size:12px;color:var(--faint);text-align:right">${stage(o.status).name}</div></div>`;
+      return `<div class="bar-row" data-open="${o.id}" style="cursor:pointer"><div class="nm">${esc(o.company)}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round(hi/max*100)}%;background:var(--grad)">${fmtMoney(lo)}${hi!==lo?"–"+fmtMoney(hi):""}</div></div><div style="width:90px;font-size:12px;color:var(--faint);text-align:right">${esc(stage(o.status).name)}</div></div>`;
     }).join("")+`</div>`;
   }
   return html;
@@ -1858,7 +1869,7 @@ function funnelChart(){
   const max=Math.max(1,...activeStages().map(s=>state.opportunities.filter(o=>o.status===s.id).length));
   return activeStages().map(s=>{
     const n=state.opportunities.filter(o=>o.status===s.id).length;
-    return `<div class="bar-row" style="cursor:default"><div class="nm">${s.name}</div><div class="bar-track"><div class="bar-fill" style="width:${n?Math.max(n/max*100,8):0}%;background:${s.color}">${n||""}</div></div></div>`;
+    return `<div class="bar-row" style="cursor:default"><div class="nm">${esc(s.name)}</div><div class="bar-track"><div class="bar-fill" style="width:${n?Math.max(n/max*100,8):0}%;background:${cssCol(s.color)}">${n||""}</div></div></div>`;
   }).join("");
 }
 function donut(data){
@@ -2084,7 +2095,7 @@ function entName(type,rec){ return rec?((ENT[type].name(rec)||"").toString()||"U
 function entLabel(type,id){ const r=entGet(type,id); return r?entName(type,r):"(deleted)"; }
 function entIcoHTML(type,rec,big){
   const c=ENT[type], sz=big?"width:40px;height:40px;flex:0 0 40px;border-radius:12px;font-size:14px;":"";
-  if(type==="person"&&rec) return `<div class="ent-ico" style="${sz}background:${colorFor(rec.name||"?")}">${rec.photo?`<img src="${esc(rec.photo)}" alt=""/>`:esc(initials(rec.name))}</div>`;
+  if(type==="person"&&rec) return `<div class="ent-ico" style="${sz}background:${colorFor(rec.name||"?")}">${rec.photo?`<img src="${esc(safeImg(rec.photo))}" alt=""/>`:esc(initials(rec.name))}</div>`;
   return `<div class="ent-ico" style="${sz}background:${c.col}26;color:${c.col}">${c.icon}</div>`;
 }
 function entDelete(type,id){
@@ -2570,7 +2581,7 @@ function capReview(){
         : it.candidates.length ? "" : "New";
       const mustPick = it.choice==="";
       const extras=[it.fields.title,it.fields.department,(it.fields.expertise||[]).join(", "),it.fields.status,it.fields.note,it.fields.description,it.fields.reason].filter(Boolean).join(" · ");
-      return `<div class="rev-item ${it.on?"":"off"}" data-revrow="${i}">
+      return `<div class="rev-item ${it.on?"":"off"}">
         <span class="rev-cb ${it.on?"on":""}" data-rev="${i}">${I.check}</span>
         <div class="rev-b">
           <div class="rev-n">${esc(it.name)}</div>
@@ -3295,7 +3306,7 @@ function entDetailBody(type,rec){
         : `<span class="dept-pill" data-setmgr="${rec.id}" style="padding:3px 10px;font-size:12px">Set manager</span>`],
       ["Knows",(rec.expertise||[]).filter(x=>!linked.includes(canonThing(x))).join(", ")],
       ["Interactions",ints.length?`${ints.length} recorded${ints[0]&&ints[0].at?` · last ${fmtDate(ymdOf(ints[0].at))}`:""}`:"none recorded"],
-      ["Email",rec.email],["LinkedIn",rec.linkedin?`<a href="${esc(rec.linkedin)}" target="_blank" rel="noopener">profile ↗</a>`:""]);
+      ["Email",rec.email],["LinkedIn",rec.linkedin?`<a href="${esc(safeUrl(rec.linkedin))}" target="_blank" rel="noopener">profile ↗</a>`:""]);
     const rounds=ints.filter(x=>x.t==="round");
     if(rounds.length) rows.push(["Met while interviewing",rounds.map(r=>esc(r.rec.name||r.rec.type||"round")).join(", ")]);
   }
@@ -4100,7 +4111,7 @@ function tabOverview(o){
   if(e){ const cls=e.du<=0?"var(--bad)":e.du<=2?"var(--warn)":"var(--accent2)";
     h+=`<div class="ai-box" style="border-color:${cls}55;background:${cls}14">
       <div style="display:flex;align-items:center;gap:10px"><div style="font-size:13px;font-weight:800;color:${cls}">⏱ ${esc(e.label)} · ${relDays(e.du)}</div></div>
-      <div style="font-size:12.5px;color:var(--muted);margin-top:4px">${fmtDateTime(e.date,e.time)} ${e.link?`· <a href="${esc(e.link)}" target="_blank" rel="noopener">open meeting link →</a>`:""}</div></div>`;
+      <div style="font-size:12.5px;color:var(--muted);margin-top:4px">${fmtDateTime(e.date,e.time)} ${e.link?`· <a href="${esc(safeUrl(e.link))}" target="_blank" rel="noopener">open meeting link →</a>`:""}</div></div>`;
   }
   h+=`<div class="brief-box">
     <div class="brief-head">${favHTML(o)}
@@ -4110,13 +4121,13 @@ function tabOverview(o){
     ${o.research?`<div class="brief-body">${esc(o.research)}</div><div class="brief-meta">Pre-call brief${o.researchAt?` · ${daysSince(o.researchAt)===0?"today":(daysSince(o.researchAt)+"d ago")}`:""}${o.domain?` · ${esc(o.domain)}`:""}</div>`:`<div class="brief-empty">Pull the logo + a quick pre-call brief so you never mix up who's who.</div>`}
   </div>`;
   h+=`<dl class="kv">
-    <dt>Stage</dt><dd><span class="pill" style="background:${stage(o.status).color}22;color:${stage(o.status).color}"><span class="dot" style="background:${stage(o.status).color}"></span>${stage(o.status).name}</span></dd>
+    <dt>Stage</dt><dd><span class="pill" style="background:${cssCol(stage(o.status).color)}22;color:${cssCol(stage(o.status).color)}"><span class="dot" style="background:${cssCol(stage(o.status).color)}"></span>${esc(stage(o.status).name)}</span></dd>
     <dt>Excitement</dt><dd><span style="color:var(--warn)">${o.excitement?"★".repeat(o.excitement)+"☆".repeat(5-o.excitement):"—"}</span></dd>
     <dt>How you got here</dt><dd>${esc(o.source||"—")}${o.referrer?` · via <b>${esc(o.referrer)}</b>`:""}</dd>
     <dt>Work mode</dt><dd>${esc(o.workMode||"—")} ${o.location?`· ${esc(o.location)}`:""}</dd>
     <dt>Comp</dt><dd>${o.compMin||o.compMax?esc((o.compMin?fmtMoney(o.compMin):"")+(o.compMax?"–"+fmtMoney(o.compMax):""))+(o.compNotes?` · ${esc(o.compNotes)}`:""):"—"}</dd>
     <dt>Applied</dt><dd>${o.appliedDate?fmtDate(o.appliedDate):"—"}</dd>
-    ${o.jobUrl?`<dt>Job post</dt><dd><a href="${esc(o.jobUrl)}" target="_blank" rel="noopener">${esc(domainOf(o)||"link")} ↗</a></dd>`:""}
+    ${o.jobUrl?`<dt>Job post</dt><dd><a href="${esc(safeUrl(o.jobUrl))}" target="_blank" rel="noopener">${esc(domainOf(o)||"link")} ↗</a></dd>`:""}
   </dl>`;
   if((o.tags||[]).length) h+=`<div style="margin:10px 0;display:flex;gap:6px;flex-wrap:wrap">${o.tags.map(t=>`<span class="chip tag-chip">${esc(t)}</span>`).join("")}</div>`;
   if(o.product){ h+=`<label style="margin-top:14px">Product / company</label><div class="note-block">${esc(o.product)}</div>`; }
@@ -4150,7 +4161,7 @@ function tabRounds(o){
         ${r.status==="done"?`<span class="chip" style="color:var(--good)">done</span>`:r.status==="cancelled"?`<span class="chip">cancelled</span>`:du!=null?`<span class="chip" style="color:${du<0?'var(--bad)':du<=2?'var(--warn)':'var(--accent2)'}">${relDays(du)}</span>`:""}
         <button class="del" data-del-round="${r.id}">${I.trash}</button></div>
       <div class="si-meta">${r.type?`<span>${esc(r.type)}</span>`:""}${r.date?`<span>${fmtDateTime(r.date,r.time)}</span>`:""}${r.interviewers?`<span>${I.user.replace(/width="[^"]*"/,'')} ${esc(r.interviewers)}</span>`:""}${r.rating?`<span style="color:var(--warn)">${"★".repeat(r.rating)}</span>`:""}</div>
-      ${r.link?`<div style="margin-top:7px"><a href="${esc(r.link)}" target="_blank" rel="noopener" class="chip" style="color:var(--accent2)">${I.link} join link</a></div>`:""}
+      ${r.link?`<div style="margin-top:7px"><a href="${esc(safeUrl(r.link))}" target="_blank" rel="noopener" class="chip" style="color:var(--accent2)">${I.link} join link</a></div>`:""}
       ${r.prep?`<div class="note-block" style="margin-top:8px"><b style="color:var(--accent3)">Prep:</b> ${esc(r.prep)}</div>`:""}
       ${r.debrief?`<div class="note-block" style="margin-top:8px"><b style="color:var(--good)">Debrief:</b> ${esc(r.debrief)}</div>`:""}
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">
@@ -4171,11 +4182,11 @@ function tabPeople(o){
     : tabEmpty(I.user,"No contacts yet","Save the people you're meeting — recruiters, hiring managers, panelists. Add a LinkedIn and generate a one-tap research brief on each.");
   people.forEach(p=>{
     h+=`<div class="sub-item">
-      <div class="si-head"><div style="display:flex;align-items:center;gap:10px"><div class="fav" style="background:${colorFor(p.name)};width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden">${p.photo?`<img src="${esc(p.photo)}" style="width:100%;height:100%;object-fit:cover" alt=""/>`:esc(initials(p.name))}</div><div><div class="nm">${esc(p.name)}</div><div style="font-size:12px;color:var(--muted)">${esc(p.title||"")}</div></div></div>
+      <div class="si-head"><div style="display:flex;align-items:center;gap:10px"><div class="fav" style="background:${colorFor(p.name)};width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;overflow:hidden">${p.photo?`<img src="${esc(safeImg(p.photo))}" style="width:100%;height:100%;object-fit:cover" alt=""/>`:esc(initials(p.name))}</div><div><div class="nm">${esc(p.name)}</div><div style="font-size:12px;color:var(--muted)">${esc(p.title||"")}</div></div></div>
         <button class="del" data-del-person="${p.id}">${I.trash}</button></div>
       ${p.notes?`<div class="note-block" style="margin-top:8px">${esc(p.notes)}</div>`:""}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
-        ${p.linkedin?`<a href="${esc(p.linkedin)}" target="_blank" rel="noopener" class="btn sm ghost">in LinkedIn ↗</a>`:""}
+        ${p.linkedin?`<a href="${esc(safeUrl(p.linkedin))}" target="_blank" rel="noopener" class="btn sm ghost">in LinkedIn ↗</a>`:""}
         ${p.email?`<a href="mailto:${esc(p.email)}" class="btn sm ghost">✉ Email</a>`:""}
         <button class="btn sm ghost" data-research="${p.id}" style="color:var(--accent3)">${I.ai} Research prompt</button>
         <button class="btn sm ghost" data-edit-person="${p.id}">${I.edit}</button>
@@ -4537,7 +4548,7 @@ function syncStageDraft(){ // capture current input values before a re-render
 function renderStageEditor(){
   const rows = stageDraft.map((s,i)=>`
     <div class="sub-item" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:9px">
-      <input type="color" value="${s.color}" data-stagecolor="${i}" style="width:34px;height:32px;padding:2px;flex:0 0 34px;cursor:pointer"/>
+      <input type="color" value="${cssCol(s.color)}" data-stagecolor="${i}" style="width:34px;height:32px;padding:2px;flex:0 0 34px;cursor:pointer"/>
       <input value="${esc(s.name)}" data-stagename="${i}" maxlength="28" style="flex:1"/>
       <button class="x-btn" data-stagemove="${i}|-1" ${i===0?'style="opacity:.3;pointer-events:none"':''} title="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg></button>
       <button class="x-btn" data-stagemove="${i}|1" ${i===stageDraft.length-1?'style="opacity:.3;pointer-events:none"':''} title="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -5289,6 +5300,10 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd]");
   if(!t) return;
+  // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
+  // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
+  // land on an undefined opportunity. One guard here beats remembering it in a dozen handlers.
+  if(t.closest("#drawer") && !getOp()){ closeDrawer(); return; }
 
   // nav
   if(t.dataset.view){ view=t.dataset.view; searchQ=$("#search").value=""; activeFilter=null; render(); return; }

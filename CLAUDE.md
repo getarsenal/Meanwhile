@@ -244,7 +244,17 @@ positions persist in `W().layout` and `ogZoom("reset")` clears them.
 builds a new `#ogWrap`, and a module-level flag left that new one with no listeners — which is
 exactly how editing someone from the map used to kill it until a reload. Managers and departments are set from the person detail (`openMgrPicker`,
 `openDeptPicker`) — both write the field *and* the graph link.
-Day 91 changes nothing: the ring keeps counting and the framing becomes *My Company*.
+**Day 91 changes nothing** — and the UI has to say so, because a countdown implies something
+runs out. The ring (`.wh-ring`) is a **button** (`data-act="ring-help"` → `openRingHelp()`) that
+spells out in plain words that nothing locks, expires, resets or is archived at day 90; past 90 it
+simply reads complete, keeps counting ("128 days in") and the framing becomes *My Company*. The
+Home hero counter is the same button. Never reintroduce copy like "90-day mode" that sounds like a
+state you can fall out of.
+The hero`s `.wh-top` is a **grid**, not a flex row (`"fav name ring" / "fav sub ring"`, and on
+phones `"fav name ring" / "sub sub sub"`) so the subtitle drops to its own full-width line instead
+of being crushed between the logo and the ring. The ring `<svg>` must size from CSS (`width:100%`),
+never fixed attributes — a fixed 76px svg in a 62px slot put the number off-centre inside its own
+circle, which is exactly the bug it shipped with.
 
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
 `employers().length > 0`, so a new user never sees an empty object.

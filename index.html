@@ -555,17 +555,44 @@ tbody td{padding:12px 14px;vertical-align:middle}
 
 .work-hero{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(150deg,var(--panel),var(--panel2));padding:20px;margin-bottom:16px}
 .work-hero .wh-glow{position:absolute;inset:0;pointer-events:none}
-.work-hero .wh-top{display:flex;align-items:center;gap:14px;position:relative}
+/* A grid rather than a flex row: on a phone the subtitle drops to its own full-width line
+   instead of being squeezed between the logo and the ring and wrapping mid-phrase. */
+.work-hero .wh-top{display:grid;position:relative;align-items:center;gap:2px 14px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"fav name ring" "fav sub ring"}
+.work-hero .wh-top > .fav{grid-area:fav}
+.work-hero .wh-name{grid-area:name}
+.work-hero .wh-sub{grid-area:sub}
+.work-hero .wh-ring{grid-area:ring}
 .work-hero .fav{width:52px;height:52px;border-radius:14px;flex:0 0 52px;display:grid;place-items:center;font-weight:800;font-size:21px;color:#fff;overflow:hidden;position:relative}
 .work-hero .fav img{width:100%;height:100%;object-fit:contain;padding:14%}
 .wh-name{font-size:21px;font-weight:850;letter-spacing:-.02em;line-height:1.2}
 .wh-sub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.45}
-.wh-ring{margin-left:auto;flex:0 0 auto;position:relative;width:76px;height:76px;display:grid;place-items:center}
-.wh-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
-.wh-ring .rn{font-size:21px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums}
-.wh-ring .rl{font-size:9.5px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+/* The ring is a button — tapping it explains what the 90 days mean. The svg must scale with the
+   box (it used to be a fixed 76px inside a 62px slot on phones, so the circle overflowed and the
+   number inside sat off-centre). */
+.wh-ring{margin-left:auto;flex:0 0 auto;position:relative;width:76px;height:76px;display:grid;
+  place-items:center;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;
+  border-radius:50%;-webkit-tap-highlight-color:transparent}
+.wh-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.wh-ring .rin{position:relative;text-align:center;line-height:1}
+.wh-ring .rn{display:block;font-size:21px;font-weight:850;line-height:1;font-variant-numeric:tabular-nums}
+.wh-ring .rl{display:block;font-size:9px;font-weight:800;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-top:3px;white-space:nowrap}
+.wh-ring:active{transform:scale(.94)}
+.wh-ring::after{content:"";position:absolute;inset:-6px;border-radius:50%}
 .wh-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px;position:relative}
-@media(max-width:560px){ .wh-ring{width:62px;height:62px} .wh-ring .rn{font-size:17px} .wh-name{font-size:18px} }
+@media(max-width:560px){
+  .work-hero{padding:16px}
+  .work-hero .wh-top{gap:3px 11px;grid-template-areas:"fav name ring" "sub sub sub"}
+  .work-hero .wh-sub{margin-top:8px}
+  .work-hero .fav{width:44px;height:44px;flex:0 0 44px;border-radius:12px;font-size:18px}
+  .wh-name{font-size:17px}
+  .wh-sub{font-size:12px;margin-top:2px}
+  .wh-ring{width:58px;height:58px}
+  .wh-ring .rn{font-size:16px}
+  .wh-ring .rl{font-size:8px;margin-top:2px}
+  .wh-actions{margin-top:13px;gap:7px}
+}
 
 .w-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-bottom:18px}
 .w-tile{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 12px;cursor:pointer;transition:.14s;min-width:0}
@@ -1364,7 +1391,7 @@ function workHeroCard(o){
   const bits=[`${c.people} ${c.people===1?"person":"people"}`,`${c.projects} ${c.projects===1?"project":"projects"}`,`${c.openProblems} open ${c.openProblems===1?"problem":"problems"}`,`${c.questions} ${c.questions===1?"question":"questions"}`];
   const inner=`
     <div class="hero-main">
-      <div class="hero-eyebrow">${I.building}<span>${day!=null&&day<=90?"90-day mode":"Your company"}</span></div>
+      <div class="hero-eyebrow">${I.building}<span>${day!=null&&day<=90?"Your first 90 days":"Your company"}</span></div>
       <div class="hero-co">${favHTML(o,"hero-fav")}
         <div style="min-width:0"><div class="hero-name">${esc(o.company)}</div><div class="hero-role">${esc(workTitle(o))}</div></div>
       </div>
@@ -1375,7 +1402,7 @@ function workHeroCard(o){
         <button class="btn ghost sm hero-btn" data-act="who-ask">Who do I ask?</button>
       </div>
     </div>
-    <div class="hero-count"><div class="hc-num">${day!=null&&day>0?day:"—"}</div><div class="hc-unit">${day==null?"add start date":day<=0?"days to go":day<=90?"of 90":"days in"}</div></div>`;
+    <div class="hero-count" data-act="ring-help" style="cursor:pointer" title="What does this mean?"><div class="hc-num">${day!=null&&day>0?day:"—"}</div><div class="hc-unit">${day==null?"add start date":day<=0?"days to go":day<=90?"of 90":"days in"}</div></div>`;
   return heroShell(inner, colorFor(o.company));
 }
 // a compact entry point when the hero is busy with the job search
@@ -2742,24 +2769,52 @@ function workHero(o){
   const day=hireDay(o), tint=colorFor(o.company);
   const pct=day==null?0:Math.max(0,Math.min(1,day/90));
   const R=32, C=2*Math.PI*R;
-  const ring = day==null?"" : `<div class="wh-ring">
-    <svg viewBox="0 0 76 76" width="76" height="76"><circle cx="38" cy="38" r="${R}" fill="none" stroke="var(--line)" stroke-width="6"/>
-      <circle cx="38" cy="38" r="${R}" fill="none" stroke="${day>90?"var(--good)":"var(--accent)"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct)).toFixed(1)}"/></svg>
-    <div style="text-align:center"><div class="rn">${day>0?day:"—"}</div><div class="rl">${day>90?"days in":day>0?"of 90":"soon"}</div></div></div>`;
+  // Past 90 the ring simply completes and keeps counting — it's a marker on the journey, never a
+  // deadline, and nothing here expires when you pass it. Tapping it says so in plain words.
+  const past = day!=null && day>90;
+  const ring = day==null?"" : `<button class="wh-ring" data-act="ring-help" title="What does this mean?" aria-label="Day ${day>0?day:0}. What does this mean?">
+    <svg viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="${R}" fill="none" stroke="var(--line)" stroke-width="6"/>
+      <circle cx="38" cy="38" r="${R}" fill="none" stroke="${past?"var(--good)":"var(--accent)"}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-pct)).toFixed(1)}"/></svg>
+    <span class="rin"><span class="rn">${day>0?day:"—"}</span><span class="rl">${past?"days in":day>0?"of 90":"soon"}</span></span></button>`;
   const started = o.hired&&o.hired.startDate;
-  const sub = day==null ? "Add your start date to begin 90-day mode"
+  const sub = day==null ? "Add your start date to see where you are on the journey"
     : day<=0 ? `Starting ${fmtDate(started)} — ${relDays(daysUntil(started))}`
     : `${workTitle(o)} · started ${fmtDate(started)}`;
   return `<div class="work-hero"><div class="wh-glow" style="background:radial-gradient(60% 80% at 20% 0%, ${tint}22, transparent 70%)"></div>
     <div class="wh-top">${favHTML(o)}
-      <div style="min-width:0"><div class="wh-name">${esc(o.company)}</div><div class="wh-sub">${esc(sub)}</div></div>
-      ${ring}</div>
+      <div class="wh-name">${esc(o.company)}</div>
+      ${ring}
+      <div class="wh-sub">${esc(sub)}</div></div>
     <div class="wh-actions">
       <button class="btn primary sm" data-act="capture">${I.plus} Capture</button>
       <button class="btn ghost sm" data-act="who-ask">${I.people} Who do I ask?</button>
       <button class="btn ghost sm" data-act="work-gaps">${I.spark} What am I missing?</button>
       <button class="btn ghost sm" data-open="${o.id}">Role details</button>
     </div></div>`;
+}
+/* "90 days" is a familiar way to talk about starting a job, not a rule this app enforces. The ring
+   is a sense of place on the journey — it fills up, then it keeps counting, and nothing you've
+   recorded is treated any differently on day 91 than on day 89. Said plainly, because a countdown
+   implies something runs out. */
+function openRingHelp(){
+  const o=workOp(); const day=o?hireDay(o):null;
+  const past=day!=null&&day>90;
+  const line = day==null ? "Add your start date and this starts counting."
+    : day<=0 ? `You start ${fmtDate(o.hired.startDate)}. The count begins on your first day.`
+    : past ? `You're ${day} days in — well past the first 90.`
+    : `You're on day ${day}. The ring fills as you go.`;
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:rgba(94,106,210,.18);color:var(--accent3);display:grid;place-items:center">${I.building}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Your first 90 days</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${esc(line)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:4px 0 12px">Ninety days is just the usual shorthand for finding your feet somewhere new — long enough to have met people and seen a full cycle of how things run. It's here to show you where you are, nothing more.</p>
+  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 12px"><b style="color:var(--good)">Nothing happens at day 90.</b> Nothing locks, expires, resets or gets archived. Every person, note, project and connection stays exactly where it is, and the counter keeps going — day 200, day 900. ${past?"You're already past it, and everything is right where you left it.":"After 90 the ring simply shows as complete and the count carries on."}</p>
+  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 14px">The only thing the marks do is offer you a review at day 30, 60 and 90 — written from your own notes, whenever you feel like reading one. Ignore them and nothing is lost.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn primary" data-act="cancel-editor">Got it</button>
+    ${day!=null&&day>=30?`<button class="btn ghost" data-report="${[90,60,30].find(d=>day>=d)}">${I.map} See a review</button>`:""}
+  </div>`);
 }
 function workCounts(o){
   const openQ=wOf("questions",o.id).filter(q=>q.status==="Open").length;
@@ -2790,7 +2845,7 @@ function workOverview(o){
     const have=wOf("reports",o.id).find(r=>r.day===due);
     h+=`<div class="ai-box" style="border-color:rgba(78,163,129,.35);background:linear-gradient(160deg,rgba(78,163,129,.1),rgba(78,163,129,.05))">
       <div class="ai-head" style="color:var(--good)">${I.trophy} ${due===90?"You've hit day 90":`Day ${due} is behind you`}</div>
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${due===90?"Time for your 90-day map — everything you've learned about how this place actually works.":`See what you learned in your first ${due} days, and what's still fuzzy.`}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${due===90?"Time for your 90-day map — everything you've learned about how this place actually works. Nothing changes from here: your map stays exactly as it is and keeps growing.":`See what you learned in your first ${due} days, and what's still fuzzy.`}</div>
       <button class="btn primary sm" data-report="${due}">${I.map} ${have?"Open":"Generate"} the ${due===90?"90-day map":`day-${due} review`}</button>
     </div>`;
   }
@@ -5346,6 +5401,7 @@ document.addEventListener("click",e=>{
   if(act==="export"){ exportData(); return; }
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
+  if(act==="ring-help"){ openRingHelp(); return; }
   if(act==="import"){ $("#fileInput").click(); return; }
   if(act==="sample"){ loadSample(); return; }
   if(act==="settings"){ openSettings(); return; }

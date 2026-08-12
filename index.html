@@ -660,10 +660,23 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gap-do{font-size:11.5px;color:var(--accent3);font-weight:700;cursor:pointer;margin-top:3px;display:inline-block}
 
 .og-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
-.og-legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);flex:1;min-width:0}
+.og-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--muted);flex:1 1 220px}
 .og-legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .og-legend i{width:18px;height:0;border-top:2px solid var(--line2);display:inline-block}
 .og-legend i.dash{border-top:2px dashed var(--accent);opacity:.75}
+.og-modes{display:flex;gap:4px;background:var(--panel);border-radius:10px;padding:3px;flex:0 0 auto}
+.og-modes .seg{padding:6px 11px;border-radius:8px;font-size:12px;font-weight:750;color:var(--muted)}
+.og-modes .seg.on{background:var(--panel2);color:#fff;box-shadow:inset 0 0 0 1px var(--line2)}
+.og-legend i.strong{border-top-style:dashed;border-top-color:var(--accent2);opacity:1}
+.og-depts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.og-dept{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted);
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;transition:.13s}
+.og-dept:hover{border-color:var(--line2);color:var(--txt)}
+.og-dept.on{border-color:var(--accent);color:#fff;background:var(--panel2)}
+.og-dept i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.og-dept b{color:var(--faint);font-weight:800}
+.og-dept.clear{color:var(--accent3)}
+.og-node.dim{opacity:.22}
 .og-zoom{display:flex;gap:5px;flex:0 0 auto}
 .og-zoom .x-btn{width:30px;height:30px;font-size:15px;font-weight:800}
 .og-wrap{position:relative;height:400px;border:1px solid var(--line);border-radius:13px;background:
@@ -2052,7 +2065,7 @@ function entDelete(type,id){
    to host one, and at personal scale a filtered array is faster than any query language. ---- */
 const REL_LABEL={KNOWS:"knows",OWNS:"owns",WORKS_IN:"works in",INVOLVED_IN:"involved in",AFFECTS:"affects",
   USES:"uses",HELPED_SOLVE:"helped solve",DEPENDS_ON:"depends on",PART_OF:"part of",ANSWERS:"answers",
-  REPORTS_TO:"reports to",RELATES_TO:"relates to",MENTIONS:"mentions"};
+  REPORTS_TO:"reports to",WORKS_WITH:"works with",RELATES_TO:"relates to",MENTIONS:"mentions"};
 const REL_TYPES=Object.keys(REL_LABEL);
 function addLink(opId,st,sid,rel,tt,tid,conf,via){
   if(!sid||!tid||(st===tt&&sid===tid)) return null;
@@ -2836,6 +2849,7 @@ function workKnowledge(o){
    built from who reports to whom. Solid lines are reporting; dashed lines are people who keep
    turning up on the same work — the thing an org chart never tells you. ---- */
 function wLayout(){ const w=W(); w.layout=w.layout||{}; return w.layout; }
+function deptColor(deptId){ return deptId?colorFor("dept:"+entLabel("department",deptId)):"#5a6070"; }
 function personManager(p){
   if(p.managerId&&entGet("person",p.managerId)) return p.managerId;
   const l=W().links.find(x=>x.st==="person"&&x.sid===p.id&&x.rel==="REPORTS_TO"&&entGet("person",x.tid));
@@ -2855,7 +2869,38 @@ function collabPairs(o){
       seen[k]={a:u[i],b:u[j],n:1}; out.push(seen[k]);
     }
   });
-  return out.sort((x,y)=>y.n-x.n).slice(0,16);
+  const inferred=out.sort((x,y)=>y.n-x.n).slice(0,16);
+  // links you drew yourself always show, and are never crowded out by inferred ones
+  const manual=W().links.filter(l=>l.opId===o.id&&l.rel==="WORKS_WITH"&&l.st==="person"&&l.tt==="person"
+      &&entGet("person",l.sid)&&entGet("person",l.tid))
+    .map(l=>({a:l.sid,b:l.tid,n:2,manual:true,linkId:l.id}));
+  const has={}; manual.forEach(m=>has[[m.a,m.b].sort().join("|")]=1);
+  return manual.concat(inferred.filter(x=>!has[[x.a,x.b].sort().join("|")]));
+}
+function setWorksWith(aId,bId){
+  const opId=entOpId("person",aId);
+  if(!opId||aId===bId) return;
+  const w=W();
+  const ex=w.links.find(l=>l.rel==="WORKS_WITH"&&((l.sid===aId&&l.tid===bId)||(l.sid===bId&&l.tid===aId)));
+  if(ex){ w.links=w.links.filter(l=>l!==ex); save(); render(); openEnt("person",aId); toast("Connection removed"); return; }
+  addLink(opId,"person",aId,"WORKS_WITH","person",bId,1);
+  save(); render(); openEnt("person",aId);
+  toast(`Linked to ${entLabel("person",bId)}`);
+}
+function openWorksWithPicker(personId){
+  const p=entGet("person",personId); if(!p) return;
+  const opId=entOpId("person",personId);
+  const others=entAll("person",opId).filter(x=>x.id!==personId);
+  const linked=new Set(relatedOfType("person",personId,"person",["WORKS_WITH"]).map(x=>x.id));
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.link}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Who do they work with?</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="sect-note">Meanwhile already draws a dashed line when two people keep appearing on the same work. Add one here to state it outright — it shows on the map and on both their records.</div>
+  ${others.length?`<div class="card panel" style="padding:5px;max-height:320px;overflow:auto">${
+    others.map(x=>entRow("person",x,{tail:`<button class="btn sm ghost" data-workswith="${personId}|${x.id}">${linked.has(x.id)?"✓ Linked":"Link"}</button>`})).join("")}</div>`
+    :`<div class="ent-empty">Nobody else recorded here yet.</div>`}`);
 }
 /* Tidy tree: depth from the reporting chain, x from leaf order with parents centred over
    their children. Anyone you haven't placed yet waits in a tray under the chart. */
@@ -2896,8 +2941,30 @@ function orgLayout(o){
   Object.keys(pos).forEach(id=>{ const sv=saved[id]; if(sv){ pos[id].x=sv.x; pos[id].y=sv.y; pos[id].moved=1; } });
   return {pos,parentOf,kids,loose,byId,NW,NH,treeDepth:depth};
 }
+/* The other way to look at it: forget the hierarchy and show me who sits where. */
+function deptLayout(o){
+  const ppl=(o.people||[]).slice();
+  const depts=wOf("departments",o.id).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const groups=depts.map(d=>({id:d.id,name:d.name,people:ppl.filter(p=>p.deptId===d.id)}))
+    .filter(g=>g.people.length)
+    .concat((()=>{ const rest=ppl.filter(p=>!p.deptId||!depts.some(d=>d.id===p.deptId));
+      return rest.length?[{id:"",name:"No department yet",people:rest}]:[]; })());
+  const NW=172, NH=54, GAPX=16, GAPY=16, PERROW=4, HEAD=26;
+  const pos={}, bands=[]; let y=0;
+  groups.forEach(g=>{
+    const rows=Math.ceil(g.people.length/PERROW);
+    const h=HEAD+rows*(NH+GAPY);
+    bands.push({id:g.id,name:g.name,y,h,n:g.people.length,w:PERROW*(NW+GAPX)-GAPX});
+    g.people.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
+      pos[p.id]={x:(i%PERROW)*(NW+GAPX), y:y+HEAD+Math.floor(i/PERROW)*(NH+GAPY), depth:0, band:g.id};
+    });
+    y+=h+18;
+  });
+  const byId={}; ppl.forEach(p=>byId[p.id]=p);
+  return {pos,parentOf:{},kids:{},loose:[],byId,NW,NH,bands,treeDepth:-1};
+}
 function workGraph(o){
-  const L=orgLayout(o);
+  const L=ogMode==="dept"?deptLayout(o):orgLayout(o);
   const ids=Object.keys(L.pos);
   if(!ids.length&&!L.loose.length) return `<div class="ent-empty">Capture a few notes and the people you meet appear here.</div>`;
   const PAD=30;
@@ -2905,7 +2972,7 @@ function workGraph(o){
   const minX=Math.min(0,...xs), minY=Math.min(0,...ys);
   const W_=Math.max(320,(Math.max(...xs,0)-minX)+L.NW+PAD*2), H_=Math.max(180,(Math.max(...ys,0)-minY)+L.NH+PAD*2);
   const X=i=>L.pos[i].x-minX+PAD, Y=i=>L.pos[i].y-minY+PAD;
-  const deptCol=p=>p.deptId?ENT.department.col:"#5a6070";
+  const deptCol=p=>deptColor(p.deptId);
   const deptOf=p=>p.deptId?entLabel("department",p.deptId):"";
 
   let edges="";
@@ -2923,23 +2990,32 @@ function workGraph(o){
     const ax=X(pr.a)+L.NW/2, ay=Y(pr.a)+L.NH/2, bx=X(pr.b)+L.NW/2, by=Y(pr.b)+L.NH/2;
     const cx=(ax+bx)/2, cy=(ay+by)/2+Math.min(70,Math.abs(bx-ax)/3.2);
     edges+=`<path d="M${ax.toFixed(1)} ${ay.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}"
-      fill="none" stroke="var(--accent)" stroke-width="${Math.min(2.4,1+pr.n*0.5)}" stroke-dasharray="5 5" opacity=".5"/>`;
+      fill="none" stroke="${pr.manual?"var(--accent2)":"var(--accent)"}" stroke-width="${pr.manual?2.2:Math.min(2.2,1+pr.n*0.5)}"
+      stroke-dasharray="${pr.manual?"7 4":"4 5"}" opacity="${pr.manual?".9":".45"}"/>`;
   });
 
   const card=(id)=>{
     const p=L.byId[id], col=deptCol(p), d=deptOf(p), nRep=(L.kids[id]||[]).length;
-    return `<g class="og-node${L.pos[id].unplaced?" loose":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
+    const dim=ogFilter&&p.deptId!==ogFilter;
+    return `<g class="og-node${L.pos[id].unplaced?" loose":""}${dim?" dim":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
       <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card"/>
       <rect width="3.5" height="${L.NH}" rx="2" fill="${col}"/>
       <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"/>
       <text x="28" y="${L.NH/2+4}" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">${esc(initials(p.name))}</text>
       <text x="49" y="${L.NH/2-3}" fill="var(--txt)" font-size="11.5" font-weight="750">${esc(clip(p.name,16))}</text>
-      <text x="49" y="${L.NH/2+11}" fill="var(--faint)" font-size="9.5">${esc(clip(p.title||d||"—",21))}</text>
+      ${d?`<circle cx="52" cy="${L.NH/2+7.5}" r="3" fill="${col}"/>`:""}
+      <text x="${d?60:49}" y="${L.NH/2+11}" fill="var(--faint)" font-size="9.5">${esc(clip(p.title?(d?p.title:p.title):d||"—",d?18:21))}</text>
       ${nRep?`<circle cx="${L.NW-13}" cy="13" r="8" fill="var(--panel2)" stroke="var(--line2)"/>
         <text x="${L.NW-13}" y="16.5" text-anchor="middle" fill="var(--muted)" font-size="9" font-weight="800">${nRep}</text>`:""}
     </g>`;
   };
   let band="";
+  (L.bands||[]).forEach(bd=>{
+    const c=deptColor(bd.id), by=bd.y-minY+PAD, bw=Math.max(bd.w,W_-PAD*2);
+    band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="14" fill="${c}" opacity=".07"/>
+      <rect x="${PAD-10}" y="${by-6}" width="3" height="${bd.h}" rx="2" fill="${c}" opacity=".55"/>
+      <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan></text>`;
+  });
   if(L.treeDepth>=0&&L.loose.length){
     const y=(L.treeDepth+1)*(L.NH+46)-minY+PAD-4;
     band=`<line x1="${PAD}" y1="${y}" x2="${W_-PAD}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 6"/>`;
@@ -2948,8 +3024,17 @@ function workGraph(o){
   const tray=L.loose.length&&L.treeDepth>=0
     ? `<div class="og-tray"><span class="og-tray-l">${L.loose.length} ${L.loose.length===1?"person has":"people have"} no reporting line recorded</span>
        <span class="og-tray-l" style="color:var(--accent3)">— open anyone and set “Reports to”</span></div>` : "";
+  const depts=wOf("departments",o.id).filter(d=>(o.people||[]).some(p=>p.deptId===d.id));
+  const legend=depts.length?`<div class="og-depts">${depts.map(d=>`<span class="og-dept${ogFilter===d.id?" on":""}" data-ogdept="${d.id}">
+      <i style="background:${deptColor(d.id)}"></i>${esc(d.name)}
+      <b>${(o.people||[]).filter(p=>p.deptId===d.id).length}</b></span>`).join("")}
+      ${ogFilter?`<span class="og-dept clear" data-ogdept="">Show all</span>`:""}</div>`:"";
   return `<div class="og-bar">
-      <div class="og-legend"><span><i class="solid"></i>reports to</span><span><i class="dash"></i>works with</span></div>
+      <div class="og-modes">
+        <button class="seg ${ogMode==="org"?"on":""}" data-ogmode="org">Reporting</button>
+        <button class="seg ${ogMode==="dept"?"on":""}" data-ogmode="dept">By department</button>
+      </div>
+      <div class="og-legend"><span><i class="solid"></i>reports to</span><span><i class="dash"></i>works with</span><span><i class="dash strong"></i>you linked</span></div>
       <div class="og-zoom">
         <button class="x-btn" data-og="out" title="Zoom out">−</button>
         <button class="x-btn" data-og="in" title="Zoom in">＋</button>
@@ -2957,14 +3042,15 @@ function workGraph(o){
         ${Object.keys(wLayout()).length?`<button class="x-btn" data-og="reset" title="Undo my dragging">↺</button>`:""}
       </div>
     </div>
+    ${legend}
     <div class="og-wrap" id="ogWrap"><div class="og-pan" id="ogPan">${svg}</div></div>
     ${tray}
-    <div class="sect-note" style="margin:10px 2px 0">Drag a card to move it, drag the background to pan, pinch or scroll to zoom. Tap a card to open the person. Set who reports to whom on a person's <b>Edit</b> screen.</div>`;
+    <div class="sect-note" style="margin:10px 2px 0">Drag a card to move it, drag the background to pan, pinch or scroll to zoom. Tap a card to open someone; tap a department to isolate it. Reporting lines and “works with” links are set on a person's record.</div>`;
 }
 function clip(s,n){ s=String(s||""); return s.length>n?s.slice(0,n-1)+"…":s; }
 
 /* Pan / zoom / drag. Pointer events so a finger and a mouse take the same path. */
-let ogView={x:0,y:0,z:1}, ogBound=false;
+let ogView={x:0,y:0,z:1}, ogMode="org", ogFilter="";
 function ogApply(){ const el=document.getElementById("ogPan"); if(el) el.style.transform=`translate(${ogView.x}px,${ogView.y}px) scale(${ogView.z})`; }
 function ogFit(){
   const wrap=document.getElementById("ogWrap"), svg=document.getElementById("ogSvg");
@@ -2983,7 +3069,10 @@ function armWorkGraph(){
     wrap.style.height=Math.round(Math.max(210,Math.min(420,h*Math.max(.3,z)+34)))+"px";
   }
   ogFit();
-  if(ogBound) return; ogBound=true;
+  // The flag lives on the element, not on the module: every render builds a NEW #ogWrap, and a
+  // module-level "already bound" would leave that new one dead. (It did — editing anyone from the
+  // map re-rendered the view and nothing was clickable until a reload.)
+  if(wrap.dataset.bound) return; wrap.dataset.bound="1";
   let mode=null, startX=0, startY=0, orig=null, nodeId=null, moved=false, pts=new Map(), pinch=0;
   const pt=e=>({x:e.clientX,y:e.clientY});
   wrap.addEventListener("pointerdown",e=>{
@@ -3113,6 +3202,7 @@ function entDetailBody(type,rec){
     ${type==="question"&&rec.status!=="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Open">↺ Reopen</button>`:""}
     ${type==="person"?`<button class="btn ghost sm" data-whoabout="${rec.id}">${I.ai} What do I know?</button>
       <button class="btn ghost sm" data-mpprep="${rec.id}">${I.cal} Prep to meet</button>
+      <button class="btn ghost sm" data-workswithpick="${rec.id}">${I.link} Works with…</button>
       <button class="btn ghost sm" data-mergewith="${rec.id}">${I.people} Merge…</button>`:""}
     <button class="btn ghost sm danger" data-entdel="${type}|${rec.id}">${I.trash} Delete</button>
   </div>`;
@@ -4993,7 +5083,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept]");
   if(!t) return;
 
   // nav
@@ -5140,6 +5230,8 @@ document.addEventListener("click",e=>{
     const wo=getOp(); if(wo&&wo.status==="hired") workOpId=wo.id;
     closeEditor(); closeDrawer(); render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
   if(t.dataset.og){ ogZoom(t.dataset.og); return; }
+  if(t.dataset.ogmode){ ogMode=t.dataset.ogmode; ogFilter=""; render(); return; }
+  if(t.dataset.ogdept!=null){ ogFilter=ogFilter===t.dataset.ogdept?"":t.dataset.ogdept; render(); return; }
   if(t.dataset.wop){ workOpId=t.dataset.wop; if(view!=="work"){ view="work"; workTab="overview"; } render(); return; }
   if(act==="hire"){ openHire(openId||t.dataset.hire); return; }
   if(act==="capture"){ openCapture(); return; }
@@ -5179,6 +5271,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
   if(t.dataset.setdept){ openDeptPicker(t.dataset.setdept); return; }
   if(t.dataset.setmgr){ openMgrPicker(t.dataset.setmgr); return; }
+  if(t.dataset.workswithpick){ openWorksWithPicker(t.dataset.workswithpick); return; }
+  if(t.dataset.workswith){ const [a,bb]=t.dataset.workswith.split("|"); setWorksWith(a,bb); return; }
   if(t.dataset.pickmgr){ const [pid,mid]=t.dataset.pickmgr.split("|"); setPersonMgr(pid,mid||""); return; }
   if(t.dataset.pickdept){ const [pid,did]=t.dataset.pickdept.split("|"); setPersonDept(pid,did||""); return; }
   if(t.dataset.newdept){ const inp=document.getElementById("newDept"); const nm=(inp&&inp.value||"").trim();

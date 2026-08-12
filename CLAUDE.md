@@ -222,9 +222,16 @@ pre-hire events (discovered/applied/rounds) with post-hire ones (milestones, cap
 (or a `REPORTS_TO` link, via `personManager()`), with a cycle guard, and drops anyone without a
 reporting line into a band underneath rather than hiding them. Solid elbows are reporting;
 dashed arcs are `collabPairs()` — people who keep appearing on the same project or problem, which
-is the thing an org chart never tells you. Pan/zoom/drag live in `armWorkGraph()` (pointer events,
-so touch and mouse share a path); dragged positions persist in `W().layout` and `ogZoom("reset")`
-clears them. Managers and departments are set from the person detail (`openMgrPicker`,
+is the thing an org chart never tells you. Two layouts via `ogMode`: `orgLayout()` (reporting tree) and `deptLayout()` (people grouped into
+department bands). Departments get a stable colour from `deptColor()` — the card's accent bar, the
+dot on its meta line, the legend chips and the bands all agree; tapping a legend chip sets
+`ogFilter` and dims everyone else. Dashed lines are both inferred (`collabPairs`) and **manual**
+(`WORKS_WITH` links, drawn heavier — `setWorksWith`/`openWorksWithPicker` from a person's record).
+Pan/zoom/drag live in `armWorkGraph()` (pointer events, so touch and mouse share a path); dragged
+positions persist in `W().layout` and `ogZoom("reset")` clears them.
+**The bind flag lives on the element** (`wrap.dataset.bound`), never on the module: every `render()`
+builds a new `#ogWrap`, and a module-level flag left that new one with no listeners — which is
+exactly how editing someone from the map used to kill it until a reload. Managers and departments are set from the person detail (`openMgrPicker`,
 `openDeptPicker`) — both write the field *and* the graph link.
 Day 91 changes nothing: the ring keeps counting and the framing becomes *My Company*.
 

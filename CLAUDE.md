@@ -122,6 +122,12 @@ you paste into a new AI chat to prep for interviews.
   topbar "Smart add" + Settings.
 - `POST-HIRE (90-day mode → My Company)` — everything that happens *after* you get the job. See the
   dedicated section below; it's the largest addition to the app.
+- **Modals never eat your typing**: `openEditor()` takes a `snapshotEditor()` of every field (and
+  again on `spSetBody`); a backdrop tap or Escape goes through `tryCloseEditor()`, which only closes
+  silently when `editorDirty()` is false and otherwise asks. The ✕/Cancel buttons still close outright.
+- **AI keys**: free-tier engines (`FREE_ENGINES` — Gemini, Groq) mirror the key into `state.ai` so it
+  syncs with the vault and a second device just works (`aiKey()` prefers the local key, falls back to
+  the synced one). Paid keys are never written to `state`. `aiCfg.syncKey:false` opts out.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — attachment **bytes live in IndexedDB** (`meanwhile_files`), not in the synced document.
   A file record on `state` is `{name,type,size,ref}`; `fileBytes(f)` resolves `ref` → bytes (and still reads a
@@ -212,7 +218,14 @@ AI only phrases the recommendation over candidates it can't add to. **What am I 
 **Work view** (`renderWork`): hero with the day-N-of-90 ring, then tabs
 `overview | people | projects | problems | knowledge | timeline | ask`. `careerTimeline()` merges
 pre-hire events (discovered/applied/rounds) with post-hire ones (milestones, captures, entities).
-`workGraph()` is a hand-rolled radial SVG map — a discovery tool, not the primary interface.
+`workGraph()` is a real **org chart**: `orgLayout()` builds a tidy tree from `person.managerId`
+(or a `REPORTS_TO` link, via `personManager()`), with a cycle guard, and drops anyone without a
+reporting line into a band underneath rather than hiding them. Solid elbows are reporting;
+dashed arcs are `collabPairs()` — people who keep appearing on the same project or problem, which
+is the thing an org chart never tells you. Pan/zoom/drag live in `armWorkGraph()` (pointer events,
+so touch and mouse share a path); dragged positions persist in `W().layout` and `ogZoom("reset")`
+clears them. Managers and departments are set from the person detail (`openMgrPicker`,
+`openDeptPicker`) — both write the field *and* the graph link.
 Day 91 changes nothing: the ring keeps counting and the framing becomes *My Company*.
 
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once

@@ -224,10 +224,12 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .kcard .co{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
 /* default avatar — sized so the favicon/initial always renders as a clean box, even in contexts (dashboard lists) with no override */
 .fav{position:relative;width:36px;height:36px;border-radius:10px;flex:0 0 36px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;overflow:hidden}
-.fav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fav img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:14%}
+.fav.has-img{background:#f7f8fa!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.fav.has-img > span{display:none}
 .fav > span{position:absolute;inset:0;display:grid;place-items:center}
 .kcard .fav{width:26px;height:26px;border-radius:8px;flex:0 0 26px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;overflow:hidden}
-.kcard .fav img{width:100%;height:100%;object-fit:cover}
+.kcard .fav img{width:100%;height:100%;object-fit:contain;padding:14%}
 .kcard .cn{font-weight:800;font-size:13.5px;line-height:1.3}
 .kcard .rl{color:var(--muted);font-size:12px;margin-top:3px;line-height:1.4}
 .kcard .meta{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
@@ -252,7 +254,7 @@ tbody tr:hover{background:var(--panel2)}
 tbody td{padding:12px 14px;vertical-align:middle}
 .cell-co{display:flex;align-items:center;gap:10px}
 .cell-co .fav{width:30px;height:30px;border-radius:9px;flex:0 0 30px;display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;overflow:hidden}
-.cell-co .fav img{width:100%;height:100%;object-fit:cover}
+.cell-co .fav img{width:100%;height:100%;object-fit:contain;padding:14%}
 
 /* status pill */
 .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap}
@@ -393,7 +395,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 
 .detail-hero{display:flex;align-items:center;gap:14px;margin-bottom:6px}
 .detail-hero .fav{width:48px;height:48px;border-radius:13px;flex:0 0 48px;display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;overflow:hidden}
-.detail-hero .fav img{width:100%;height:100%;object-fit:cover}
+.detail-hero .fav img{width:100%;height:100%;object-fit:contain;padding:14%}
 .detail-hero h2{margin:0;font-size:19px;font-weight:850;letter-spacing:-.02em;line-height:1.3}
 .detail-hero .rl{color:var(--muted);font-size:13.5px;margin-top:4px;line-height:1.4}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;font-size:13.5px;margin:16px 0;line-height:1.5}
@@ -491,6 +493,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ask-chips{display:flex;gap:7px;flex-wrap:wrap}
 .ask-chips .chip{cursor:pointer}
 .ask-chips .chip:hover{border-color:var(--accent);color:var(--txt)}
+.keysync{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);line-height:1.55;
+  background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin:-4px 2px 12px;cursor:pointer}
+.keysync input{width:16px;height:16px;flex:0 0 16px;margin-top:1px;accent-color:var(--accent)}
+.keysync b{color:var(--txt);font-weight:750}
+.keysync i{color:var(--faint);font-style:normal}
+.keysync.note{cursor:default;border-color:rgba(198,164,92,.3);background:rgba(198,164,92,.07)}
+.keysync.note > span:first-child{flex:0 0 15px;color:var(--warn)}
+.keysync.note svg{width:15px;height:15px}
 .ai-keylinks{font-size:12px;color:var(--muted);margin:-2px 2px 12px;line-height:1.7;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 11px}
 .ai-keylinks a{color:var(--accent3);font-weight:700;white-space:nowrap}
 .ai-subhead{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 9px;padding-top:14px;border-top:1px solid var(--line)}
@@ -547,7 +557,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .work-hero .wh-glow{position:absolute;inset:0;pointer-events:none}
 .work-hero .wh-top{display:flex;align-items:center;gap:14px;position:relative}
 .work-hero .fav{width:52px;height:52px;border-radius:14px;flex:0 0 52px;display:grid;place-items:center;font-weight:800;font-size:21px;color:#fff;overflow:hidden;position:relative}
-.work-hero .fav img{width:100%;height:100%;object-fit:cover}
+.work-hero .fav img{width:100%;height:100%;object-fit:contain;padding:14%}
 .wh-name{font-size:21px;font-weight:850;letter-spacing:-.02em;line-height:1.2}
 .wh-sub{color:var(--muted);font-size:13px;margin-top:3px;line-height:1.45}
 .wh-ring{margin-left:auto;flex:0 0 auto;position:relative;width:76px;height:76px;display:grid;place-items:center}
@@ -649,11 +659,37 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gap-item b{font-weight:750}
 .gap-do{font-size:11.5px;color:var(--accent3);font-weight:700;cursor:pointer;margin-top:3px;display:inline-block}
 
-.wgraph{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:13px;background:var(--bg2);padding:6px}
-.wgraph svg{display:block;margin:0 auto}
-.wgraph text{font-family:inherit}
-.wg-node{cursor:pointer}
-.wg-node:hover circle{stroke:#fff;stroke-width:1.6}
+.og-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px}
+.og-legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);flex:1;min-width:0}
+.og-legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.og-legend i{width:18px;height:0;border-top:2px solid var(--line2);display:inline-block}
+.og-legend i.dash{border-top:2px dashed var(--accent);opacity:.75}
+.og-zoom{display:flex;gap:5px;flex:0 0 auto}
+.og-zoom .x-btn{width:30px;height:30px;font-size:15px;font-weight:800}
+.og-wrap{position:relative;height:400px;border:1px solid var(--line);border-radius:13px;background:
+  radial-gradient(circle at 1px 1px, rgba(255,255,255,.045) 1px, transparent 0) 0 0/22px 22px, var(--bg2);
+  overflow:hidden;touch-action:none;cursor:grab}
+.og-wrap:active{cursor:grabbing}
+.og-pan{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+.og-wrap text{font-family:inherit;pointer-events:none;user-select:none}
+.og-node{cursor:pointer}
+.og-card{fill:var(--panel);stroke:var(--line);stroke-width:1}
+.og-node:hover .og-card{stroke:var(--accent);fill:var(--panel2)}
+.og-node.loose .og-card{stroke-dasharray:4 4;opacity:.9}
+.og-node.dragging{opacity:.85}
+.og-node.dragging .og-card{stroke:var(--accent);stroke-width:1.8}
+.og-tray{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
+.og-tray-l{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+.og-chip{cursor:pointer}
+.og-chip:hover{border-color:var(--accent);color:var(--txt)}
+@media(max-width:560px){ .og-wrap{height:330px} }
+.dept-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.dept-pill{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.14s}
+.dept-pill:hover{border-color:var(--line2);color:var(--txt)}
+.dept-pill b{color:var(--txt);font-weight:800}
+.dept-pill.add{border-style:dashed;color:var(--accent3)}
+.dept-pill .n{background:rgba(191,138,79,.18);color:var(--warn);border-radius:999px;padding:0 7px;font-size:11px;font-weight:800}
 
 .w-switch{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch}
 .sect-note{font-size:12.5px;color:var(--faint);line-height:1.6;margin:-4px 2px 12px}
@@ -934,8 +970,8 @@ function favHTML(o,cls){
   const primary = o.logo || (dom?"https://logo.clearbit.com/"+encodeURIComponent(dom):"");
   // try the real logo, fall back to the favicon, then to colored initials (the absolute span behind)
   const img = primary
-    ? `<img src="${esc(primary)}" loading="lazy" data-fb="${esc(fav)}" onerror="if(this.dataset.tried){this.remove()}else{this.dataset.tried=1;this.src=this.dataset.fb}" alt=""/>`
-    : (dom?`<img src="${esc(fav)}" loading="lazy" onerror="this.remove()" alt=""/>`:"");
+    ? `<img src="${esc(primary)}" loading="lazy" data-fb="${esc(fav)}" onload="this.parentNode.classList.add('has-img')" onerror="if(this.dataset.tried){this.parentNode.classList.remove('has-img');this.remove()}else{this.dataset.tried=1;this.src=this.dataset.fb}" alt=""/>`
+    : (dom?`<img src="${esc(fav)}" loading="lazy" onload="this.parentNode.classList.add('has-img')" onerror="this.remove()" alt=""/>`:"");
   return `<div class="fav ${cls||''}" style="background:${c}"><span style="position:absolute">${esc(initials(o.company))}</span>${img}</div>`;
 }
 function domainOf(o){ if(o.domain) return o.domain.replace(/^https?:\/\//,'').replace(/\/.*$/,''); if(o.jobUrl){ try{ return new URL(o.jobUrl).hostname.replace(/^www\./,''); }catch(e){} } return ""; }
@@ -1040,7 +1076,7 @@ function render(){
   else { if(heroTimer){ clearInterval(heroTimer); heroTimer=null; } if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
   else if(view==="cards") c.innerHTML = renderCards();
   else if(view==="calendar") c.innerHTML = renderCalendar();
-  else if(view==="work") c.innerHTML = renderWork();
+  else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="knowledge") setTimeout(armWorkGraph,0); }
   else if(view==="insights") c.innerHTML = renderInsights(); }
 }
 /* The Capture button follows you everywhere once you're employed — capture is the whole game
@@ -2754,6 +2790,12 @@ function workPeople(o){
   ppl.sort((a,b)=>personInteractions(b).length-personInteractions(a).length||(a.name||"").localeCompare(b.name||""));
   const depts=wOf("departments",o.id);
   let h=`<div class="sect-note">Everyone you've met here — the same records you built while interviewing, now with what they know and who they work with.</div>`;
+  h+=`<div class="dept-strip">${depts.map(d=>{
+      const n=ppl.filter(x=>x.deptId===d.id).length;
+      return `<span class="dept-pill" data-ent="department|${d.id}">${esc(d.name)}${n?`<span class="n">${n}</span>`:""}</span>`;
+    }).join("")}<span class="dept-pill add" data-entadd="department">＋ Department</span></div>`;
+  const unfiled=ppl.filter(x=>!x.deptId).length;
+  if(depts.length&&unfiled) h+=`<div class="sect-note" style="margin-top:-4px">${unfiled} ${unfiled===1?"person isn't":"people aren't"} in a department yet — open anyone and tap their department to set it.</div>`;
   h+=`<div class="card panel" style="padding:5px">${ppl.map(p=>{
     const last=(personInteractions(p)[0]||{}).at;
     return entRow("person",p,{tail:last?esc(relDays(daysUntil(ymdOf(last)))):""});
@@ -2761,10 +2803,6 @@ function workPeople(o){
   h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
     <button class="btn ghost sm" data-act="meeting-prep">${I.cal} Prep for a meeting</button>
     <button class="btn ghost sm" data-entadd="person">${I.plus} Add someone</button></div>`;
-  if(depts.length){
-    h+=`<div class="section-head"><h3>Departments</h3><div class="line"></div></div>
-      <div class="card panel" style="padding:5px">${depts.map(d=>entRow("department",d)).join("")}</div>`;
-  }
   return h;
 }
 function workSimpleList(o,type,note){
@@ -2794,53 +2832,216 @@ function workKnowledge(o){
   return h;
 }
 
-/* ---- The map. A discovery tool, not the main interface: departments ring the company,
-   the people and systems you've linked to them hang off each one. Hand-rolled SVG. ---- */
-function workGraph(o){
-  const depts=wOf("departments",o.id);
-  const ppl=(o.people||[]), systems=wOf("systems",o.id);
-  if(!depts.length&&!ppl.length&&!systems.length) return `<div class="ent-empty">Capture a few notes and your map of the place appears here.</div>`;
-  const W=520,H=430,cx=W/2,cy=H/2;
-  const spokes=depts.length?depts.map(d=>({t:"department",r:d})):[{t:"none",r:{id:"_",name:"Unfiled"}}];
-  // anyone/anything with no department hangs off a catch-all spoke
-  const grouped=spokes.map(s=>({...s, kids:[
-    ...ppl.filter(p=>s.t==="department"?p.deptId===s.r.id:!p.deptId).map(p=>({t:"person",r:p})),
-    ...systems.filter(sy=>{ const d=relatedOfType("system",sy.id,"department"); return s.t==="department"?d.some(x=>x.id===s.r.id):!d.length; }).map(sy=>({t:"system",r:sy})),
-  ].slice(0,6)}));
-  const unfiled=ppl.filter(p=>!p.deptId).length+systems.filter(sy=>!relatedOfType("system",sy.id,"department").length).length;
-  if(depts.length&&unfiled) grouped.push({t:"none",r:{id:"_",name:"Unfiled"},kids:[
-    ...ppl.filter(p=>!p.deptId).map(p=>({t:"person",r:p})),
-    ...systems.filter(sy=>!relatedOfType("system",sy.id,"department").length).map(sy=>({t:"system",r:sy})),
-  ].slice(0,6)});
-  const n=grouped.length, R1=105, R2=178;
-  let edges="",nodes="";
-  const label=(x,y,txt,size,col)=>`<text x="${x}" y="${y}" text-anchor="middle" fill="${col}" font-size="${size}" font-weight="700">${esc(txt.length>16?txt.slice(0,15)+"…":txt)}</text>`;
-  grouped.forEach((g,i)=>{
-    const a=(i/n)*2*Math.PI-Math.PI/2;
-    const x=cx+R1*Math.cos(a), y=cy+R1*Math.sin(a);
-    const col=g.t==="department"?ENT.department.col:"#5a5f6a";
-    edges+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line2)" stroke-width="1.4"/>`;
-    g.kids.forEach((k,j)=>{
-      // fan the children out, and alternate their distance so labels never collide
-      const spread=Math.min(0.8, 0.34*(g.kids.length-1)||0.001);
-      const ka=a+(g.kids.length>1?(-spread/2+spread*(j/(g.kids.length-1))):0);
-      const kr=R2+(j%2)*38;
-      const kx=cx+kr*Math.cos(ka), ky=cy+kr*Math.sin(ka);
-      edges+=`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${kx.toFixed(1)}" y2="${ky.toFixed(1)}" stroke="var(--line)" stroke-width="1.2"/>`;
-      const kc=k.t==="person"?colorFor(k.r.name||"?"):ENT[k.t].col;
-      nodes+=`<g class="wg-node" data-ent="${k.t}|${k.r.id}"><circle cx="${kx.toFixed(1)}" cy="${ky.toFixed(1)}" r="13" fill="${kc}" opacity=".92"/>
-        <text x="${kx.toFixed(1)}" y="${(ky+3.5).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="800">${esc(k.t==="person"?initials(k.r.name):entName(k.t,k.r).slice(0,2).toUpperCase())}</text>
-        ${label(kx,ky+27,entName(k.t,k.r),9,"var(--muted)")}</g>`;
-    });
-    nodes+=`<g class="wg-node"${g.t==="department"?` data-ent="department|${g.r.id}"`:""}><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="19" fill="${col}" opacity=".9"/>
-      ${label(x,y+3.5,(g.r.name||"").slice(0,3).toUpperCase(),10,"#fff")}${label(x,y+33,g.r.name||"",10,"var(--txt)")}</g>`;
+/* ---- The org map. Not a decorative ring any more: a real chart you can pan, zoom and drag,
+   built from who reports to whom. Solid lines are reporting; dashed lines are people who keep
+   turning up on the same work — the thing an org chart never tells you. ---- */
+function wLayout(){ const w=W(); w.layout=w.layout||{}; return w.layout; }
+function personManager(p){
+  if(p.managerId&&entGet("person",p.managerId)) return p.managerId;
+  const l=W().links.find(x=>x.st==="person"&&x.sid===p.id&&x.rel==="REPORTS_TO"&&entGet("person",x.tid));
+  return l?l.tid:"";
+}
+// people who keep showing up on the same projects/problems — the informal org
+function collabPairs(o){
+  const byThing={};
+  W().links.filter(l=>l.opId===o.id&&l.st==="person"&&["INVOLVED_IN","OWNS","HELPED_SOLVE","USES"].includes(l.rel)&&(l.tt==="project"||l.tt==="problem"))
+    .forEach(l=>{ const k=l.tt+"|"+l.tid; (byThing[k]=byThing[k]||[]).push(l.sid); });
+  const seen={}, out=[];
+  Object.values(byThing).forEach(ids=>{
+    const u=[...new Set(ids)];
+    for(let i=0;i<u.length;i++) for(let j=i+1;j<u.length;j++){
+      const k=[u[i],u[j]].sort().join("|");
+      if(seen[k]) { seen[k].n++; continue; }
+      seen[k]={a:u[i],b:u[j],n:1}; out.push(seen[k]);
+    }
   });
-  return `<div class="wgraph"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="max-width:${W}px">
-    ${edges}
-    <circle cx="${cx}" cy="${cy}" r="30" fill="var(--accent)" opacity=".9"/>
-    <text x="${cx}" y="${cy+4}" text-anchor="middle" fill="#fff" font-size="12" font-weight="850">${esc(initials(o.company))}</text>
-    ${nodes}
-  </svg></div><div class="sect-note" style="margin:10px 2px 0">Tap any node to open it. Departments ring the company; the people and systems you've linked to each one hang off it.</div>`;
+  return out.sort((x,y)=>y.n-x.n).slice(0,16);
+}
+/* Tidy tree: depth from the reporting chain, x from leaf order with parents centred over
+   their children. Anyone you haven't placed yet waits in a tray under the chart. */
+function orgLayout(o){
+  const ppl=(o.people||[]).slice();
+  const byId={}; ppl.forEach(p=>byId[p.id]=p);
+  const parentOf={}, kids={};
+  ppl.forEach(p=>{
+    let m=personManager(p);
+    // walk up to make sure this doesn't loop back on itself
+    let seen={[p.id]:1}, cur=m;
+    while(cur){ if(seen[cur]){ m=""; break; } seen[cur]=1; cur=byId[cur]?personManager(byId[cur]):""; }
+    if(m&&byId[m]){ parentOf[p.id]=m; (kids[m]=kids[m]||[]).push(p.id); }
+  });
+  const linked=p=>parentOf[p.id]||(kids[p.id]||[]).length;
+  const roots=ppl.filter(p=>!parentOf[p.id]&&linked(p)).map(p=>p.id);
+  const loose=ppl.filter(p=>!linked(p));
+  const NW=172, NH=54, GAPX=16, GAPY=46;
+  const pos={}; let cursor=0;
+  const place=(id,depth)=>{
+    const ch=(kids[id]||[]).sort((a,b)=>(byId[a].name||"").localeCompare(byId[b].name||""));
+    if(!ch.length){ const x=cursor; cursor+=NW+GAPX; pos[id]={x,y:depth*(NH+GAPY),depth}; return x; }
+    const xs=ch.map(c=>place(c,depth+1));
+    const x=(xs[0]+xs[xs.length-1])/2;
+    pos[id]={x,y:depth*(NH+GAPY),depth};
+    return x;
+  };
+  roots.sort((a,b)=>((kids[b]||[]).length-(kids[a]||[]).length)).forEach(r=>{ place(r,0); cursor+=GAPX*2; });
+  // Nobody floats off the chart just because you haven't recorded their manager yet — they sit in
+  // a band underneath, ready to be dragged or given a reporting line.
+  const depth=Object.values(pos).reduce((m,v)=>Math.max(m,v.depth),-1);
+  const perRow=Math.max(3,Math.min(5,Math.ceil(Math.sqrt(loose.length))+1));
+  loose.sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
+    pos[p.id]={x:(i%perRow)*(NW+GAPX), y:(depth+1+Math.floor(i/perRow))*(NH+GAPY)+(depth>=0?26:0), depth:-1, unplaced:1};
+  });
+  // hand-dragged positions win
+  const saved=wLayout();
+  Object.keys(pos).forEach(id=>{ const sv=saved[id]; if(sv){ pos[id].x=sv.x; pos[id].y=sv.y; pos[id].moved=1; } });
+  return {pos,parentOf,kids,loose,byId,NW,NH,treeDepth:depth};
+}
+function workGraph(o){
+  const L=orgLayout(o);
+  const ids=Object.keys(L.pos);
+  if(!ids.length&&!L.loose.length) return `<div class="ent-empty">Capture a few notes and the people you meet appear here.</div>`;
+  const PAD=30;
+  const xs=ids.map(i=>L.pos[i].x), ys=ids.map(i=>L.pos[i].y);
+  const minX=Math.min(0,...xs), minY=Math.min(0,...ys);
+  const W_=Math.max(320,(Math.max(...xs,0)-minX)+L.NW+PAD*2), H_=Math.max(180,(Math.max(...ys,0)-minY)+L.NH+PAD*2);
+  const X=i=>L.pos[i].x-minX+PAD, Y=i=>L.pos[i].y-minY+PAD;
+  const deptCol=p=>p.deptId?ENT.department.col:"#5a6070";
+  const deptOf=p=>p.deptId?entLabel("department",p.deptId):"";
+
+  let edges="";
+  // reporting: an elbow from the bottom of the manager to the top of the report
+  ids.forEach(id=>{
+    const par=L.parentOf[id]; if(!par||!L.pos[par]) return;
+    const x1=X(par)+L.NW/2, y1=Y(par)+L.NH, x2=X(id)+L.NW/2, y2=Y(id);
+    const mid=(y1+y2)/2;
+    edges+=`<path d="M${x1} ${y1} V${mid} H${x2} V${y2}" fill="none" stroke="var(--line2)" stroke-width="1.6" stroke-linejoin="round"/>`;
+  });
+  // collaboration: a dashed arc between people who share work but no reporting line
+  collabPairs(o).forEach(pr=>{
+    if(!L.pos[pr.a]||!L.pos[pr.b]) return;
+    if(L.parentOf[pr.a]===pr.b||L.parentOf[pr.b]===pr.a) return;
+    const ax=X(pr.a)+L.NW/2, ay=Y(pr.a)+L.NH/2, bx=X(pr.b)+L.NW/2, by=Y(pr.b)+L.NH/2;
+    const cx=(ax+bx)/2, cy=(ay+by)/2+Math.min(70,Math.abs(bx-ax)/3.2);
+    edges+=`<path d="M${ax.toFixed(1)} ${ay.toFixed(1)} Q${cx.toFixed(1)} ${cy.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}"
+      fill="none" stroke="var(--accent)" stroke-width="${Math.min(2.4,1+pr.n*0.5)}" stroke-dasharray="5 5" opacity=".5"/>`;
+  });
+
+  const card=(id)=>{
+    const p=L.byId[id], col=deptCol(p), d=deptOf(p), nRep=(L.kids[id]||[]).length;
+    return `<g class="og-node${L.pos[id].unplaced?" loose":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
+      <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card"/>
+      <rect width="3.5" height="${L.NH}" rx="2" fill="${col}"/>
+      <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"/>
+      <text x="28" y="${L.NH/2+4}" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">${esc(initials(p.name))}</text>
+      <text x="49" y="${L.NH/2-3}" fill="var(--txt)" font-size="11.5" font-weight="750">${esc(clip(p.name,16))}</text>
+      <text x="49" y="${L.NH/2+11}" fill="var(--faint)" font-size="9.5">${esc(clip(p.title||d||"—",21))}</text>
+      ${nRep?`<circle cx="${L.NW-13}" cy="13" r="8" fill="var(--panel2)" stroke="var(--line2)"/>
+        <text x="${L.NW-13}" y="16.5" text-anchor="middle" fill="var(--muted)" font-size="9" font-weight="800">${nRep}</text>`:""}
+    </g>`;
+  };
+  let band="";
+  if(L.treeDepth>=0&&L.loose.length){
+    const y=(L.treeDepth+1)*(L.NH+46)-minY+PAD-4;
+    band=`<line x1="${PAD}" y1="${y}" x2="${W_-PAD}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 6"/>`;
+  }
+  const svg=`<svg id="ogSvg" width="${W_}" height="${H_}" viewBox="0 0 ${W_} ${H_}">${band}${edges}${ids.map(card).join("")}</svg>`;
+  const tray=L.loose.length&&L.treeDepth>=0
+    ? `<div class="og-tray"><span class="og-tray-l">${L.loose.length} ${L.loose.length===1?"person has":"people have"} no reporting line recorded</span>
+       <span class="og-tray-l" style="color:var(--accent3)">— open anyone and set “Reports to”</span></div>` : "";
+  return `<div class="og-bar">
+      <div class="og-legend"><span><i class="solid"></i>reports to</span><span><i class="dash"></i>works with</span></div>
+      <div class="og-zoom">
+        <button class="x-btn" data-og="out" title="Zoom out">−</button>
+        <button class="x-btn" data-og="in" title="Zoom in">＋</button>
+        <button class="x-btn" data-og="fit" title="Fit to screen">⤢</button>
+        ${Object.keys(wLayout()).length?`<button class="x-btn" data-og="reset" title="Undo my dragging">↺</button>`:""}
+      </div>
+    </div>
+    <div class="og-wrap" id="ogWrap"><div class="og-pan" id="ogPan">${svg}</div></div>
+    ${tray}
+    <div class="sect-note" style="margin:10px 2px 0">Drag a card to move it, drag the background to pan, pinch or scroll to zoom. Tap a card to open the person. Set who reports to whom on a person's <b>Edit</b> screen.</div>`;
+}
+function clip(s,n){ s=String(s||""); return s.length>n?s.slice(0,n-1)+"…":s; }
+
+/* Pan / zoom / drag. Pointer events so a finger and a mouse take the same path. */
+let ogView={x:0,y:0,z:1}, ogBound=false;
+function ogApply(){ const el=document.getElementById("ogPan"); if(el) el.style.transform=`translate(${ogView.x}px,${ogView.y}px) scale(${ogView.z})`; }
+function ogFit(){
+  const wrap=document.getElementById("ogWrap"), svg=document.getElementById("ogSvg");
+  if(!wrap||!svg) return;
+  const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
+  const z=Math.min(1, (wrap.clientWidth-16)/w, (wrap.clientHeight-16)/h);
+  ogView={z:Math.max(.3,z), x:(wrap.clientWidth-w*z)/2, y:10};
+  ogApply();
+}
+function armWorkGraph(){
+  const wrap=document.getElementById("ogWrap"); if(!wrap) return;
+  const svg=document.getElementById("ogSvg");
+  if(svg){                       // size the canvas to the chart rather than always 400px
+    const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
+    const z=Math.min(1,(wrap.clientWidth-16)/w);
+    wrap.style.height=Math.round(Math.max(210,Math.min(420,h*Math.max(.3,z)+34)))+"px";
+  }
+  ogFit();
+  if(ogBound) return; ogBound=true;
+  let mode=null, startX=0, startY=0, orig=null, nodeId=null, moved=false, pts=new Map(), pinch=0;
+  const pt=e=>({x:e.clientX,y:e.clientY});
+  wrap.addEventListener("pointerdown",e=>{
+    const n=e.target.closest("[data-node]");
+    pts.set(e.pointerId,pt(e));
+    if(pts.size===2){ mode="pinch"; pinch=ogDist(pts); orig={...ogView}; return; }
+    moved=false; startX=e.clientX; startY=e.clientY;
+    if(n){ mode="node"; nodeId=n.dataset.node; const m=n.getAttribute("transform").match(/translate\(([-\d.]+),([-\d.]+)\)/); orig={x:+m[1],y:+m[2]}; }
+    else { mode="pan"; orig={...ogView}; }
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener("pointermove",e=>{
+    if(!mode) return;
+    pts.set(e.pointerId,pt(e));
+    if(mode==="pinch"&&pts.size===2){ const d=ogDist(pts); ogView.z=Math.max(.3,Math.min(2.4,orig.z*(d/pinch))); ogApply(); return; }
+    const dx=e.clientX-startX, dy=e.clientY-startY;
+    if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+    if(mode==="pan"){ ogView.x=orig.x+dx; ogView.y=orig.y+dy; ogApply(); }
+    else if(mode==="node"){
+      const g=wrap.querySelector(`[data-node="${nodeId}"]`); if(!g) return;
+      g.setAttribute("transform",`translate(${orig.x+dx/ogView.z},${orig.y+dy/ogView.z})`);
+      g.classList.add("dragging");
+    }
+  });
+  const done=e=>{
+    pts.delete(e.pointerId);
+    if(mode==="node"&&nodeId){
+      const g=wrap.querySelector(`[data-node="${nodeId}"]`);
+      if(g){ g.classList.remove("dragging");
+        if(moved){ const m=g.getAttribute("transform").match(/translate\(([-\d.]+),([-\d.]+)\)/);
+          const o=workOp(); const base=orgLayout(o);
+          // store in layout space, not screen space, so it survives a re-render
+          const ids=Object.keys(base.pos); const minX=Math.min(0,...ids.map(i=>base.pos[i].x)), minY=Math.min(0,...ids.map(i=>base.pos[i].y));
+          wLayout()[nodeId]={x:+m[1]-30+minX, y:+m[2]-30+minY};
+          save();
+        } else { const [ty,id]=["person",nodeId]; openEnt(ty,id); } }
+    }
+    mode=null; nodeId=null;
+  };
+  wrap.addEventListener("pointerup",done);
+  wrap.addEventListener("pointercancel",done);
+  wrap.addEventListener("wheel",e=>{
+    e.preventDefault();
+    const r=wrap.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    const z=Math.max(.3,Math.min(2.4, ogView.z*(e.deltaY<0?1.12:0.89)));
+    ogView.x = mx-(mx-ogView.x)*(z/ogView.z); ogView.y = my-(my-ogView.y)*(z/ogView.z); ogView.z=z;
+    ogApply();
+  },{passive:false});
+}
+function ogDist(pts){ const [a,b]=[...pts.values()]; return Math.hypot(a.x-b.x,a.y-b.y)||1; }
+function ogZoom(dir){
+  const wrap=document.getElementById("ogWrap"); if(!wrap) return;
+  if(dir==="fit") return ogFit();
+  if(dir==="reset"){ W().layout={}; save(); render(); toast("Back to the automatic layout"); return; }
+  const cx=wrap.clientWidth/2, cy=wrap.clientHeight/2;
+  const z=Math.max(.3,Math.min(2.4, ogView.z*(dir==="in"?1.2:0.83)));
+  ogView.x=cx-(cx-ogView.x)*(z/ogView.z); ogView.y=cy-(cy-ogView.y)*(z/ogView.z); ogView.z=z;
+  ogApply();
 }
 
 /* ============================ ENTITY DETAIL + FORMS ============================ */
@@ -2862,7 +3063,12 @@ function entDetailBody(type,rec){
     const ints=personInteractions(rec);
     // expertise that isn't already a linked System — the graph shows those below, no need twice
     const linked=relatedOfType("person",rec.id,"system",["KNOWS","OWNS"]).map(x=>canonThing(entLabel("system",x.id)));
-    rows.push(["Title",rec.title],["Department",rec.deptId?entLabel("department",rec.deptId):""],
+    const deptCell=`<span class="dept-pill" data-setdept="${rec.id}" style="padding:3px 10px;font-size:12px">${rec.deptId?esc(entLabel("department",rec.deptId)):"Set department"}</span>`;
+    const mgrId=personManager(rec);
+    rows.push(["Title",rec.title],["Department",deptCell],
+      ["Reports to",mgrId
+        ? `<span class="cite" data-ent="person|${mgrId}">${esc(entLabel("person",mgrId))}</span> <span class="dept-pill" data-setmgr="${rec.id}" style="padding:2px 9px;font-size:11px">change</span>`
+        : `<span class="dept-pill" data-setmgr="${rec.id}" style="padding:3px 10px;font-size:12px">Set manager</span>`],
       ["Knows",(rec.expertise||[]).filter(x=>!linked.includes(canonThing(x))).join(", ")],
       ["Interactions",ints.length?`${ints.length} recorded${ints[0]&&ints[0].at?` · last ${fmtDate(ymdOf(ints[0].at))}`:""}`:"none recorded"],
       ["Email",rec.email],["LinkedIn",rec.linkedin?`<a href="${esc(rec.linkedin)}" target="_blank" rel="noopener">profile ↗</a>`:""]);
@@ -2917,7 +3123,7 @@ function entDetailBody(type,rec){
    [name, label, kind, required, options] where kind is text|textarea|date|select|ent:<type> */
 function entFields(type){
   return {
-    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
+    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
     department:[["name","Name","text",1],["note","Notes","textarea"]],
@@ -2939,7 +3145,8 @@ function openEntForm(type,rec,opId){
     else if(kind==="select") input=`<select name="${n}">${(opts||[]).map(x=>`<option ${v===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
     else if(kind&&kind.indexOf("ent:")===0){
       const t=kind.slice(4);
-      input=`<select name="${n}"><option value="">— none —</option>${entAll(t,opId).map(r=>`<option value="${r.id}" ${v===r.id?"selected":""}>${esc(entName(t,r))}</option>`).join("")}</select>`;
+      const pool=entAll(t,opId).filter(r=>!(rec&&r.id===rec.id));   // no self-reporting
+      input=`<select name="${n}"><option value="">— none —</option>${pool.map(r=>`<option value="${r.id}" ${v===r.id?"selected":""}>${esc(entName(t,r))}</option>`).join("")}</select>`;
     }
     else input=`<input name="${n}" value="${esc(v||"")}" ${req?"required":""}/>`;
     return `<div class="form-row"><label>${esc(l)}${req?" *":""}</label>${input}</div>`;
@@ -2970,6 +3177,7 @@ function saveEntForm(form){
   else rec=wAdd(ENT[type].list,Object.assign({opId},d));
   // department / owner picks are relationships too, so the graph stays the single source of truth
   if(d.deptId) addLink(opId,type,rec.id,type==="person"?"WORKS_IN":"PART_OF","department",d.deptId,1);
+  if(d.managerId&&type==="person"&&d.managerId!==rec.id) addLink(opId,"person",rec.id,"REPORTS_TO","person",d.managerId,1);
   if(d.ownerId) addLink(opId,"person",d.ownerId,"OWNS",type,rec.id,1);
   (d.expertise||[]).forEach(x=>{ const s=resolveEnt("system",x,opId); if(s.rec&&s.conf>=1) addLink(opId,"person",rec.id,"KNOWS","system",s.rec.id,1); });
   save(); closeEditor(); render(); toast("Saved");
@@ -3014,6 +3222,57 @@ function mergePeople(keepId,dropId){
   o.people=(o.people||[]).filter(p=>p.id!==dropId);
   o.updatedAt=Date.now();
   return true;
+}
+function openDeptPicker(personId){
+  const p=entGet("person",personId); if(!p) return;
+  const opId=entOpId("person",personId);
+  const depts=entAll("department",opId);
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Which department?</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="dept-strip">${depts.map(d=>`<span class="dept-pill${p.deptId===d.id?" add":""}" data-pickdept="${personId}|${d.id}">${esc(d.name)}${p.deptId===d.id?" ✓":""}</span>`).join("")}
+    ${p.deptId?`<span class="dept-pill" data-pickdept="${personId}|">Clear</span>`:""}</div>
+  <div class="form-row" style="margin-top:6px"><label>Or add a new one</label>
+    <div style="display:flex;gap:8px"><input id="newDept" placeholder="Finance" autocomplete="off"/>
+    <button class="btn ghost" data-newdept="${personId}">＋ Add</button></div></div>`);
+}
+function openMgrPicker(personId){
+  const p=entGet("person",personId); if(!p) return;
+  const opId=entOpId("person",personId);
+  const others=entAll("person",opId).filter(x=>x.id!==personId);
+  const cur=personManager(p);
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Who do they report to?</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${others.length?`<div class="card panel" style="padding:5px;max-height:300px;overflow:auto">${
+    others.map(x=>entRow("person",x,{tail:cur===x.id?`<span class="st-pill" style="background:rgba(78,163,129,.18);color:var(--good)">current</span>`:`<button class="btn sm ghost" data-pickmgr="${personId}|${x.id}">Pick</button>`})).join("")}</div>`
+    :`<div class="ent-empty">Nobody else recorded here yet.</div>`}
+  ${cur?`<button class="btn ghost sm" data-pickmgr="${personId}|" style="margin-top:10px">Clear reporting line</button>`:""}
+  <div class="sect-note" style="margin-top:10px">This draws the solid lines on the org map.</div>`);
+}
+function setPersonMgr(personId,mgrId){
+  const p=entGet("person",personId); if(!p||personId===mgrId) return;
+  const opId=entOpId("person",personId), w=W();
+  w.links=w.links.filter(l=>!(l.st==="person"&&l.sid===personId&&l.rel==="REPORTS_TO"));
+  p.managerId=mgrId||"";
+  if(mgrId) addLink(opId,"person",personId,"REPORTS_TO","person",mgrId,1);
+  save(); closeEditor(); render(); openEnt("person",personId);
+  toast(mgrId?`Reports to ${entLabel("person",mgrId)}`:"Reporting line cleared");
+}
+function setPersonDept(personId,deptId){
+  const p=entGet("person",personId); if(!p) return;
+  const opId=entOpId("person",personId);
+  if(p.deptId&&p.deptId!==deptId){
+    const w=W(); w.links=w.links.filter(l=>!(l.st==="person"&&l.sid===personId&&l.rel==="WORKS_IN"&&l.tid===p.deptId));
+  }
+  p.deptId=deptId||"";
+  if(deptId) addLink(opId,"person",personId,"WORKS_IN","department",deptId,1);
+  save(); closeEditor(); render(); openEnt("person",personId);
+  toast(deptId?`Filed under ${entLabel("department",deptId)}`:"Department cleared");
 }
 function openMergePicker(keepId){
   const keep=entGet("person",keepId); const opId=entOpId("person",keepId);
@@ -3833,8 +4092,31 @@ function openEditor(html){
   editorEl=el(`<div class="overlay show" id="editorOverlay" style="z-index:150;display:flex;justify-content:center;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))">
     <div class="card" style="width:min(540px,100%);margin:auto;padding:22px">${html}</div></div>`);
   document.body.appendChild(editorEl);
-  editorEl.addEventListener("click",e=>{ if(e.target===editorEl) closeEditor(); }); // only background closes
+  // A stray tap on the backdrop used to bin whatever you'd typed. Now it only closes when there's
+  // nothing to lose; if there is, it asks. The ✕ and Cancel buttons still close outright.
+  editorEl.addEventListener("click",e=>{ if(e.target===editorEl) tryCloseEditor(); });
+  snapshotEditor();
   const f=editorEl.querySelector("input,textarea,select"); if(f) setTimeout(()=>f.focus(),50);
+}
+// remember what every field looked like when the screen appeared, so "changed" means changed
+function snapshotEditor(){
+  if(!editorEl) return;
+  editorEl.querySelectorAll("input,textarea,select").forEach(el=>{
+    if(el.type==="file"||el.type==="button") return;
+    el.dataset.initial = el.type==="checkbox"||el.type==="radio" ? (el.checked?"1":"") : (el.value||"");
+  });
+}
+function editorDirty(){
+  if(!editorEl) return false;
+  return [...editorEl.querySelectorAll("input,textarea,select")].some(el=>{
+    if(el.type==="file"||el.type==="button"||el.dataset.initial===undefined) return false;
+    const now = el.type==="checkbox"||el.type==="radio" ? (el.checked?"1":"") : (el.value||"");
+    return now !== el.dataset.initial;
+  });
+}
+function tryCloseEditor(){
+  if(!editorDirty()) return closeEditor();
+  if(confirm("You've typed something here that hasn't been saved.\n\nOK to discard it — Cancel to keep editing.")) closeEditor();
 }
 function closeEditor(){ if(typeof capStopVoice==="function") capStopVoice(); if(editorEl){ editorEl.remove(); editorEl=null; } }
 
@@ -4104,10 +4386,23 @@ function aiEngine(){
   if(e==="proxy") return aiProxyUrl()?"proxy":"paste";
   if(e==="anthropic") return aiCfg.key?"anthropic":"paste";
   if(e==="openai") return aiCfg.key?"openai":"paste";
-  if(e==="groq") return aiCfg.key?"groq":"paste";
-  if(e==="google") return aiCfg.key?"google":"paste";
+  if(e==="groq") return aiKey()?"groq":"paste";
+  if(e==="google") return aiKey()?"google":"paste";
   return "paste";
 }
+/* Free-tier keys (Gemini, Groq) can ride along in your own synced vault so you set them up once
+   instead of on every device. Paid keys are attached to a card, so they stay on the device where
+   you entered them and are never written into the document that syncs. */
+const FREE_ENGINES=["google","groq"];
+function engineIsFree(e){ return FREE_ENGINES.includes(e||aiCfg.engine||"google"); }
+// the key in play: this device's, or the synced one if this device hasn't got its own
+function aiKey(){
+  if(aiCfg.key) return aiCfg.key;
+  const sh=state.ai;
+  if(sh&&sh.key&&sh.engine===(aiCfg.engine||"google")&&engineIsFree(sh.engine)) return sh.key;
+  return "";
+}
+function aiSyncOn(){ return aiCfg.syncKey!==false; }   // opt-out, on by default for free engines
 // providers that can read an uploaded PDF directly
 function engineReadsPDF(){ return ["proxy","anthropic","google"].includes(aiEngine()); }
 const AI_SCHEMA=`Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
@@ -4175,7 +4470,7 @@ async function aiCall(prompt, doc, opts){
     const base={messages:[{role:"user",content:prompt}],max_tokens:maxTok}; if(wantJson) base.response_format={type:"json_object"};
     let res,lastStatus=0,lastErr="";
     for(const model of models){
-      res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiCfg.key},body:JSON.stringify(Object.assign({model},base))});
+      res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiKey()},body:JSON.stringify(Object.assign({model},base))});
       if(res.ok) break; lastStatus=res.status; lastErr=(await res.text()).slice(0,200);
       if(![404,400].includes(res.status)) break;
     }
@@ -4195,7 +4490,7 @@ async function aiCall(prompt, doc, opts){
     const models=[aiCfg.model||"gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"].filter((m,i,a)=>m&&a.indexOf(m)===i);
     let res,lastStatus=0,lastErr="";
     for(const model of models){
-      res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiCfg.key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body});
+      res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiKey())}`,{method:"POST",headers:{"Content-Type":"application/json"},body});
       if(res.ok) break;
       lastStatus=res.status; lastErr=(await res.text()).slice(0,160);
       if(![404,400,429].includes(res.status)) break; // model-not-found or quota → try the next model
@@ -4361,7 +4656,8 @@ function spShowReadFail(url, tried){
   <details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--faint);font-weight:600">What was tried</summary>
     <div class="note-block" style="margin-top:8px;font-size:12px">${esc(detail||"nothing")}</div></details>`);
 }
-function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card"); if(card){ card.innerHTML=html; const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
+function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card");
+  if(card){ card.innerHTML=html; snapshotEditor(); const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
 async function runExtract(){
   const ta=$("#spInput"); spText=ta?ta.value.trim():"";
   if(!spText){ toast("Paste something first"); return; }
@@ -4468,7 +4764,14 @@ function aiEngineFields(){
     ${opt("off","Off")}
   </select></div>
   <div id="aiKeyRow" style="display:${needsKey?"block":"none"}">
-    <div class="form-row"><label>API key <span style="color:var(--faint);font-weight:500">— stays on this device, never synced</span></label><input id="aiKey" type="password" value="${esc(aiCfg.key||"")}" placeholder="${kph}"/></div>
+    <div class="form-row"><label>API key</label><input id="aiKey" type="password" value="${esc(aiCfg.key||"")}" placeholder="${kph}"/></div>
+    ${engineIsFree(eng)
+      ? `<label class="keysync"><input type="checkbox" id="aiSyncKey" ${aiSyncOn()?"checked":""}/>
+          <span><b>Set it up once</b> — keep this key with your synced data so your phone and laptop both have it.
+          ${syncOn()?"":`<i>Turn on cloud sync below and it'll travel with everything else.</i>`}</span></label>`
+      : `<div class="keysync note"><span>${I.bell}</span><span><b>This one stays on this device.</b>
+          ChatGPT and Claude keys bill a card, so Meanwhile keeps them where you typed them rather than
+          copying them between devices. Gemini and Groq are free-tier — those it will carry across for you.</span></div>`}
     <div class="ai-keylinks">🔑 Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a> · <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (free) ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
     <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${mph}"/></div>
   </div>
@@ -4504,7 +4807,21 @@ function saveAISettings(){
   if($("#aiKey")) aiCfg.key=$("#aiKey").value.trim();
   if($("#aiModel")) aiCfg.model=$("#aiModel").value.trim();
   if($("#aiProxy")) aiCfg.proxyUrl=$("#aiProxy").value.trim();
+  const box=$("#aiSyncKey"); if(box) aiCfg.syncKey=box.checked;
   saveAICfg();
+  syncAIKey();
+}
+function syncAIKey(){
+  const free=engineIsFree(aiCfg.engine);
+  if(free&&aiSyncOn()&&aiCfg.key){
+    const cur=state.ai||{};
+    if(cur.key!==aiCfg.key||cur.engine!==aiCfg.engine||cur.model!==(aiCfg.model||"")){
+      state.ai={engine:aiCfg.engine,key:aiCfg.key,model:aiCfg.model||"",at:Date.now()};
+      save();
+    }
+  } else if(state.ai){                     // paid engine, or you turned sharing off
+    delete state.ai; save();
+  }
 }
 
 /* ============================ COMPANY ENRICH (logo + pre-call brief) ============================ */
@@ -4676,7 +4993,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr]");
   if(!t) return;
 
   // nav
@@ -4822,6 +5139,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.wtab){ workTab=t.dataset.wtab; view="work";
     const wo=getOp(); if(wo&&wo.status==="hired") workOpId=wo.id;
     closeEditor(); closeDrawer(); render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+  if(t.dataset.og){ ogZoom(t.dataset.og); return; }
   if(t.dataset.wop){ workOpId=t.dataset.wop; if(view!=="work"){ view="work"; workTab="overview"; } render(); return; }
   if(act==="hire"){ openHire(openId||t.dataset.hire); return; }
   if(act==="capture"){ openCapture(); return; }
@@ -4859,6 +5177,15 @@ document.addEventListener("click",e=>{
   if(act==="work-gaps"){ openGaps(); return; }
   if(t.dataset.capedit){ openCapture(null,t.dataset.capedit); return; }
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
+  if(t.dataset.setdept){ openDeptPicker(t.dataset.setdept); return; }
+  if(t.dataset.setmgr){ openMgrPicker(t.dataset.setmgr); return; }
+  if(t.dataset.pickmgr){ const [pid,mid]=t.dataset.pickmgr.split("|"); setPersonMgr(pid,mid||""); return; }
+  if(t.dataset.pickdept){ const [pid,did]=t.dataset.pickdept.split("|"); setPersonDept(pid,did||""); return; }
+  if(t.dataset.newdept){ const inp=document.getElementById("newDept"); const nm=(inp&&inp.value||"").trim();
+    if(!nm){ toast("Give it a name"); return; }
+    const pid=t.dataset.newdept, opId=entOpId("person",pid);
+    const d=ensureEnt("department",opId,nm,{},"");
+    setPersonDept(pid,d.id); return; }
   if(t.dataset.mergewith){ openMergePicker(t.dataset.mergewith); return; }
   if(t.dataset.mergeinto){ const [keep,drop]=t.dataset.mergeinto.split("|");
     if(confirm(`Merge "${entLabel("person",drop)}" into "${entLabel("person",keep)}"? Everything moves across and the other record is removed.`)){
@@ -4881,6 +5208,11 @@ document.addEventListener("click",e=>{
 
 // overlay click closes drawer
 $("#overlay").addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape") return;
+  if(editorEl) tryCloseEditor();
+  else if($("#drawer").classList.contains("show")) closeDrawer();
+});
 
 // stage select in drawer footer
 document.addEventListener("change",e=>{
@@ -5082,6 +5414,8 @@ function loadSampleWork(iso){
   const john=createEnt("person",o.id,"John Alvarez",{title:"Controller",department:"Finance"},"");
   const dana=createEnt("person",o.id,"Dana Reyes",{title:"My manager · VP RevOps",department:"RevOps"},"");
   o.hired.managerId=dana.id;
+  mike.managerId=dana.id; addLink(o.id,"person",mike.id,"REPORTS_TO","person",dana.id,1,"");
+  john.managerId=sarah.id; addLink(o.id,"person",john.id,"REPORTS_TO","person",sarah.id,.7,"");
   const c1=wAdd("captures",{opId:o.id,at:Date.now()-86400000*30,summary:"Met Mike; found the bookings discrepancy",
     text:"Met Mike today. He's apparently the Salesforce guy — built most of the reporting. He said Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting on the business side, but John in Finance has been fighting this for months.",
     entities:[{t:"person",id:mike.id},{t:"person",id:sarah.id},{t:"person",id:john.id},{t:"system",id:sf.id},{t:"system",id:ns.id},{t:"problem",id:prob.id}]});

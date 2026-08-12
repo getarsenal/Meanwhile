@@ -288,6 +288,14 @@ edit/delete work. Don't create rounds/people without ids.
 - **Escape all user content** with `esc()` in any HTML string.
 - **Nothing large goes on `state`.** It's one localStorage key (~5MB) that gets pushed to the cloud on every
   save. Bytes belong in IndexedDB behind a `ref`; `state` holds ids, text and metadata.
+- **Containment: user text must never break its box.** `body` sets `overflow-wrap:break-word` so a
+  single long unbroken word (a system name, a handle, a pasted URL) cannot walk out of a card.
+  Beyond that: a flex/grid child holding text needs `min-width:0` (the default `auto` refuses to
+  shrink below its content — this is what put the company name under the day ring); a chip or pill
+  carrying a name needs `max-width:100%` + ellipsis; a fixed-size box in a flex row needs
+  `flex:0 0 <size>` or it gets squeezed and crops its contents (the sidebar mark did); and anything
+  positioned at `0–100%` and centred on its point overhangs both ends, so inset its plotting area
+  (the Upcoming timeline) rather than letting the card shave it.
 - **Mobile = no horizontal scrolling, ever.** Pipeline stacks vertically on mobile; the table
   becomes `renderRoleCards()`. Test that `document.documentElement.scrollWidth <= innerWidth`.
 - Respect iOS safe areas (`env(safe-area-inset-*)`) for top bar / bottom nav / drawer.

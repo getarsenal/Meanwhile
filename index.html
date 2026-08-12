@@ -78,8 +78,10 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:16px 26px;
   background:linear-gradient(180deg,rgba(10,11,14,.92),rgba(10,11,14,.72));backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.view-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:9px}
-.view-title .vt-ico{display:inline-flex}
+.view-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:9px;min-width:0}
+.view-title .vt-txt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.vt-wrap{min-width:0}
+.view-title .vt-ico{display:inline-flex;flex:0 0 auto}
 .view-title .vt-ico svg{width:20px;height:20px;color:var(--accent3)}
 .view-sub{color:var(--faint);font-size:12.5px;margin-top:1px}
 .view-sub:empty{display:none}
@@ -139,12 +141,24 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .empty .big svg{width:30px;height:30px;color:var(--accent3)}
 .empty .big.brand{background:transparent;box-shadow:none;width:84px;height:84px}
 .empty .big.brand img{width:84px;height:84px;border-radius:21px;box-shadow:var(--shadow)}
-.welcome-feats{display:flex;flex-direction:column;gap:9px;margin-top:18px;width:100%;max-width:420px;text-align:left}
-.wf{display:flex;align-items:flex-start;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 14px}
-.wf>span{width:34px;height:34px;border-radius:10px;background:rgba(94,106,210,.13);display:grid;place-items:center;flex:0 0 34px}
-.wf>span svg{width:18px;height:18px;color:var(--accent3)}
-.wf b{font-size:13.5px;font-weight:750;display:block;color:var(--txt)}
-.wf small{font-size:12px;color:var(--muted);line-height:1.45}
+.welcome-feats{display:flex;flex-direction:column;gap:9px;margin-top:18px;width:100%;max-width:430px;text-align:left}
+.wf{display:flex;align-items:center;gap:12px;width:100%;background:var(--panel);border:1px solid var(--line);
+  border-radius:13px;padding:13px 14px;transition:.14s;text-align:left}
+.wf:hover{border-color:var(--line2);background:var(--panel2);transform:translateY(-1px)}
+.wf:active{transform:translateY(0) scale(.995)}
+.wf.primary{border-color:rgba(94,106,210,.42);background:linear-gradient(160deg,rgba(94,106,210,.15),rgba(94,106,210,.06))}
+.wf.primary:hover{border-color:var(--accent)}
+.wf.done .wf-ico{background:rgba(78,163,129,.16);color:var(--good)}
+.wf.done b{color:var(--muted);font-weight:700}
+.wf-ico{width:34px;height:34px;border-radius:10px;background:rgba(94,106,210,.13);display:grid;place-items:center;flex:0 0 34px}
+.wf-ico svg{width:18px;height:18px;color:var(--accent3)}
+.wf-b{flex:1;min-width:0}
+.wf b{font-size:13.5px;font-weight:750;display:block;color:var(--txt);line-height:1.35}
+.wf small{font-size:12px;color:var(--muted);line-height:1.45;display:block;margin-top:2px}
+.wf-go{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--faint);transition:.14s}
+.wf:hover .wf-go{color:var(--accent2);transform:translateX(2px)}
+.wf-link{margin-top:16px;font-size:12.5px;font-weight:700;color:var(--faint);padding:8px 12px;border-radius:9px}
+.wf-link:hover{color:var(--accent2);background:var(--panel)}
 
 /* ---------- Dashboard hero (the visual hook) ---------- */
 .hero{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);background:linear-gradient(135deg,#16131f,#0c0b12);margin-bottom:18px}
@@ -402,7 +416,13 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .topbar-brand{display:block}
   .view-title{font-size:18px}
   .view-sub{font-size:11.5px}
+  .vt-wrap{flex:1 1 0}
+  .view-title .vt-ico{display:none}
+  .empty{padding:34px 18px}
+  .empty .big.brand{width:68px;height:68px}
+  .empty .big.brand img{width:68px;height:68px;border-radius:18px}
   .search{order:5;max-width:none;flex:1 1 100%;margin:2px 0 0}
+  body.no-data .search{display:none}
   .btn.primary{padding:10px 14px}
   #settingsBtn{flex:0 0 auto}
   .form-2,.form-3{grid-template-columns:1fr}
@@ -672,7 +692,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   <main class="main">
     <div class="topbar">
       <img class="topbar-brand" src="icon.png" alt="Meanwhile" data-view="dashboard" title="Meanwhile — Dashboard"/>
-      <div style="min-width:0">
+      <div class="vt-wrap">
         <h2 class="view-title" id="viewTitle"></h2>
         <div class="view-sub" id="viewSub"></div>
       </div>
@@ -1001,13 +1021,15 @@ function getProfile(){ state.profile=state.profile||{}; return state.profile; }
 function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
   if(view==="work" && !employers().length) view="dashboard";   // employer deleted / not hired yet
+  document.body.classList.toggle("no-data", !state.opportunities.length);
   renderNav();
   renderFab();
   const v=VIEWS.find(x=>x.id===view);
   const name=(getProfile().name||"").trim();
   // On Home, lead with a personal greeting when a name is set
-  if(view==="dashboard" && name) $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${greeting()}, ${esc(name.split(" ")[0])}`;
-  else $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span>${esc(v.name)}`;
+  // the name is already in the welcome heading, and a phone hasn't the width for both
+  if(view==="dashboard" && name) $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span><span class="vt-txt">${greeting()}${isMobile()?"":", "+esc(name.split(" ")[0])}</span>`;
+  else $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span><span class="vt-txt">${esc(v.name)}</span>`;
   // No subtitle verbiage — the nav + content carry the context. Only the filter chip shows here.
   if(activeFilter && (view==="cards"||view==="pipeline"))
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
@@ -1337,21 +1359,27 @@ function renderMovesHub(ops){
   return h+`</div>`;
 }
 
+/* The first screen. It used to describe three features in tiles that looked tappable and weren't —
+   so now every row IS the thing it describes, and the two setup steps tick themselves off once done. */
 function emptyState(){
+  const name=(getProfile().name||"").trim();
+  const aiOn=!(aiEngine()==="paste"||aiEngine()==="off");
+  const hasResume=!!(state.resume&&(state.resume.text||state.resume.file||(state.resume.data&&state.resume.data.header)));
+  const step=(o)=>`<button class="wf${o.primary?" primary":""}${o.done?" done":""}" data-act="${o.act}">
+    <span class="wf-ico">${o.done?I.check:o.icon}</span>
+    <span class="wf-b"><b>${esc(o.title)}</b><small>${esc(o.sub)}</small></span>
+    <span class="wf-go">${o.done?"Change":"→"}</span></button>`;
   return `<div class="empty welcome">
     <div class="big brand"><img src="icon.png" alt="Meanwhile" width="84" height="84"/></div>
-    <h3>${getProfile().name?`Welcome, ${esc(getProfile().name.split(" ")[0])}`:"Welcome to Meanwhile"}</h3>
-    <p style="max-width:440px">Your interview command center. Track every company, prep with AI, and never mix up who's who — all in one place.</p>
+    <h3>${name?`Welcome, ${esc(name.split(" ")[0])}`:"Welcome to Meanwhile"}</h3>
+    <p style="max-width:400px">Track every company, prep with AI, and — once you're hired — keep the map of how the place actually works.</p>
     <div class="welcome-feats">
-      <div class="wf"><span>${I.ai}</span><div><b>Smart add</b><small>Paste a job link, email or invite → a ready-to-review entry</small></div></div>
-      <div class="wf"><span>${I.spark}</span><div><b>AI prep</b><small>Briefs, smart questions to ask & thank-you notes</small></div></div>
-      <div class="wf"><span>${I.dash}</span><div><b>Stay organized</b><small>Logos, stages & next calls at a glance</small></div></div>
+      ${step({act:"smart-paste",icon:I.ai,primary:1,title:"Paste a job link",sub:"A posting, recruiter email or invite becomes a role you just review"})}
+      ${step({act:"add",icon:I.briefcase,title:"Add a role by hand",sub:"Company, stage, contacts and notes"})}
+      ${step({act:"ai-settings",icon:I.spark,done:aiOn,title:aiOn?`AI connected — ${aiEngineLabel().replace(" ✓","")}`:"Connect your AI",sub:aiOn?"Powering briefs, thank-you notes and capture":"Free with Gemini or Groq. Everything works without it too."})}
+      ${step({act:"edit-resume",icon:I.user,done:hasResume,title:hasResume?"Résumé saved":"Add your résumé",sub:hasResume?"Your briefs and cover letters are tailored to it":"So every brief and cover letter sounds like you"})}
     </div>
-    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center">
-      <button class="btn primary" data-act="add">${I.briefcase} Add your first role</button>
-      <button class="btn ghost" data-act="smart-paste">${I.ai} Smart add</button>
-      <button class="btn ghost" data-act="sample">${I.spark} Load demo data</button>
-    </div>
+    <button class="wf-link" data-act="sample">Just looking? Load demo data</button>
   </div>`;
 }
 

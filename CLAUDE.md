@@ -40,6 +40,12 @@ you paste into a new AI chat to prep for interviews.
   `dataStatusBox()` is the Settings panel that says plainly where the data lives.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
+- `emptyState()` is the first screen: four **tappable** rows (`.wf` buttons, each with a `data-act`)
+  rather than tiles that only describe features — paste a link, add by hand, connect AI, add résumé.
+  The last two tick themselves off (`.wf.done`) once `aiEngine()` is live / a résumé exists.
+  On mobile the topbar keeps to one row via `.vt-wrap{flex:1 1 0}` + `.vt-txt` ellipsis, the view
+  icon is hidden and the greeting drops the name; `body.no-data` hides the search box until there's
+  something to search.
 - `renderDashboard` leads with `dashHero()` (hero), 4 KPI tiles, then `renderMovesHub()` — the
   **Next moves** action hub: `nextMoves()` aggregates every actionable thing across roles (upcoming
   interviews, thank-yous for just-finished rounds, due `nextAction` tasks, offer deadlines, quiet

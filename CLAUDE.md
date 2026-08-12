@@ -168,6 +168,18 @@ back to the notes that established each edge. Vocabulary is fixed in `REL_LABEL`
 `buildPlan()` → **review screen** (`capReview`) → `capApply()`. With no AI configured it still saves
 the raw note. The FAB (`renderFab`) appears app-wide once you have an employer.
 
+**Capture is an agent, not an extractor.** `CAPTURE_SCHEMA` lets the model come back with more than
+records: `ask_me` (up to 3 clarifying questions, with quick-answer `options`), `updates` (change a
+record you already have), `answers` (close an open question), `tasks` (one next step → `o.nextAction*`),
+`understood` (what it took from the note) and `advice`. `buildPlan` turns the first four into
+`plan.ops` and `plan.asks`; `applyOps()` executes the ticked ones. Answering questions calls
+`capRefine()`, which re-runs `capturePrompt(o,text,capAnswered)` — the answers go back in and the
+plan is rebuilt, so the loop is ask → answer → re-read → act. **The guards are in `buildPlan`, not
+the prompt**: an update to a record that doesn't resolve exactly is dropped, an invalid status is
+dropped, only a whitelist of fields may be `set` (never ids or `opId`), an answer to a question that
+isn't actually open is dropped, and a status change that wouldn't change anything is never offered.
+Every op is individually tickable and shows its before → after plus the model's stated reason.
+
 **Entity resolution** is the delicate part (`resolveEnt`). `personMatch()` scores name pairs through
 a nickname table (`NICK`: mike→michael); surnames decide it when both have one, a bare first name is
 0.7 ("probable"), and **two plausible matches means the item is left unticked until the user picks** —

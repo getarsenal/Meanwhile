@@ -579,6 +579,24 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rev-m{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5}
 .rev-flag{font-size:11px;color:var(--warn);font-weight:700;margin-top:5px}
 .rev-item select{margin-top:6px;padding:7px 9px;font-size:12.5px}
+.cap-under{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:14px;font-size:12.5px;color:var(--muted);line-height:1.75}
+.cap-under div{padding-left:14px;position:relative}
+.cap-under div:before{content:"·";position:absolute;left:4px;color:var(--accent3);font-weight:900}
+.cap-answered{margin-bottom:14px;font-size:12px}
+.cap-answered summary{cursor:pointer;color:var(--good);font-weight:700}
+.cap-answered div{margin-top:7px;color:var(--muted);line-height:1.55;padding-left:12px;border-left:2px solid var(--line)}
+.ask-item{background:linear-gradient(160deg,rgba(198,164,92,.1),rgba(198,164,92,.04));border:1px solid rgba(198,164,92,.3);border-radius:12px;padding:12px;margin-bottom:9px}
+.ask-q{font-weight:750;font-size:13.5px;line-height:1.45}
+.ask-why{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.ask-opts{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0 8px}
+.ask-opts .chip{cursor:pointer}
+.ask-opts .chip:hover{border-color:var(--warn);color:var(--txt)}
+.ask-item input{padding:9px 11px;font-size:13px}
+.op-kind{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--accent3);
+  background:rgba(94,106,210,.14);border-radius:6px;padding:2px 6px;margin-right:6px;vertical-align:1px}
+.cap-advice{font-size:12.5px;color:var(--muted);line-height:1.7;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.cap-advice div{padding-left:15px;position:relative}
+.cap-advice div:before{content:"→";position:absolute;left:0;color:var(--accent3);font-weight:800}
 .rev-rel{font-size:12px;color:var(--muted);line-height:1.7}
 .rev-rel b{color:var(--txt);font-weight:750}
 .rev-rel .r{color:var(--accent3);font-weight:800;font-size:10.5px;letter-spacing:.04em}
@@ -2151,8 +2169,12 @@ function capSaveRaw(){
 }
 
 /* ============================ AI EXTRACTION ============================ */
+/* The capture agent's contract. It doesn't just fill in records — it can come back with
+   questions, propose changes to things you already have, close open questions, and suggest a
+   next step. Everything it proposes is reviewed before anything is written. */
 const CAPTURE_SCHEMA=`{
  "summary": "",              // one short line describing what happened
+ "understood": [""],         // 2-5 short bullets: what you took from the note, in my words
  "people":      [{"name":"","title":"","department":"","expertise":[""],"note":""}],
  "departments": [{"name":""}],
  "systems":     [{"name":"","note":""}],
@@ -2160,8 +2182,13 @@ const CAPTURE_SCHEMA=`{
  "problems":    [{"title":"","status":"","note":""}],
  "processes":   [{"name":"","note":""}],
  "decisions":   [{"title":"","madeBy":"","date":"","reason":""}],
- "questions":   [""],
- "relationships":[{"from":"","fromType":"person","rel":"KNOWS","to":"","toType":"system","confidence":0.9}]
+ "questions":   [""],        // NEW open questions the note raises but doesn't answer
+ "relationships":[{"from":"","fromType":"person","rel":"KNOWS","to":"","toType":"system","confidence":0.9}],
+ "ask_me":   [{"ask":"","why":"","options":[""]}],                     // what you need me to clarify
+ "updates":  [{"type":"project","name":"","set":{"status":""},"why":""}], // change something already on record
+ "answers":  [{"question":"","answer":"","why":""}],                   // an open question this note answers
+ "tasks":    [{"label":"","date":"YYYY-MM-DD","why":""}],              // a next step for me
+ "advice":   [""]            // 0-2 short suggestions that aren't records
 }`;
 function knownEntitiesText(opId){
   const L=[];
@@ -2171,15 +2198,29 @@ function knownEntitiesText(opId){
   });
   return L.length?("\nUse these EXACT names when the note refers to one of them:\n"+L.join("\n")+"\n"):"";
 }
-function capturePrompt(o,text){
-  return `You turn a person's rough note about their workplace into structured records. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
-${knownEntitiesText(o.id)}
+// the open questions already on record — so the agent can close one instead of asking it again
+function openQuestionsText(opId){
+  const q=wOf("questions",opId).filter(x=>x.status==="Open").map(x=>x.q);
+  return q.length?`\nOPEN QUESTIONS I've already recorded (if this note answers one, put it in "answers" using its exact wording):\n- ${q.join("\n- ")}\n`:"";
+}
+function capturePrompt(o,text,answered){
+  const prior = (answered&&answered.length)
+    ? `\n--- I ANSWERED YOUR QUESTIONS ---\n${answered.map(a=>`Q: ${a.ask}\nA: ${a.answer}`).join("\n")}\n--- END ---\nUse these answers. Don't ask them again. Only ask something new if it genuinely blocks a decision.\n`
+    : "";
+  return `You are the organizational memory of one person and you are about to file a note for them. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
+${knownEntitiesText(o.id)}${openQuestionsText(o.id)}${prior}
+Your job: read the note, work out what it means for what they already know, and propose what to record. They review everything before it is saved, so propose confidently — but never invent.
+
 Rules:
-- Only extract what the note actually says or clearly implies. Never invent people, systems, owners, reporting lines, project status or opinions.
-- Names: use the note's wording, but if it clearly refers to something in the lists above, reuse that exact name.
+- Only use what the note actually says or clearly implies. Never invent people, systems, owners, reporting lines, project status, dates or opinions. If something is unstated and it matters, ASK instead of guessing.
+- Names: use the note's wording, but if it clearly refers to something already on record, reuse that exact name.
 - "status" for projects must be one of: ${PROJECT_STATUS.join(", ")}. For problems: ${PROBLEM_STATUS.join(", ")}.
-- questions: things the writer does not know yet — phrase each as a question.
-- relationships: fromType/toType must each be one of person, project, problem, department, system, process, decision. rel must be one of ${REL_TYPES.filter(r=>r!=="MENTIONS").join(", ")}. confidence 0-1: use 0.9+ only when the note states it outright, 0.5-0.8 when you're inferring it.
+- relationships: fromType/toType must each be one of person, project, problem, department, system, process, decision. rel must be one of ${REL_TYPES.filter(r=>r!=="MENTIONS").join(", ")}. confidence 0-1: 0.9+ only when the note states it outright, 0.5-0.8 when inferring.
+- ask_me: at most 3, only where the answer changes what gets recorded — an ambiguous person, an owner who's implied but not named, a project that might be one they already have. Give 2-4 short "options" when there's an obvious set to pick from. Ask nothing if the note is clear.
+- updates: only for records already on record, and only when the note clearly says something changed (a project became blocked, a problem got solved). Name the exact record. Say why.
+- answers: only for open questions listed above, and only when the note genuinely answers one.
+- tasks: at most 1, only if the note implies something THEY need to do next. Resolve relative dates to YYYY-MM-DD.
+- advice: at most 2, one line each — what's worth chasing, who's worth talking to. Only from what's here.
 - Leave arrays empty rather than guessing. Return ONLY the JSON object, no markdown.
 
 ${CAPTURE_SCHEMA}
@@ -2244,11 +2285,37 @@ async function capExtract(){
   const btn=editorEl&&editorEl.querySelector('[data-act="cap-go"]');
   if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
   try{
-    const out=await aiCall(capturePrompt(o,text),null,{maxTokens:2048});
+    const out=await aiCall(capturePrompt(o,text),null,{maxTokens:3000});
     capPlan=buildPlan(o,text,aiParse(out));
+    capAnswered=[];
     capReview();
   }catch(err){
     if(btn){ btn.innerHTML=`${I.ai} Save &amp; organize`; btn.disabled=false; }
+    toast("⚠ "+err.message);
+  }
+}
+/* Round two: you answered its questions, so it reads the note again knowing what it didn't.
+   This is the whole point — it asks, you tell it, and the plan gets better before anything is saved. */
+let capAnswered=[];
+async function capRefine(){
+  const p=capPlan; if(!p) return;
+  const o=opById(p.opId); if(!o) return;
+  const answered=(p.asks||[]).map(q=>{
+    const el=document.querySelector(`[data-ansfor="${q.id}"]`);
+    return {ask:q.ask, answer:((el&&el.value)||q.answer||"").trim()};
+  }).filter(a=>a.answer);
+  if(!answered.length){ toast("Answer at least one, or skip"); return; }
+  capAnswered=capAnswered.concat(answered);
+  const btn=editorEl&&editorEl.querySelector('[data-act="cap-refine"]');
+  if(btn){ btn.textContent="Re-reading with your answers…"; btn.disabled=true; }
+  try{
+    const out=await aiCall(capturePrompt(o,p.text,capAnswered),null,{maxTokens:3000});
+    const next=buildPlan(o,p.text,aiParse(out));
+    next.answeredLog=capAnswered.slice();
+    capPlan=next;
+    capReview();
+  }catch(err){
+    if(btn){ btn.innerHTML=`${I.ai} Answer &amp; re-read`; btn.disabled=false; }
     toast("⚠ "+err.message);
   }
 }
@@ -2283,7 +2350,63 @@ function buildPlan(o,text,d){
     add(r.fromType,r.from,{}); add(r.toType,r.to,{});
     return {from:r.from,fromType:r.fromType,to:r.to,toType:r.toType,rel:r.rel,conf:Math.max(0,Math.min(1,+r.confidence||0.7)),on:true};
   });
-  return {opId:o.id,captureId:capEditId||null,text,summary:(d.summary||"").trim(),items,rels};
+  // --- things that aren't "create a record": changes, answers, a next step, questions for me ---
+  const ops=[];
+  (d.updates||[]).forEach(u=>{
+    if(!u||!u.type||!ENT[u.type]||!u.name||!u.set) return;
+    const r=resolveEnt(u.type,u.name,o.id);
+    if(!r.rec||r.conf<1) return;                      // only touch a record we're sure about
+    const set={}; Object.keys(u.set||{}).forEach(k=>{ if(["status","ownerId","deptId","solution","answer","note","description"].includes(k)&&u.set[k]) set[k]=u.set[k]; });
+    if(set.status){
+      const valid=u.type==="project"?PROJECT_STATUS:u.type==="problem"?PROBLEM_STATUS:null;
+      if(valid&&!valid.includes(set.status)) delete set.status;
+    }
+    if(!Object.keys(set).length) return;
+    if(set.status&&set.status===r.rec.status) return;  // nothing actually changes
+    ops.push({kind:"update",type:u.type,id:r.rec.id,name:entName(u.type,r.rec),set,why:u.why||"",on:true,
+      was:set.status?r.rec.status:""});
+  });
+  (d.answers||[]).forEach(a=>{
+    if(!a||!a.question||!a.answer) return;
+    const q=wOf("questions",o.id).find(x=>x.status==="Open"&&canonThing(x.q)===canonThing(a.question));
+    if(!q) return;
+    ops.push({kind:"answer",id:q.id,name:q.q,answer:String(a.answer).trim(),why:a.why||"",on:true});
+  });
+  (d.tasks||[]).forEach(t=>{
+    if(!t||!t.label) return;
+    ops.push({kind:"task",label:String(t.label).trim(),date:/^\d{4}-\d{2}-\d{2}$/.test(t.date||"")?t.date:"",why:t.why||"",on:true});
+  });
+  const asks=(d.ask_me||[]).filter(q=>q&&q.ask).slice(0,3).map((q,i)=>({
+    id:"q"+i, ask:String(q.ask).trim(), why:(q.why||"").trim(),
+    options:(q.options||[]).filter(Boolean).map(String).slice(0,4), answer:""
+  }));
+  return {opId:o.id,captureId:capEditId||null,text,summary:(d.summary||"").trim(),
+    understood:(d.understood||[]).filter(Boolean).map(String).slice(0,5),
+    advice:(d.advice||[]).filter(Boolean).map(String).slice(0,2),
+    items,rels,ops,asks};
+}
+// run the proposed non-record operations. Same rule as everything else: only what was ticked.
+function applyOps(o,plan,capId){
+  let n=0;
+  (plan.ops||[]).forEach(op=>{
+    if(!op.on) return;
+    if(op.kind==="update"){
+      const rec=entGet(op.type,op.id); if(!rec) return;
+      if(op.set.status&&op.set.status!==rec.status){ rec.prevStatus=rec.status; rec.statusAt=Date.now();
+        if(op.set.status==="Solved") rec.solvedAt=Date.now(); }
+      Object.assign(rec,op.set); rec.fromCapture=rec.fromCapture||capId;
+      addLink(o.id,"capture",capId,"MENTIONS",op.type,op.id,1,capId); n++;
+    }
+    else if(op.kind==="answer"){
+      const q=wFind("questions",op.id); if(!q) return;
+      q.status="Answered"; q.answer=op.answer; q.answeredAt=Date.now(); q.statusAt=Date.now(); q.prevStatus="Open";
+      addLink(o.id,"capture",capId,"ANSWERS","question",op.id,1,capId); n++;
+    }
+    else if(op.kind==="task"){
+      o.nextActionLabel=op.label; if(op.date) o.nextActionDate=op.date; n++;
+    }
+  });
+  return n;
 }
 function planItem(i){ return capPlan.items[i]; }
 function capReview(){
@@ -2291,12 +2414,34 @@ function capReview(){
   const groups={};
   p.items.forEach((it,i)=>{ (groups[it.type]=groups[it.type]||[]).push(i); });
   const order=["person","problem","project","system","department","process","decision","question"];
-  const nothing=!p.items.length&&!p.rels.length;
+  const ops=p.ops||[], asks=(p.asks||[]).filter(q=>!q.answer);
+  const nothing=!p.items.length&&!p.rels.length&&!ops.length;
   let h=`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.ai}</div>
-    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${nothing?"Nothing to file":"Here's what I found"}</h2>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${nothing?"Nothing to file":asks.length?"A couple of things first":"Here's what I'd do"}</h2>
       ${p.summary?`<div style="font-size:12.5px;color:var(--faint);line-height:1.4">${esc(p.summary)}</div>`:""}</div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>`;
+  if((p.understood||[]).length){
+    h+=`<div class="cap-under">${p.understood.map(u=>`<div>${esc(u)}</div>`).join("")}</div>`;
+  }
+  if((p.answeredLog||[]).length){
+    h+=`<details class="cap-answered"><summary>You answered ${p.answeredLog.length} ${p.answeredLog.length===1?"question":"questions"}</summary>
+      ${p.answeredLog.map(a=>`<div><b>${esc(a.ask)}</b><br>${esc(a.answer)}</div>`).join("")}</details>`;
+  }
+  // Questions come first: answering them changes the plan, so there's no point reviewing it yet
+  if(asks.length){
+    h+=`<div class="rev-group"><div class="rev-head">${I.question}I need to check</div>${
+      asks.map(q=>`<div class="ask-item">
+        <div class="ask-q">${esc(q.ask)}</div>
+        ${q.why?`<div class="ask-why">${esc(q.why)}</div>`:""}
+        ${q.options.length?`<div class="ask-opts">${q.options.map(o2=>`<span class="chip" data-askopt="${q.id}|${esc(o2)}">${esc(o2)}</span>`).join("")}</div>`:""}
+        <input data-ansfor="${q.id}" value="${esc(q.answer||"")}" placeholder="Type your answer…" autocomplete="off"/>
+      </div>`).join("")}
+      <div style="display:flex;gap:8px;margin-top:2px">
+        <button class="btn primary sm" data-act="cap-refine">${I.ai} Answer &amp; re-read</button>
+        <button class="btn ghost sm" data-act="cap-skipask">Skip — file it as is</button>
+      </div></div>`;
+  }
   if(nothing) h+=`<div class="ent-empty">I couldn't pull any people, systems or projects out of this one — it'll still be saved as a note you can search and ask about.</div>`;
   order.forEach(type=>{
     const idxs=groups[type]; if(!idxs||!idxs.length) return;
@@ -2330,8 +2475,30 @@ function capReview(){
       p.rels.map((r,i)=>`<div><b>${esc(r.from)}</b> <span class="r">${esc((REL_LABEL[r.rel]||r.rel).toUpperCase())}</span> <b>${esc(r.to)}</b>${r.conf<0.75?` <span style="color:var(--warn);font-size:11px">· inferred</span>`:""}</div>`).join("")
     }</div></div></div>`;
   }
+  // changes to what you already have — spelled out as before → after, never silently applied
+  if(ops.length){
+    const label={update:"Change",answer:"Answer",task:"Next step"};
+    h+=`<div class="rev-group"><div class="rev-head">${I.spark}Also</div>${ops.map((op,i)=>{
+      let title="", meta="";
+      if(op.kind==="update"){
+        title=op.name;
+        meta=op.set.status?`${op.was||"—"} → ${op.set.status}`:Object.keys(op.set).map(k=>k+" updated").join(", ");
+      } else if(op.kind==="answer"){ title=op.name; meta=`Answered: ${op.answer}`; }
+      else { title=op.label; meta=op.date?`by ${fmtDate(op.date)}`:"no date"; }
+      return `<div class="rev-item ${op.on?"":"off"}">
+        <span class="rev-cb ${op.on?"on":""}" data-op="${i}">${I.check}</span>
+        <div class="rev-b"><div class="rev-n"><span class="op-kind">${label[op.kind]}</span> ${esc(title)}</div>
+          <div class="rev-m">${esc(meta)}</div>
+          ${op.why?`<div class="rev-m" style="color:var(--faint)">${esc(op.why)}</div>`:""}</div></div>`;
+    }).join("")}</div>`;
+  }
+  if((p.advice||[]).length){
+    h+=`<div class="rev-group"><div class="rev-head">${I.spark}Worth doing</div>
+      <div class="cap-advice">${p.advice.map(a=>`<div>${esc(a)}</div>`).join("")}</div></div>`;
+  }
+  const total=p.items.filter(i=>i.on).length+ops.filter(o2=>o2.on).length;
   h+=`<div style="display:flex;gap:10px;margin-top:6px">
-    <button class="btn primary" style="flex:1" data-act="cap-save">${I.check} Save ${nothing?"note":"all"}</button>
+    <button class="btn primary" style="flex:1" data-act="cap-save">${I.check} ${nothing?"Save note":`Do ${total} ${total===1?"thing":"things"}`}</button>
     <button class="btn ghost" data-act="cap-back">← Edit note</button>
   </div>`;
   spSetBody(h);
@@ -2365,12 +2532,13 @@ function capApply(){
     const a=resolved[r.fromType+"|"+canonThing(r.from)], b=resolved[r.toType+"|"+canonThing(r.to)];
     if(a&&b) addLink(o.id,a.t,a.id,r.rel,b.t,b.id,r.conf,cap.id);
   });
+  const opN=applyOps(o,p,cap.id);
   o.updatedAt=Date.now();
-  save(); closeEditor(); capPlan=null;
+  save(); closeEditor(); capPlan=null; capAnswered=[];
   if(view!=="work"){ view="work"; workOpId=o.id; workTab="overview"; }
   render();
-  const n=cap.entities.length;
-  toast(existing?"Note updated ✓":n?`Filed ✓ ${n} ${n===1?"thing":"things"} updated`:"Note saved");
+  const n=cap.entities.length+opN;
+  toast(existing?"Note updated ✓":n?`Done ✓ ${n} ${n===1?"thing":"things"} recorded`:"Note saved");
 }
 function createEnt(type,opId,name,f,viaCapture){
   f=f||{};
@@ -4480,7 +4648,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt]");
   if(!t) return;
 
   // nav
@@ -4633,6 +4801,13 @@ document.addEventListener("click",e=>{
   if(act==="cap-go"){ capExtract(); return; }
   if(act==="cap-raw"){ capSaveRaw(); return; }
   if(act==="cap-save"){ capApply(); return; }
+  if(act==="cap-refine"){ capRefine(); return; }
+  if(act==="cap-skipask"){ if(capPlan){ capPlan.asks=[]; capReview(); } return; }
+  if(t.dataset.op!=null&&capPlan){ const op=(capPlan.ops||[])[+t.dataset.op]; if(op){ op.on=!op.on; capReview(); } return; }
+  if(t.dataset.askopt){ const [qid,val]=t.dataset.askopt.split("|");
+    const el=document.querySelector(`[data-ansfor="${qid}"]`); if(el){ el.value=val; el.focus(); }
+    if(capPlan){ const q=(capPlan.asks||[]).find(x=>x.id===qid); if(q) q.answer=val; }
+    return; }
   if(act==="cap-back"){ const txt=capPlan?capPlan.text:""; spSetBody(captureBody()); const ta=document.getElementById("capText"); if(ta) ta.value=txt; return; }
   if(t.dataset.rev!=null&&capPlan){ const it=planItem(+t.dataset.rev);
     if(it){ if(!it.on&&it.choice===""){ toast("Choose which one it is first"); return; } it.on=!it.on; capReview(); } return; }

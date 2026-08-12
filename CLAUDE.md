@@ -163,7 +163,11 @@ exports and migrates like everything else. Access via `W()` (lazily creates the 
 `wOf(list,opId)`, `wFind`, `wAdd`. **Never hand-init `state.work`.**
 
 **The entity registry (`ENT`)** drives lists, detail modals, forms, search and graph nodes for all
-nine types: `person, project, problem, department, system, process, decision, question, capture`.
+eleven types: `person, project, problem, department, team, system, process, decision, question,
+info, capture`. **`info` ("Company info")** is the catch-all for things you just have to know —
+a product family, a recurring meeting, an acronym — categorised by `kind` (`INFO_KINDS`) so it
+stays searchable; when the capture agent is torn between project and info it's told to pick info.
+**`team`** nests inside a department (`deptId`) and both departments and teams carry a `headId`.
 Add a type there and most of the UI comes free. `entFields(type)` is the form spec (one builder,
 `openEntForm`/`saveEntForm`, handles every type). **People are the deliberate exception**: they stay
 on `o.people` so a person is one record from interview to colleague — `entGet("person",id)` searches
@@ -215,15 +219,22 @@ AI only phrases the recommendation over candidates it can't add to. **What am I 
 (`knowledgeGaps`) is likewise computed, so every gap is a fact about your notes. Same principle in
 `reportData/reportText` for the 30/60/90 reviews: numbers computed, narrative generated.
 
+**Mislabelled records** (`convertEnt`/`openConvertPicker`, offered on any type in `CONVERT_TO`)
+move to another type keeping their links, the notes that mention them and their original `at`;
+`ENT_NAMEF`/`ENT_BODYF` map each type's name and body field so the text survives.
+
 **Work view** (`renderWork`): hero with the day-N-of-90 ring, then tabs
-`overview | people | projects | problems | knowledge | timeline | ask`. `careerTimeline()` merges
+`overview | people | org | projects | problems | knowledge | timeline | ask`. The **org** tab
+(`workOrg`) is the map plus every department with its teams, heads and members; Knowledge is now
+purely what-you-know (company info, systems, processes, decisions, questions, notes). `careerTimeline()` merges
 pre-hire events (discovered/applied/rounds) with post-hire ones (milestones, captures, entities).
 `workGraph()` is a real **org chart**: `orgLayout()` builds a tidy tree from `person.managerId`
 (or a `REPORTS_TO` link, via `personManager()`), with a cycle guard, and drops anyone without a
 reporting line into a band underneath rather than hiding them. Solid elbows are reporting;
 dashed arcs are `collabPairs()` — people who keep appearing on the same project or problem, which
-is the thing an org chart never tells you. Two layouts via `ogMode`: `orgLayout()` (reporting tree) and `deptLayout()` (people grouped into
-department bands). Departments get a stable colour from `deptColor()` — the card's accent bar, the
+is the thing an org chart never tells you. Two layouts via `ogMode`: `orgLayout()` (reporting tree) and `deptLayout()` (department bands, with
+**teams nested inside as their own dashed rounded regions** via `teamBoxes`, each labelled with its
+lead; department and team heads get a gold ring and crown on their card). Departments get a stable colour from `deptColor()` — the card's accent bar, the
 dot on its meta line, the legend chips and the bands all agree; tapping a legend chip sets
 `ogFilter` and dims everyone else. Dashed lines are both inferred (`collabPairs`) and **manual**
 (`WORKS_WITH` links, drawn heavier — `setWorksWith`/`openWorksWithPicker` from a person's record).

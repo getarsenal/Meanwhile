@@ -696,6 +696,31 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .og-chip{cursor:pointer}
 .og-chip:hover{border-color:var(--accent);color:var(--txt)}
 @media(max-width:560px){ .og-wrap{height:330px} }
+.dept-card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--dc);
+  border-radius:14px;padding:14px;margin-bottom:12px}
+.dept-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.dept-dot{width:10px;height:10px;border-radius:50%;background:var(--dc);flex:0 0 10px}
+.dept-name{font-weight:800;font-size:15px;cursor:pointer;line-height:1.3}
+.dept-name:hover{color:var(--accent2)}
+.dept-meta{font-size:11.5px;color:var(--faint);margin-top:2px}
+.head-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--warn);
+  background:rgba(232,196,122,.12);border:1px solid rgba(232,196,122,.3);border-radius:999px;padding:4px 10px;cursor:pointer;flex:0 0 auto}
+.head-chip svg{width:12px;height:12px}
+.head-chip.none{color:var(--faint);background:transparent;border-style:dashed;border-color:var(--line2);cursor:default}
+.team-box{border:1.5px dashed var(--tc);border-radius:13px;background:color-mix(in srgb, var(--tc) 7%, transparent);
+  padding:11px 12px;margin-top:11px}
+.team-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.team-name{font-weight:750;font-size:13.5px;color:var(--tc);cursor:pointer}
+.team-meta{font-size:11.5px;color:var(--faint);margin-top:2px;line-height:1.45}
+.team-people{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.conv-grid{display:flex;flex-direction:column;gap:8px}
+.conv-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:12px 13px;transition:.14s}
+.conv-opt:hover{border-color:var(--accent);background:var(--panel2);transform:translateY(-1px)}
+.conv-ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:0 0 32px}
+.conv-ico svg{width:16px;height:16px}
+.conv-opt b{display:block;font-size:13.5px;font-weight:750}
+.conv-opt small{display:block;font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:2px}
 .dept-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
 .dept-pill{display:inline-flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line);
   border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.14s}
@@ -803,10 +828,13 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
 
 /* Post-hire (see the POST-HIRE section): everything you learn once you're inside a company.
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
-const WORK_LISTS = ["captures","projects","problems","departments","systems","processes","decisions","questions","links","milestones","reports"];
+const WORK_LISTS = ["captures","projects","problems","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
+// Everything true about the company that isn't a project, a problem or a system: a product family,
+// a recurring meeting, an acronym everyone uses. One type with a kind, so it stays searchable.
+const INFO_KINDS = ["Product or offering","Meeting or ritual","Term or acronym","Policy or rule","How we're organised","Tool or resource","Other"];
 
 let state = load();
 let view = "dashboard";
@@ -1037,6 +1065,8 @@ const I = {
   question:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 4M12 17.3h.01"/></svg>',
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3h9L20 8.5v11A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4.5A1.5 1.5 0 0 1 20 5.5v12a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 17.5Z"/><path d="M12 6v14"/></svg>',
+  crown:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8.5 6.5 12 12 5l5.5 7L21 8.5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>',
   map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 3.5-6 2.4V21l6-2.4 6 2.4 6-2.4V3.5L15 5.9Z"/><path d="M9 3.5v15M15 5.9v15"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>',
 };
@@ -1089,7 +1119,7 @@ function render(){
   else { if(heroTimer){ clearInterval(heroTimer); heroTimer=null; } if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
   else if(view==="cards") c.innerHTML = renderCards();
   else if(view==="calendar") c.innerHTML = renderCalendar();
-  else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="knowledge") setTimeout(armWorkGraph,0); }
+  else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="org") setTimeout(armWorkGraph,0); }
   else if(view==="insights") c.innerHTML = renderInsights(); }
 }
 /* The Capture button follows you everywhere once you're employed — capture is the whole game
@@ -1525,7 +1555,7 @@ function searchWork(q){
   const T=q.split(/\s+/).filter(Boolean);
   const out=[];
   employers().forEach(o=>{
-    ["person","project","problem","system","department","process","decision","question","capture"].forEach(t=>{
+    ["person","project","problem","system","department","team","process","decision","question","info","capture"].forEach(t=>{
       entAll(t,o.id).forEach(r=>{
         const hay=[entName(t,r),entRowMeta(t,r),r.text,r.description,r.note,r.notes,r.reason,r.answer,(r.expertise||[]).join(" ")].filter(Boolean).join(" ").toLowerCase();
         const score=T.filter(x=>hay.includes(x)).length;
@@ -2031,6 +2061,8 @@ const ENT = {
   project:   {list:"projects",    icon:I.project,  col:"#8a72bd", label:"Project",    plural:"Projects",       name:r=>r.name},
   problem:   {list:"problems",    icon:I.problem,  col:"#cf7273", label:"Problem",    plural:"Problems",       name:r=>r.title},
   department:{list:"departments", icon:I.people,   col:"#bf8a4f", label:"Department", plural:"Departments",    name:r=>r.name},
+  team:      {list:"teams",       icon:I.people,   col:"#7c9cc4", label:"Team",       plural:"Teams",          name:r=>r.name},
+  info:      {list:"infos",       icon:I.info,     col:"#9b8ec4", label:"Company info",plural:"Company info",  name:r=>r.title},
   system:    {list:"systems",     icon:I.system,   col:"#5b9c97", label:"System",     plural:"Systems",        name:r=>r.name},
   process:   {list:"processes",   icon:I.process,  col:"#5b86b3", label:"Process",    plural:"Processes",      name:r=>r.name},
   decision:  {list:"decisions",   icon:I.decision, col:"#a874a0", label:"Decision",   plural:"Decisions",      name:r=>r.title},
@@ -2252,13 +2284,15 @@ function capSaveRaw(){
 const CAPTURE_SCHEMA=`{
  "summary": "",              // one short line describing what happened
  "understood": [""],         // 2-5 short bullets: what you took from the note, in my words
- "people":      [{"name":"","title":"","department":"","expertise":[""],"note":""}],
+ "people":      [{"name":"","title":"","department":"","team":"","expertise":[""],"note":""}],
  "departments": [{"name":""}],
  "systems":     [{"name":"","note":""}],
  "projects":    [{"name":"","status":"","note":""}],
  "problems":    [{"title":"","status":"","note":""}],
  "processes":   [{"name":"","note":""}],
  "decisions":   [{"title":"","madeBy":"","date":"","reason":""}],
+ "teams":       [{"name":"","department":"","lead":""}],
+ "info":        [{"title":"","kind":"","summary":""}],   // a product, a recurring meeting, an acronym
  "questions":   [""],        // NEW open questions the note raises but doesn't answer
  "relationships":[{"from":"","fromType":"person","rel":"KNOWS","to":"","toType":"system","confidence":0.9}],
  "ask_me":   [{"ask":"","why":"","options":[""]}],                     // what you need me to clarify
@@ -2292,6 +2326,8 @@ Rules:
 - Only use what the note actually says or clearly implies. Never invent people, systems, owners, reporting lines, project status, dates or opinions. If something is unstated and it matters, ASK instead of guessing.
 - Names: use the note's wording, but if it clearly refers to something already on record, reuse that exact name.
 - "status" for projects must be one of: ${PROJECT_STATUS.join(", ")}. For problems: ${PROBLEM_STATUS.join(", ")}.
+- Pick the right bucket. A "project" is a piece of work with people and an end. A recurring meeting (QBR, standup), a product or product family, an acronym, a policy — those are "info", with "kind" one of: ${INFO_KINDS.join(", ")}. If in doubt between project and info, choose info: it's for things to know rather than things to do.
+- "teams" are groups inside a department (e.g. "GTM Americas" inside Sales). Only when the note names one.
 - relationships: fromType/toType must each be one of person, project, problem, department, system, process, decision. rel must be one of ${REL_TYPES.filter(r=>r!=="MENTIONS").join(", ")}. confidence 0-1: 0.9+ only when the note states it outright, 0.5-0.8 when inferring.
 - ask_me: at most 3, only where the answer changes what gets recorded — an ambiguous person, an owner who's implied but not named, a project that might be one they already have. Give 2-4 short "options" when there's an obvious set to pick from. Ask nothing if the note is clear.
 - updates: only for records already on record, and only when the note clearly says something changed (a project became blocked, a problem got solved). Name the exact record. Say why.
@@ -2414,13 +2450,15 @@ function buildPlan(o,text,d){
     const it={type,name,rec:r.rec,conf:r.conf,candidates:r.candidates,fields:rec||{},extra:extra||"",on,choice};
     items.push(it); seen[key]=it; return it;
   };
-  (d.people||[]).forEach(p=>add("person",p.name,{title:p.title||"",department:p.department||"",expertise:p.expertise||[],notes:p.note||""}));
+  (d.people||[]).forEach(p=>add("person",p.name,{title:p.title||"",department:p.department||"",team:p.team||"",expertise:p.expertise||[],notes:p.note||""}));
   (d.departments||[]).forEach(x=>add("department",x.name||x,{}));
   (d.systems||[]).forEach(x=>add("system",x.name||x,{note:x.note||""}));
   (d.projects||[]).forEach(x=>add("project",x.name||x,{status:x.status||"Unknown",note:x.note||""}));
   (d.problems||[]).forEach(x=>add("problem",x.title||x.name||x,{status:x.status||"Discovered",description:x.note||""}));
   (d.processes||[]).forEach(x=>add("process",x.name||x,{note:x.note||""}));
   (d.decisions||[]).forEach(x=>add("decision",x.title||x,{madeBy:x.madeBy||"",date:x.date||"",reason:x.reason||""}));
+  (d.teams||[]).forEach(x=>add("team",x.name||x,{department:x.department||"",lead:x.lead||""}));
+  (d.info||[]).forEach(x=>add("info",x.title||x.name||x,{kind:INFO_KINDS.includes(x.kind)?x.kind:"Other",summary:x.summary||""}));
   (d.questions||[]).forEach(q=>{ const t=typeof q==="string"?q:(q.q||""); if(t.trim()) add("question",t.trim(),{status:"Open"}); });
   // people mentioned only inside a relationship still deserve a record
   const rels=(d.relationships||[]).filter(r=>r&&r.from&&r.to&&ENT[r.fromType]&&ENT[r.toType]&&REL_LABEL[r.rel]).map(r=>{
@@ -2609,6 +2647,7 @@ function capApply(){
     const a=resolved[r.fromType+"|"+canonThing(r.from)], b=resolved[r.toType+"|"+canonThing(r.to)];
     if(a&&b) addLink(o.id,a.t,a.id,r.rel,b.t,b.id,r.conf,cap.id);
   });
+  attachTeams(o,p.items,cap.id);
   const opN=applyOps(o,p,cap.id);
   o.updatedAt=Date.now();
   save(); closeEditor(); capPlan=null; capAnswered=[];
@@ -2624,6 +2663,7 @@ function createEnt(type,opId,name,f,viaCapture){
     const p={id:uid(),at:Date.now(),name,title:f.title||"",linkedin:"",email:"",notes:f.notes||"",expertise:(f.expertise||[]).filter(Boolean),fromCapture:viaCapture||""};
     o.people.push(p);
     if(f.department){ const d=ensureEnt("department",opId,f.department,{},viaCapture); if(d){ p.deptId=d.id; addLink(opId,"person",p.id,"WORKS_IN","department",d.id,.9,viaCapture); } }
+    if(f.team){ const tm=ensureEnt("team",opId,f.team,{},viaCapture); if(tm){ p.teamId=tm.id; if(p.deptId&&!tm.deptId) tm.deptId=p.deptId; } }
     (p.expertise||[]).forEach(x=>{ const s=resolveEnt("system",x,opId); if(s.rec) addLink(opId,"person",p.id,"KNOWS","system",s.rec.id,.85,viaCapture); });
     return p;
   }
@@ -2631,7 +2671,9 @@ function createEnt(type,opId,name,f,viaCapture){
   const rec=Object.assign(base,
     type==="project"   ? {name,description:f.note||f.description||"",status:PROJECT_STATUS.includes(f.status)?f.status:"Unknown",myRole:"",start:"",target:"",note:""} :
     type==="problem"   ? {title:name,description:f.description||f.note||"",status:PROBLEM_STATUS.includes(f.status)?f.status:"Discovered",discovered:todayYMD(),attempts:"",solution:"",note:""} :
-    type==="department"? {name,note:f.note||""} :
+    type==="department"? {name,note:f.note||"",headId:""} :
+    type==="team"      ? {name,note:f.note||"",headId:"",deptId:""} :
+    type==="info"      ? {title:name,kind:INFO_KINDS.includes(f.kind)?f.kind:"Other",summary:f.summary||"",note:f.note||""} :
     type==="system"    ? {name,note:f.note||"",ownerId:""} :
     type==="process"   ? {name,note:f.note||"",steps:""} :
     type==="decision"  ? {title:name,madeBy:f.madeBy||"",date:f.date||"",reason:f.reason||"",alternatives:"",note:""} :
@@ -2639,6 +2681,13 @@ function createEnt(type,opId,name,f,viaCapture){
   return wAdd(ENT[type].list,rec);
 }
 function ensureEnt(type,opId,name,f,via){ const r=resolveEnt(type,name,opId); return r.rec&&r.conf>=1?r.rec:createEnt(type,opId,name,f,via); }
+// a team the model named with its department goes straight into it
+function attachTeams(o,items,via){
+  items.filter(i=>i.type==="team"&&i.on&&i.fields&&i.fields.department).forEach(i=>{
+    const tm=resolveEnt("team",i.name,o.id).rec; if(!tm||tm.deptId) return;
+    const d=ensureEnt("department",o.id,i.fields.department,{},via); if(d) tm.deptId=d.id;
+  });
+}
 // fill in blanks on an existing record — never overwrite what the user already wrote
 function mergeEnt(type,rec,f){
   if(!f) return;
@@ -2660,7 +2709,7 @@ function mergeEnt(type,rec,f){
 }
 
 /* ============================ WORK VIEW (90-day mode / My Company) ============================ */
-const WORK_TABS=[["overview","Overview"],["people","People"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
+const WORK_TABS=[["overview","Overview"],["people","People"],["org","Departments"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
 function renderWork(){
   const emp=employers(); const o=workOp();
   if(!o) return `<div class="empty"><div class="big">${I.building}</div><h3>No company yet</h3><p>When you land a role, open it and tap <b>I got the job</b>.</p></div>`;
@@ -2670,6 +2719,7 @@ function renderWork(){
   h+=`<div class="tabs">${WORK_TABS.map(([id,l])=>`<button class="tab ${workTab===id?'active':''}" data-wtab="${id}">${esc(l)}</button>`).join("")}</div>`;
   if(workTab==="overview")      h+=workOverview(o);
   else if(workTab==="people")   h+=workPeople(o);
+  else if(workTab==="org")      h+=workOrg(o);
   else if(workTab==="projects") h+=workSimpleList(o,"project","Projects are context, not a task list — what's happening around you and who's involved.");
   else if(workTab==="problems") h+=workSimpleList(o,"problem","What's broken, being looked at, or knowingly lived with.");
   else if(workTab==="knowledge")h+=workKnowledge(o);
@@ -2784,7 +2834,11 @@ function entRowMeta(type,r){
   if(type==="question")return [r.status!=="Open"?r.status:"",r.answer||""].filter(Boolean).join(" · ")||fmtDate(ymdOf(r.at));
   if(type==="capture") return (r.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(r.at));
   if(type==="decision")return [r.madeBy?"by "+r.madeBy:"",r.date||"",r.reason].filter(Boolean).join(" · ");
-  if(type==="department"){ const n=entAll("person",opId).filter(p=>p.deptId===r.id).length; return [n?`${n} ${n===1?"person":"people"}`:"nobody yet",r.note].filter(Boolean).join(" · "); }
+  if(type==="department"){ const n=entAll("person",opId).filter(p=>p.deptId===r.id).length;
+    return [n?`${n} ${n===1?"person":"people"}`:"nobody yet",r.headId?"head "+entLabel("person",r.headId):"",r.note].filter(Boolean).join(" · "); }
+  if(type==="team"){ const n=entAll("person",opId).filter(p=>p.teamId===r.id).length;
+    return [r.deptId?entLabel("department",r.deptId):"",n?`${n} ${n===1?"person":"people"}`:"nobody yet",r.headId?"lead "+entLabel("person",r.headId):"",r.note].filter(Boolean).join(" · "); }
+  if(type==="info") return [r.kind,r.summary].filter(Boolean).join(" · ");
   return r.note||"";
 }
 function statusPill(txt,col){ return `<span class="st-pill" style="background:${col}22;color:${col}">${esc(txt)}</span>`; }
@@ -2818,6 +2872,58 @@ function workPeople(o){
     <button class="btn ghost sm" data-entadd="person">${I.plus} Add someone</button></div>`;
   return h;
 }
+function teamsOf(o,deptId){ return wOf("teams",o.id).filter(t=>t.deptId===deptId); }
+function peopleOfTeam(o,teamId){ return (o.people||[]).filter(p=>p.teamId===teamId); }
+function headChip(o,id){
+  if(!id) return `<span class="head-chip none">No head recorded</span>`;
+  const p=entGet("person",id); if(!p) return "";
+  return `<span class="head-chip" data-ent="person|${p.id}">${I.crown}${esc(p.name)}</span>`;
+}
+function workOrg(o){
+  const depts=wOf("departments",o.id).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  const ppl=o.people||[];
+  let h=`<div class="sect-note">How this place is arranged — departments, the teams inside them, and who runs each. Tap anything to open it.</div>`;
+  h+=`<div class="card panel" style="margin-bottom:16px"><div class="panel-title">${I.map} The map</div>${workGraph(o)}</div>`;
+  if(!depts.length){
+    h+=`<div class="card panel"><div class="ent-empty">No departments yet. Add one and you can start placing people and teams inside it.</div></div>`;
+  }
+  depts.forEach(d=>{
+    const teams=teamsOf(o,d.id);
+    const inDept=ppl.filter(p=>p.deptId===d.id);
+    const unteamed=inDept.filter(p=>!p.teamId||!teams.some(t=>t.id===p.teamId));
+    h+=`<div class="dept-card" style="--dc:${deptColor(d.id)}">
+      <div class="dept-head">
+        <span class="dept-dot"></span>
+        <div style="flex:1;min-width:0">
+          <div class="dept-name" data-ent="department|${d.id}">${esc(d.name)}</div>
+          <div class="dept-meta">${inDept.length} ${inDept.length===1?"person":"people"}${teams.length?` · ${teams.length} ${teams.length===1?"team":"teams"}`:""}</div>
+        </div>
+        ${headChip(o,d.headId)}
+        <button class="btn sm ghost" data-entedit="department|${d.id}">${I.edit}</button>
+      </div>
+      ${teams.map(t=>{
+        const mem=peopleOfTeam(o,t.id);
+        return `<div class="team-box" style="--tc:${teamColor(t.id)}">
+          <div class="team-head">
+            <div style="flex:1;min-width:0"><div class="team-name" data-ent="team|${t.id}">${esc(t.name)}</div>
+            <div class="team-meta">${mem.length} ${mem.length===1?"person":"people"}${t.note?` · ${esc(clip(t.note,50))}`:""}</div></div>
+            ${headChip(o,t.headId)}
+            <button class="btn sm ghost" data-entedit="team|${t.id}">${I.edit}</button>
+          </div>
+          ${mem.length?`<div class="team-people">${mem.map(p=>`<span class="chip og-chip" data-ent="person|${p.id}">${esc(p.name)}</span>`).join("")}</div>`:`<div class="team-meta" style="padding-left:2px">Nobody placed here yet — set someone's team on their record.</div>`}
+        </div>`;
+      }).join("")}
+      ${unteamed.length?`<div class="team-people" style="padding:2px 2px 0">
+        <span class="team-meta" style="margin-right:4px">Not in a team:</span>
+        ${unteamed.map(p=>`<span class="chip og-chip" data-ent="person|${p.id}">${esc(p.name)}</span>`).join("")}</div>`:""}
+      <button class="add-sub" data-teamadd="${d.id}" style="margin-top:10px;padding:8px">＋ Team in ${esc(d.name)}</button>
+    </div>`;
+  });
+  h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <button class="btn ghost sm" data-entadd="department">${I.plus} Add department</button>
+    <button class="btn ghost sm" data-entadd="team">${I.plus} Add team</button></div>`;
+  return h;
+}
 function workSimpleList(o,type,note){
   const list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
   let h=`<div class="sect-note">${esc(note)}</div>`;
@@ -2828,9 +2934,8 @@ function workSimpleList(o,type,note){
   return h;
 }
 function workKnowledge(o){
-  let h=`<div class="sect-note">How this place works: the systems you depend on, the processes around you, why things are the way they are — and what you still don't know.</div>`;
-  h+=`<div class="card panel" style="margin-bottom:16px"><div class="panel-title">${I.map} The map</div>${workGraph(o)}</div>`;
-  [["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["department","The org as you've encountered it."],["capture","Everything you've captured."]].forEach(([type,note])=>{
+  let h=`<div class="sect-note">What you know about this place: the things to look up, the tools you depend on, how work gets done and why. <span data-wtab="org" style="color:var(--accent3);cursor:pointer;font-weight:700">The org map moved to Departments →</span></div>`;
+  [["info","Products, meetings, acronyms — the things you have to just know."],["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["capture","Everything you've captured."]].forEach(([type,note])=>{
     let list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
     if(type==="question") list=list.sort((a,b)=>(a.status==="Open"?0:1)-(b.status==="Open"?0:1)||b.at-a.at);
     h+=`<div class="section-head"><h3>${esc(ENT[type].plural)}</h3><div class="line"></div>${list.length?`<span class="tag">${list.length}</span>`:""}</div>`;
@@ -2850,6 +2955,7 @@ function workKnowledge(o){
    turning up on the same work — the thing an org chart never tells you. ---- */
 function wLayout(){ const w=W(); w.layout=w.layout||{}; return w.layout; }
 function deptColor(deptId){ return deptId?colorFor("dept:"+entLabel("department",deptId)):"#5a6070"; }
+function teamColor(teamId){ return teamId?colorFor("team:"+entLabel("team",teamId)):"#6b7078"; }
 function personManager(p){
   if(p.managerId&&entGet("person",p.managerId)) return p.managerId;
   const l=W().links.find(x=>x.st==="person"&&x.sid===p.id&&x.rel==="REPORTS_TO"&&entGet("person",x.tid));
@@ -2949,19 +3055,35 @@ function deptLayout(o){
     .filter(g=>g.people.length)
     .concat((()=>{ const rest=ppl.filter(p=>!p.deptId||!depts.some(d=>d.id===p.deptId));
       return rest.length?[{id:"",name:"No department yet",people:rest}]:[]; })());
-  const NW=172, NH=54, GAPX=16, GAPY=16, PERROW=4, HEAD=26;
-  const pos={}, bands=[]; let y=0;
+  const NW=172, NH=54, GAPX=16, GAPY=16, PERROW=4, HEAD=26, TEAMHEAD=22, TPAD=10;
+  const pos={}, bands=[], teamBoxes=[]; let y=0;
   groups.forEach(g=>{
-    const rows=Math.ceil(g.people.length/PERROW);
-    const h=HEAD+rows*(NH+GAPY);
-    bands.push({id:g.id,name:g.name,y,h,n:g.people.length,w:PERROW*(NW+GAPX)-GAPX});
-    g.people.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
-      pos[p.id]={x:(i%PERROW)*(NW+GAPX), y:y+HEAD+Math.floor(i/PERROW)*(NH+GAPY), depth:0, band:g.id};
+    // inside a department, people cluster by team — each team gets its own bordered region
+    const teams=g.id?wOf("teams",o.id).filter(t=>t.deptId===g.id):[];
+    const inTeam=t=>g.people.filter(p=>p.teamId===t.id);
+    const used={}; teams.forEach(t=>inTeam(t).forEach(p=>used[p.id]=1));
+    const rest=g.people.filter(p=>!used[p.id]);
+    let inner=HEAD;
+    const lay=(list,ox,oy)=>{
+      list.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
+        pos[p.id]={x:ox+(i%PERROW)*(NW+GAPX), y:oy+Math.floor(i/PERROW)*(NH+GAPY), depth:0, band:g.id};
+      });
+      return Math.ceil(list.length/PERROW)*(NH+GAPY);
+    };
+    teams.filter(t=>inTeam(t).length).forEach(t=>{
+      const mem=inTeam(t);
+      const bh=TEAMHEAD+lay(mem,TPAD,y+inner+TEAMHEAD+2)+2;
+      teamBoxes.push({id:t.id,name:t.name,deptId:g.id,y:y+inner,h:bh,n:mem.length,
+        w:Math.min(PERROW,mem.length)*(NW+GAPX)-GAPX+TPAD*2, headId:t.headId});
+      inner+=bh+10;
     });
+    if(rest.length) inner+=lay(rest,TPAD,y+inner);
+    const h=Math.max(inner,HEAD+NH+GAPY);
+    bands.push({id:g.id,name:g.name,y,h,n:g.people.length,w:PERROW*(NW+GAPX)-GAPX+TPAD*2,headId:g.headId});
     y+=h+18;
   });
   const byId={}; ppl.forEach(p=>byId[p.id]=p);
-  return {pos,parentOf:{},kids:{},loose:[],byId,NW,NH,bands,treeDepth:-1};
+  return {pos,parentOf:{},kids:{},loose:[],byId,NW,NH,bands,teamBoxes,treeDepth:-1};
 }
 function workGraph(o){
   const L=ogMode==="dept"?deptLayout(o):orgLayout(o);
@@ -2997,10 +3119,12 @@ function workGraph(o){
   const card=(id)=>{
     const p=L.byId[id], col=deptCol(p), d=deptOf(p), nRep=(L.kids[id]||[]).length;
     const dim=ogFilter&&p.deptId!==ogFilter;
+    const isHead=wOf("departments",o.id).some(x=>x.headId===id)||wOf("teams",o.id).some(x=>x.headId===id);
     return `<g class="og-node${L.pos[id].unplaced?" loose":""}${dim?" dim":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
       <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card"/>
       <rect width="3.5" height="${L.NH}" rx="2" fill="${col}"/>
-      <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"/>
+      <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"${isHead?' stroke="#e8c47a" stroke-width="2"':""}/>
+      ${isHead?`<path d="M20 ${L.NH/2-14} l3 3 5-5 5 5 3-3 v3 h-16 z" fill="#e8c47a" opacity=".95"/>`:""}
       <text x="28" y="${L.NH/2+4}" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">${esc(initials(p.name))}</text>
       <text x="49" y="${L.NH/2-3}" fill="var(--txt)" font-size="11.5" font-weight="750">${esc(clip(p.name,16))}</text>
       ${d?`<circle cx="52" cy="${L.NH/2+7.5}" r="3" fill="${col}"/>`:""}
@@ -3012,9 +3136,19 @@ function workGraph(o){
   let band="";
   (L.bands||[]).forEach(bd=>{
     const c=deptColor(bd.id), by=bd.y-minY+PAD, bw=Math.max(bd.w,W_-PAD*2);
-    band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="14" fill="${c}" opacity=".07"/>
-      <rect x="${PAD-10}" y="${by-6}" width="3" height="${bd.h}" rx="2" fill="${c}" opacity=".55"/>
-      <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan></text>`;
+    const head=bd.headId&&entGet("person",bd.headId);
+    band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="${c}" opacity=".07"/>
+      <rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="none" stroke="${c}" stroke-width="1" opacity=".22"/>
+      <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan>${
+        head?`<tspan dx="12" fill="var(--muted)" font-size="9.5" font-weight="700" letter-spacing="0">▲ ${esc(head.name)}</tspan>`:""}</text>`;
+  });
+  // teams sit inside their department as their own softly-bordered region
+  (L.teamBoxes||[]).forEach(tb=>{
+    const c=teamColor(tb.id), ty=tb.y-minY+PAD, head=tb.headId&&entGet("person",tb.headId);
+    band+=`<rect x="${PAD}" y="${ty}" width="${tb.w}" height="${tb.h}" rx="13" fill="${c}" opacity=".05"/>
+      <rect x="${PAD}" y="${ty}" width="${tb.w}" height="${tb.h}" rx="13" fill="none" stroke="${c}" stroke-width="1.2" stroke-dasharray="2 4" opacity=".55"/>
+      <text x="${PAD+11}" y="${ty+15}" fill="${c}" font-size="9.5" font-weight="800" letter-spacing=".05em">${esc(tb.name.toUpperCase())}${
+        head?`<tspan dx="9" fill="var(--muted)" font-size="9" font-weight="700" letter-spacing="0">▲ ${esc(head.name)}</tspan>`:""}</text>`;
   });
   if(L.treeDepth>=0&&L.loose.length){
     const y=(L.treeDepth+1)*(L.NH+46)-minY+PAD-4;
@@ -3155,6 +3289,7 @@ function entDetailBody(type,rec){
     const deptCell=`<span class="dept-pill" data-setdept="${rec.id}" style="padding:3px 10px;font-size:12px">${rec.deptId?esc(entLabel("department",rec.deptId)):"Set department"}</span>`;
     const mgrId=personManager(rec);
     rows.push(["Title",rec.title],["Department",deptCell],
+      ["Team",rec.teamId?`<span class="cite" data-ent="team|${rec.teamId}">${esc(entLabel("team",rec.teamId))}</span>`:""],
       ["Reports to",mgrId
         ? `<span class="cite" data-ent="person|${mgrId}">${esc(entLabel("person",mgrId))}</span> <span class="dept-pill" data-setmgr="${rec.id}" style="padding:2px 9px;font-size:11px">change</span>`
         : `<span class="dept-pill" data-setmgr="${rec.id}" style="padding:3px 10px;font-size:12px">Set manager</span>`],
@@ -3169,7 +3304,14 @@ function entDetailBody(type,rec){
   else if(type==="system") rows.push(["Owner",rec.ownerId?entLabel("person",rec.ownerId):"— not recorded"],["Notes",rec.note]);
   else if(type==="process") rows.push(["How it works",rec.steps],["Notes",rec.note]);
   else if(type==="decision") rows.push(["Made by",rec.madeBy],["When",rec.date],["Why",rec.reason],["Alternatives considered",rec.alternatives],["Notes",rec.note]);
-  else if(type==="department") rows.push(["Notes",rec.note]);
+  else if(type==="department"){
+    const teams=teamsOf(opById(opId)||{id:opId},rec.id);
+    rows.push(["Head",rec.headId?`<span class="cite" data-ent="person|${rec.headId}">${esc(entLabel("person",rec.headId))}</span>`:""],
+      ["Teams",teams.length?teams.map(x=>esc(x.name)).join(", "):""],["Notes",rec.note]);
+  }
+  else if(type==="team") rows.push(["Department",rec.deptId?`<span class="cite" data-ent="department|${rec.deptId}">${esc(entLabel("department",rec.deptId))}</span>`:""],
+    ["Lead",rec.headId?`<span class="cite" data-ent="person|${rec.headId}">${esc(entLabel("person",rec.headId))}</span>`:""],["What they do",rec.note]);
+  else if(type==="info") rows.push(["Kind",rec.kind],["In a sentence",rec.summary],["Detail",rec.note]);
   else if(type==="question") rows.push(["Status",statusPill(rec.status,{Open:"#c6a45c",Answered:"#4ea381",Dismissed:"#7c828f"}[rec.status]||"#7c828f")],["Answer",rec.answer]);
   else if(type==="capture") rows.push(["Captured",fmtDate(ymdOf(rec.at))],["Summary",rec.summary]);
 
@@ -3204,6 +3346,7 @@ function entDetailBody(type,rec){
       <button class="btn ghost sm" data-mpprep="${rec.id}">${I.cal} Prep to meet</button>
       <button class="btn ghost sm" data-workswithpick="${rec.id}">${I.link} Works with…</button>
       <button class="btn ghost sm" data-mergewith="${rec.id}">${I.people} Merge…</button>`:""}
+    ${(CONVERT_TO[type]||[]).length?`<button class="btn ghost sm" data-convert="${type}|${rec.id}">${I.process} Not a ${esc(ENT[type].label.toLowerCase())}?</button>`:""}
     <button class="btn ghost sm danger" data-entdel="${type}|${rec.id}">${I.trash} Delete</button>
   </div>`;
   return h;
@@ -3213,10 +3356,12 @@ function entDetailBody(type,rec){
    [name, label, kind, required, options] where kind is text|textarea|date|select|ent:<type> */
 function entFields(type){
   return {
-    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
+    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
-    department:[["name","Name","text",1],["note","Notes","textarea"]],
+    department:[["name","Name","text",1],["headId","Head of department","ent:person"],["note","Notes","textarea"]],
+    team:      [["name","Name","text",1],["deptId","Department","ent:department"],["headId","Team lead","ent:person"],["note","What they do","textarea"]],
+    info:      [["title","What is it","text",1],["kind","Kind","select",0,INFO_KINDS],["summary","In a sentence","textarea"],["note","Detail","textarea"]],
     system:    [["name","Name","text",1],["ownerId","Owner","ent:person"],["note","Notes","textarea"]],
     process:   [["name","Name","text",1],["steps","How it works","textarea"],["note","Notes","textarea"]],
     decision:  [["title","Decision","text",1],["madeBy","Made by","text"],["date","When","text"],["reason","Why","textarea"],["alternatives","Alternatives considered","textarea"],["note","Notes","textarea"]],
@@ -3364,6 +3509,65 @@ function setPersonDept(personId,deptId){
   save(); closeEditor(); render(); openEnt("person",personId);
   toast(deptId?`Filed under ${entLabel("department",deptId)}`:"Department cleared");
 }
+/* ---- "That isn't a project." Records get mislabelled — by you in a hurry or by the AI reading a
+   note. Moving one keeps its history: every link, every note that mentions it, its original date. ---- */
+const CONVERT_TO={
+  project:["info","problem","process","system","decision"],
+  problem:["info","project","process","decision"],
+  process:["info","project","system","decision"],
+  system: ["info","project","process"],
+  decision:["info","process","project"],
+  info:   ["project","problem","process","system","decision"],
+  question:["info"],
+};
+// what each type calls its name and its body, so text survives the move
+const ENT_NAMEF={project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
+const ENT_BODYF={project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
+function convertEnt(fromType,id,toType){
+  const rec=entGet(fromType,id); if(!rec||fromType===toType||!ENT[toType]) return null;
+  const opId=rec.opId||entOpId(fromType,id);
+  const name=entName(fromType,rec);
+  const body=[rec[ENT_BODYF[fromType]],rec.note,rec.notes].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join("\n");
+  const made=createEnt(toType,opId,name,{},rec.fromCapture||"");
+  if(!made) return null;
+  if(body) made[ENT_BODYF[toType]]=body;
+  made.at=rec.at||Date.now();                       // it was learned when it was learned
+  made.convertedFrom=ENT[fromType].label;
+  if(toType==="info"&&!made.kind) made.kind="Other";
+  // the graph comes with it
+  const w=W();
+  w.links.forEach(l=>{
+    if(l.st===fromType&&l.sid===id){ l.st=toType; l.sid=made.id; }
+    if(l.tt===fromType&&l.tid===id){ l.tt=toType; l.tid=made.id; }
+  });
+  w.captures.forEach(c=>(c.entities||[]).forEach(e=>{ if(e.t===fromType&&e.id===id){ e.t=toType; e.id=made.id; } }));
+  ["projects","systems"].forEach(k=>W()[k].forEach(r=>{ if(r.ownerId===id&&fromType==="person") r.ownerId=made.id; }));
+  dedupeLinks();
+  entDelete(fromType,id);
+  return made;
+}
+function openConvertPicker(type,id){
+  const rec=entGet(type,id); if(!rec) return;
+  const opts=CONVERT_TO[type]||[];
+  if(!opts.length){ toast("This one can't be moved"); return; }
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.process}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">What is this really?</h2>
+      <div style="font-size:12.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(entName(type,rec))}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="sect-note">Currently a <b>${esc(ENT[type].label.toLowerCase())}</b>. Moving it keeps everything — its connections, the notes that mention it, and the date you learned it.</div>
+  <div class="conv-grid">${opts.map(t=>`<button class="conv-opt" data-convto="${type}|${id}|${t}">
+      <span class="conv-ico" style="background:${ENT[t].col}22;color:${ENT[t].col}">${ENT[t].icon}</span>
+      <span><b>${esc(ENT[t].label)}</b><small>${esc(CONVERT_HINT[t]||"")}</small></span></button>`).join("")}</div>`);
+}
+const CONVERT_HINT={
+  info:"A product, a meeting, an acronym — something to know, not something to do",
+  project:"A piece of work with people and a status",
+  problem:"Something broken, being looked at, or lived with",
+  process:"How a piece of work actually gets done",
+  system:"A tool people depend on",
+  decision:"Why something is the way it is",
+};
 function openMergePicker(keepId){
   const keep=entGet("person",keepId); const opId=entOpId("person",keepId);
   const others=entAll("person",opId).filter(p=>p.id!==keepId).sort((a,b)=>personMatch(b.name,keep.name)-personMatch(a.name,keep.name));
@@ -3529,9 +3733,9 @@ function changedCard(o){
    and is told to say "I don't have anything on that" rather than fill the gap with invention. */
 function workRefs(o){
   const refs={}; const L=[]; let n={};
-  const key=t=>({person:"p",project:"pr",problem:"pb",department:"d",system:"s",process:"pc",decision:"dc",question:"q",capture:"c"})[t];
+  const key=t=>({person:"p",project:"pr",problem:"pb",department:"d",team:"tm",system:"s",process:"pc",decision:"dc",question:"q",info:"in",capture:"c"})[t];
   const reg=(t,rec)=>{ const k=key(t); n[k]=(n[k]||0)+1; const id=k+n[k]; refs[id]={t,id:rec.id}; return id; };
-  ["person","department","system","project","problem","process","decision","question"].forEach(t=>{
+  ["person","department","team","system","project","problem","process","decision","question","info"].forEach(t=>{
     const list=entAll(t,o.id); if(!list.length) return;
     L.push("",ENT[t].plural.toUpperCase()+":");
     list.forEach(rec=>{
@@ -5083,7 +5287,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd]");
   if(!t) return;
 
   // nav
@@ -5252,6 +5456,9 @@ document.addEventListener("click",e=>{
   if(t.dataset.ent){ const [ty,id]=t.dataset.ent.split("|"); openEnt(ty,id); return; }
   if(t.dataset.cite){ const [ty,id]=t.dataset.cite.split("|"); openEnt(ty,id); return; }
   if(t.dataset.entadd){ openEntForm(t.dataset.entadd,null,(workOp()||{}).id); return; }
+  if(t.dataset.teamadd){ openEntForm("team",null,(workOp()||{}).id);
+    const sel=document.querySelector('#entForm [name=deptId]'); if(sel){ sel.value=t.dataset.teamadd; snapshotEditor(); }
+    return; }
   if(t.dataset.entedit){ const [ty,id]=t.dataset.entedit.split("|"); openEntForm(ty,entGet(ty,id)); return; }
   if(t.dataset.entdel){ const [ty,id]=t.dataset.entdel.split("|");
     if(confirm(`Delete "${entLabel(ty,id)}"? Its connections go too. This can't be undone.`)){ entDelete(ty,id); save(); closeEditor(); render(); toast("Deleted"); } return; }
@@ -5269,6 +5476,12 @@ document.addEventListener("click",e=>{
   if(act==="work-gaps"){ openGaps(); return; }
   if(t.dataset.capedit){ openCapture(null,t.dataset.capedit); return; }
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
+  if(t.dataset.convert){ const [ty,id]=t.dataset.convert.split("|"); openConvertPicker(ty,id); return; }
+  if(t.dataset.convto){ const [ty,id,to]=t.dataset.convto.split("|");
+    const made=convertEnt(ty,id,to);
+    if(made){ save(); closeEditor(); render(); openEnt(to,made.id); toast(`Now filed as ${ENT[to].label.toLowerCase()}`); }
+    else toast("Couldn't move that one");
+    return; }
   if(t.dataset.setdept){ openDeptPicker(t.dataset.setdept); return; }
   if(t.dataset.setmgr){ openMgrPicker(t.dataset.setmgr); return; }
   if(t.dataset.workswithpick){ openWorksWithPicker(t.dataset.workswithpick); return; }
@@ -5510,6 +5723,13 @@ function loadSampleWork(iso){
   o.hired.managerId=dana.id;
   mike.managerId=dana.id; addLink(o.id,"person",mike.id,"REPORTS_TO","person",dana.id,1,"");
   john.managerId=sarah.id; addLink(o.id,"person",john.id,"REPORTS_TO","person",sarah.id,.7,"");
+  sales.headId=sarah.id; fin.headId=john.id; rev.headId=dana.id; it.headId=mike.id;
+  const gtm=createEnt("team",o.id,"GTM Americas",{},"");
+  gtm.deptId=rev.id; gtm.headId=dana.id; gtm.note="Go-to-market operations for the Americas region.";
+  dana.teamId=gtm.id; mike.teamId=gtm.id;
+  const icx=createEnt("info",o.id,"ICX",{kind:"Product or offering",summary:"The umbrella name for the customer-experience product family — not a single product."},"");
+  createEnt("info",o.id,"QBR",{kind:"Meeting or ritual",summary:"Quarterly business review. Leadership looks at Clari numbers, not Salesforce."},"");
+  addLink(o.id,"info",icx.id,"RELATES_TO","department",sales.id,.8,"");
   const c1=wAdd("captures",{opId:o.id,at:Date.now()-86400000*30,summary:"Met Mike; found the bookings discrepancy",
     text:"Met Mike today. He's apparently the Salesforce guy — built most of the reporting. He said Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting on the business side, but John in Finance has been fighting this for months.",
     entities:[{t:"person",id:mike.id},{t:"person",id:sarah.id},{t:"person",id:john.id},{t:"system",id:sf.id},{t:"system",id:ns.id},{t:"problem",id:prob.id}]});

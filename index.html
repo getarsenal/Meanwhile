@@ -4036,23 +4036,134 @@ function smartPasteBody(){
   </div>
   <div style="font-size:11.5px;color:var(--faint);margin-top:10px;text-align:center">On iPhone you can also <span data-act="scan-calendar" style="color:var(--accent3);cursor:pointer;font-weight:700">scan your calendar</span> or share an email/profile straight into Meanwhile.</div>`;
 }
+/* ---- Reading a job posting from a URL ----
+   A browser can't just fetch another site: without CORS headers the request dies before we see
+   it. So we go through public readers that do send them. Any one of them can be rate-limited,
+   key-walled or blocked by the target site on any given day, so we try several and, if they all
+   fail, say WHICH thing failed instead of one shrug of an error message.
+   NB: only CORS-safelisted request headers here (Accept is fine). Adding something like
+   x-return-format triggers a preflight most of these hosts don't answer, breaking every fetch. */
+const URL_READERS = [
+  { name:"Jina Reader", to:u=>"https://r.jina.ai/"+u,                                        parse:t=>t },
+  { name:"AllOrigins",  to:u=>"https://api.allorigins.win/raw?url="+encodeURIComponent(u),    parse:htmlToText },
+  { name:"CodeTabs",    to:u=>"https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u), parse:htmlToText },
+  { name:"direct",      to:u=>u,                                                             parse:htmlToText },
+];
+// strip a page down to the words, and lift the structured job data most boards embed
+function htmlToText(html){
+  if(!html) return "";
+  if(!/<[a-z!]/i.test(html)) return html;                       // already plain text
+  let doc; try{ doc=new DOMParser().parseFromString(html,"text/html"); }catch(e){ return html; }
+  const head=[];
+  const title=(doc.querySelector("title")||{}).textContent; if(title) head.push(title.trim());
+  const md=doc.querySelector('meta[name="description"],meta[property="og:description"]');
+  if(md&&md.content) head.push(md.content.trim());
+  head.push(...jsonLdJobs(doc));
+  doc.querySelectorAll("script,style,noscript,svg,iframe,nav,footer,header,form").forEach(n=>n.remove());
+  const main=doc.querySelector("main,article,[role=main]")||doc.body;
+  const body=((main&&main.textContent)||"").replace(/[ \t ]+/g," ").replace(/\n{3,}/g,"\n\n").trim();
+  return (head.filter(Boolean).join("\n")+"\n\n"+body).trim();
+}
+// schema.org JobPosting — title, company, salary and description, already structured
+function jsonLdJobs(doc){
+  const out=[];
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(s=>{
+    let data; try{ data=JSON.parse(s.textContent); }catch(e){ return; }
+    const walk=n=>{
+      if(!n||typeof n!=="object") return;
+      if(Array.isArray(n)) return n.forEach(walk);
+      if(n["@graph"]) walk(n["@graph"]);
+      if(String(n["@type"]||"").includes("JobPosting")){
+        const org=n.hiringOrganization&&(n.hiringOrganization.name||n.hiringOrganization);
+        const loc=n.jobLocation&&JSON.stringify(n.jobLocation).match(/"addressLocality":"([^"]+)"/);
+        const pay=n.baseSalary&&JSON.stringify(n.baseSalary).match(/"(?:minValue|value)":\s*"?([\d.]+)/);
+        out.push(["JOB POSTING",
+          n.title&&("Title: "+n.title), org&&("Company: "+org),
+          loc&&("Location: "+loc[1]), n.employmentType&&("Type: "+n.employmentType),
+          pay&&("Pay: "+pay[1]), n.datePosted&&("Posted: "+n.datePosted),
+          n.description&&("Description: "+String(n.description).replace(/<[^>]+>/g," ").replace(/\s+/g," ").slice(0,6000))
+        ].filter(Boolean).join("\n"));
+      }
+      Object.values(n).forEach(v=>{ if(v&&typeof v==="object") walk(v); });
+    };
+    walk(data);
+  });
+  return out;
+}
+// try each reader in turn; resolves {text, via} or throws with .tried for a useful message
+async function readUrlText(url, onStep){
+  const tried=[];
+  for(const r of URL_READERS){
+    if(onStep) onStep(r.name);
+    const ctl=new AbortController(); const timer=setTimeout(()=>ctl.abort(),15000);
+    try{
+      const res=await fetch(r.to(url),{headers:{Accept:"text/plain, text/html;q=0.9, */*;q=0.8"},signal:ctl.signal});
+      clearTimeout(timer);
+      if(!res.ok){ tried.push({name:r.name,status:res.status}); continue; }
+      const raw=await res.text();
+      const text=(r.parse(raw)||"").trim();
+      if(text.length<120){ tried.push({name:r.name,status:"empty"}); continue; }
+      return {text, via:r.name};
+    }catch(e){
+      clearTimeout(timer);
+      tried.push({name:r.name,status:e.name==="AbortError"?"timeout":"blocked"});
+    }
+  }
+  const err=new Error("no reader could fetch that page"); err.tried=tried; throw err;
+}
+// job sites that simply won't be read by anything but a logged-in browser
+const WALLED=/(^|\.)(linkedin|indeed|glassdoor|ziprecruiter|dice|monster)\.(com|co\.[a-z]{2}|[a-z]{2})$/i;
+// turn the pile of attempts into one sentence a person can act on
+function readFailMessage(tried,url){
+  const s=tried.map(x=>x.status);
+  const n=v=>s.filter(x=>x===v).length;
+  let host=""; try{ host=new URL(url||"").hostname.replace(/^www\./,""); }catch(e){}
+  if(host&&WALLED.test(host)) return `${host.split(".")[0].replace(/^./,c=>c.toUpperCase())} only shows job posts to a signed-in browser, so nothing can read that link from here.`;
+  if(s.length&&s.every(x=>x==="blocked"||x==="timeout")) return "Your browser couldn't reach any of the page readers — check your connection, or a network/extension may be blocking them.";
+  if(s.length&&s.every(x=>x==="empty")) return "That page loaded but had no readable text — it's probably drawn by JavaScript after a login.";
+  const walls=n(403)+n(451), limits=n(429), keys=n(401)+n(402);
+  if(walls&&walls>=limits&&walls>=keys) return "That site turns away automated readers — job boards behind a login usually do.";
+  if(limits&&limits>=keys) return "The free page readers are rate-limited right now. Waiting a minute usually clears it.";
+  if(keys) return "The page readers are asking for an API key today.";
+  return "None of the page readers could open that link.";
+}
 async function fetchJobUrl(){
   const inp=$("#spUrl"); let url=inp?inp.value.trim():"";
   if(!url){ toast("Paste a job URL first"); return; }
   if(!/^https?:\/\//i.test(url)) url="https://"+url;
-  spSourceUrl=url;
-  const btn=editorEl&&editorEl.querySelector('[data-act="ai-fetch-url"]'); if(btn){ btn.textContent="Fetching…"; btn.disabled=true; }
+  spSourceUrl=url;   // keep it either way — even a hand-pasted JD should remember where it came from
+  const btn=editorEl&&editorEl.querySelector('[data-act="ai-fetch-url"]');
+  const setBtn=txt=>{ if(btn){ btn.textContent=txt; btn.disabled=true; } };
+  setBtn("Fetching…");
   try{
-    // Jina Reader: free, CORS-friendly, returns clean readable text (no key, no backend)
-    const res=await fetch("https://r.jina.ai/"+url,{headers:{Accept:"text/plain"}});
-    if(!res.ok) throw new Error("status "+res.status);
-    let text=await res.text();
-    if(!text || text.trim().length<40) throw new Error("empty");
-    if(text.length>14000) text=text.slice(0,14000);
-    const ta=$("#spInput"); if(ta) ta.value=text; spText=text;
+    const {text,via}=await readUrlText(url,name=>setBtn(name==="Jina Reader"?"Fetching…":"Trying "+name+"…"));
+    spText = text.length>14000 ? text.slice(0,14000) : text;
+    const ta=$("#spInput"); if(ta) ta.value=spText;
     if(btn){ btn.innerHTML=`${I.ai} Fetch`; btn.disabled=false; }
+    toast("Read the posting ✓"+(via!=="Jina Reader"?` (via ${via})`:""));
     runExtract();
-  }catch(e){ spSourceUrl=""; if(btn){ btn.innerHTML=`${I.ai} Fetch`; btn.disabled=false; } toast("⚠ Couldn't read that page — paste the job text instead"); }
+  }catch(e){
+    if(btn){ btn.innerHTML=`${I.ai} Fetch`; btn.disabled=false; }
+    spShowReadFail(url, e.tried||[]);
+  }
+}
+// a dead end is the one thing this shouldn't be: keep the URL, explain, and hand over the paste box
+function spShowReadFail(url, tried){
+  const detail=tried.map(x=>`${x.name}: ${x.status}`).join(" · ");
+  spSetBody(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:rgba(198,164,92,.18);color:var(--warn);display:grid;place-items:center">${I.bell}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Couldn't open that link</h2>
+      <div style="font-size:12.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(url)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:2px 0 14px">${esc(readFailMessage(tried,url))}</p>
+  <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0 0 10px"><b>Paste the posting instead</b> — open it, select all (⌘A / Ctrl+A), copy, and drop it here. Everything else works exactly the same, and the link is still saved with the role.</p>
+  <textarea id="spInput" style="min-height:150px" placeholder="Paste the job description here…"></textarea>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
+    <button class="btn ghost" data-act="ai-fetch-retry">↻ Try the link again</button>
+  </div>
+  <details style="margin-top:12px"><summary style="cursor:pointer;font-size:12px;color:var(--faint);font-weight:600">What was tried</summary>
+    <div class="note-block" style="margin-top:8px;font-size:12px">${esc(detail||"nothing")}</div></details>`);
 }
 function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card"); if(card){ card.innerHTML=html; const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
 async function runExtract(){
@@ -4422,6 +4533,7 @@ document.addEventListener("click",e=>{
   if(act==="smart-paste"){ openSmartPaste(); return; }
   if(act==="ai-extract"){ runExtract(); return; }
   if(act==="ai-fetch-url"){ fetchJobUrl(); return; }
+  if(act==="ai-fetch-retry"){ spSetBody(smartPasteBody()); const u=$("#spUrl"); if(u){ u.value=spSourceUrl; } fetchJobUrl(); return; }
   if(act==="aigen-copy"){ copy(aiGenText,"Copied"); return; }
   if(act==="ask-ai"){ runAsk(); return; }
   if(act==="ai-fallback-copy"){ const ta=$("#spInput"); copy(aiPrompt((ta?ta.value:spText)||spText),"Prompt copied — paste into any AI"); return; }

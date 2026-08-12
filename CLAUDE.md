@@ -102,9 +102,16 @@ you paste into a new AI chat to prep for interviews.
   a base64 PDF the model reads natively.
   `aiPrompt()` builds the extraction prompt against a fixed JSON schema; `aiParse()` is a defensive
   JSON extractor; `spReview()/spApply()` map the result to a new opportunity or merge into a matched
-  one (adding round/people). **Job URL → auto-fill**: `fetchJobUrl()` pulls a posting via Jina Reader
-  (`r.jina.ai`, free/CORS/no-key) → clean text → the same extraction; the source URL is saved to
-  `o.jobUrl` (which also yields the logo domain). Config in localStorage `callback_ai_cfg_v1`
+  one (adding round/people). **Job URL → auto-fill**: `fetchJobUrl()` → `readUrlText()` walks the
+  `URL_READERS` chain (Jina Reader → AllOrigins → CodeTabs → direct), each with a 15s abort, because
+  any single public reader gets rate-limited, key-walled or blocked on any given day. HTML responses
+  go through `htmlToText()`, which strips chrome and lifts schema.org **JobPosting** JSON-LD (title,
+  company, location, pay) to the top — that structured block is why extraction from a URL is sharper
+  than from a copy-paste. On total failure `readFailMessage()` names the actual cause (rate limit /
+  site blocks readers / login-walled site via `WALLED` / JS-rendered / no connection) and
+  `spShowReadFail()` hands over the paste box **keeping `spSourceUrl`**, so the link still lands on
+  `o.jobUrl`. Only CORS-safelisted request headers — a custom header triggers a preflight these
+  hosts don't answer, which breaks every fetch at once. Config in localStorage `callback_ai_cfg_v1`
   (device-local, never synced, never in repo). `openAISettings()` configures the engine. Entry:
   topbar "Smart add" + Settings.
 - `POST-HIRE (90-day mode → My Company)` — everything that happens *after* you get the job. See the
@@ -267,7 +274,7 @@ lives in `index.html` as the `SYNC_SQL` constant (and in the in-app Settings pan
 
 ## PWA / offline
 `sw.js` (registered at boot, http(s) only) caches the app shell — network-first for
-navigations (updates show online), cache fallback offline. Cross-origin (logos/AI/Jina/
+navigations (updates show online), cache fallback offline. Cross-origin (logos/AI/readers/
 Supabase) is never intercepted, so it fails gracefully offline. Inline web manifest already
 present. Bump `CACHE` in `sw.js` to force-invalidate.
 

@@ -256,6 +256,25 @@ of being crushed between the logo and the ring. The ring `<svg>` must size from 
 never fixed attributes — a fixed 76px svg in a 62px slot put the number off-centre inside its own
 circle, which is exactly the bug it shipped with.
 
+**The header follows the job.** `tuneTopbar()` swaps the two topbar actions per view: on Work they
+become **Add** (`openAddRecord()` — one grid for every record type) and **Capture**, and the search
+placeholder changes, because "Smart add / Add role" is the wrong tool once you already have the job.
+Everywhere else the job-search actions stay. Apply the same test anywhere pre-hire language leaks in.
+**The map is a tool, not a picture.** `.og-tools` is a slim rail floating over `#ogWrap`'s right edge:
+add person / department / team, draw a reporting line, link two people, and `?` (`openMapHelp()`).
+`ogTool()` routes them; the connect tools go through `pickPersonThen()` then hand off to the pickers
+that already exist. **The rail sits inside the pan surface, so `armWorkGraph`'s `pointerdown` must
+ignore `.og-tools`** — capturing the pointer swallows every click on it.
+**Departments nest** (`parentId`, an `ent:department` field on department), so business unit →
+division → department → team goes as deep as needed; `deptPath()` walks up with a cycle guard.
+**Every `ent:` picker creates what it picks** — `openEntForm` renders a `.pick-wrap` with a `＋ New …`
+option; choosing it reveals an inline name field and `addEntInline()` creates the record (reusing an
+existing one on a name match) without leaving the form.
+**A synced AI key is only useful if the device adopts it.** `adoptSyncedAI()` runs at boot and after
+every pull: a device with no key of its own takes the whole synced setup (engine, key, model) into
+`aiCfg`. Without it a second device sat on the default engine and refused a perfectly good Groq key
+for not matching — the key was there and the app still said "connect an AI".
+
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
 `employers().length > 0`, so a new user never sees an empty object.
 

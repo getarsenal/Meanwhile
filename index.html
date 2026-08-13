@@ -735,6 +735,10 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .og-dept b{color:var(--faint);font-weight:800}
 .og-dept.clear{color:var(--accent3)}
 .og-node.dim{opacity:.22}
+/* Off the chart but not out of the app: dimmed, gold-edged, still fully clickable. */
+.og-node.away .og-card{stroke-dasharray:4 4;opacity:.9}
+.og-node.away{opacity:.72}
+.og-node.away:hover{opacity:1}
 .og-zoom{display:flex;gap:5px;flex:0 0 auto}
 .og-zoom .x-btn{width:30px;height:30px;font-size:15px;font-weight:800}
 /* A slim tool rail floating over the map's right edge: build and connect live here so the map is
@@ -2202,6 +2206,13 @@ function wAdd(k,rec){ rec.id=rec.id||uid(); rec.at=rec.at||Date.now(); W()[k].pu
 /* Big companies are stacks of legal entities and brands: Mendix is inside Siemens Digital
    Industries Software, which is inside Siemens. Knowing where you actually sit — and which
    name on an email belongs to which part — is half of understanding a large employer. */
+/* Not everyone you need to remember still works here. A predecessor is the clearest case: you
+   inherit their projects, their decisions and half your open questions are really about them, so
+   they must exist as a full record — but they report to nobody and putting them in the live org
+   chart is a lie about how the place works today. They come off the chart, not out of the app. */
+const PERSON_STANDING=["Here","Left the company","Predecessor — had my role","Changed team","Not an employee"];
+function personHere(p){ return !p||!p.standing||p.standing==="Here"; }
+function standingShort(p){ return personHere(p)?"":(p.standing==="Predecessor — had my role"?"predecessor":p.standing==="Not an employee"?"external":p.standing==="Changed team"?"moved on":"left"); }
 const ORG_KINDS=["Parent company","Business group","Division","Subsidiary","Brand or product company","Joint venture","Acquired company","Other"];
 const ENT = {
   person:    {list:"people",      icon:I.user,     col:"#6d8bc4", label:"Person",     plural:"People",         name:r=>r.name},
@@ -3002,7 +3013,8 @@ function entRowMeta(type,r){
     const knows=relatedOfType("person",r.id,"system",["KNOWS","OWNS"]).map(x=>entLabel("system",x.id));
     const owns=relatedOfType("person",r.id,"process",["OWNS"]).concat(relatedOfType("person",r.id,"project",["OWNS"]));
     const n=personInteractions(r).length;
-    return [r.title,dept,knows.length?"knows "+knows.slice(0,2).join(", "):"",owns.length?"owns "+owns.map(x=>entLabel(x.type,x.id)).slice(0,2).join(", "):"",n?`${n} ${n===1?"interaction":"interactions"}`:""].filter(Boolean).join(" · ");
+    const st=personHere(r)?"":(r.standing==="Predecessor — had my role"?"your predecessor":r.standing);
+    return [st,r.title,personHere(r)?dept:"",knows.length?"knows "+knows.slice(0,2).join(", "):"",owns.length?"owns "+owns.map(x=>entLabel(x.type,x.id)).slice(0,2).join(", "):"",n?`${n} ${n===1?"interaction":"interactions"}`:""].filter(Boolean).join(" · ");
   }
   if(type==="project") return [r.status,r.deptId?entLabel("department",r.deptId):"",r.ownerId?"owner "+entLabel("person",r.ownerId):"no owner recorded",r.description].filter(Boolean).join(" · ");
   if(type==="problem") return [r.status,r.discovered?"found "+fmtDate(r.discovered):"",r.description].filter(Boolean).join(" · ");
@@ -3236,8 +3248,11 @@ function openWorksWithPicker(personId){
 /* Tidy tree: depth from the reporting chain, x from leaf order with parents centred over
    their children. Anyone you haven't placed yet waits in a tray under the chart. */
 function orgLayout(o){
-  const ppl=(o.people||[]).slice();
-  const byId={}; ppl.forEach(p=>byId[p.id]=p);
+  const everyone=(o.people||[]).slice();
+  // people who have left, or never worked here, sit apart — a reporting chart is about now
+  const aside=everyone.filter(p=>!personHere(p));
+  const ppl=everyone.filter(personHere);
+  const byId={}; everyone.forEach(p=>byId[p.id]=p);
   const parentOf={}, kids={};
   ppl.forEach(p=>{
     let m=personManager(p);
@@ -3267,19 +3282,27 @@ function orgLayout(o){
   loose.sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
     pos[p.id]={x:(i%perRow)*(NW+GAPX), y:(depth+1+Math.floor(i/perRow))*(NH+GAPY)+(depth>=0?26:0), depth:-1, unplaced:1};
   });
+  // ...and the people who are no longer here get a band of their own below that
+  const asideY=(depth+1+Math.ceil(loose.length/perRow))*(NH+GAPY)+(depth>=0?26:0)+(loose.length?34:0);
+  aside.sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach((p,i)=>{
+    pos[p.id]={x:(i%perRow)*(NW+GAPX), y:asideY+Math.floor(i/perRow)*(NH+GAPY), depth:-2, unplaced:1, aside:1};
+  });
   // hand-dragged positions win
   const saved=wLayout();
   Object.keys(pos).forEach(id=>{ const sv=saved[id]; if(sv){ pos[id].x=sv.x; pos[id].y=sv.y; pos[id].moved=1; } });
-  return {pos,parentOf,kids,loose,byId,NW,NH,treeDepth:depth};
+  return {pos,parentOf,kids,loose,aside,byId,NW,NH,treeDepth:depth,asideY};
 }
 /* The other way to look at it: forget the hierarchy and show me who sits where. */
 function deptLayout(o){
-  const ppl=(o.people||[]).slice();
+  const everyone=(o.people||[]).slice();
+  const aside=everyone.filter(p=>!personHere(p));
+  const ppl=everyone.filter(personHere);
   const depts=wOf("departments",o.id).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const groups=depts.map(d=>({id:d.id,name:d.name,people:ppl.filter(p=>p.deptId===d.id)}))
     .filter(g=>g.people.length)
     .concat((()=>{ const rest=ppl.filter(p=>!p.deptId||!depts.some(d=>d.id===p.deptId));
-      return rest.length?[{id:"",name:"No department yet",people:rest}]:[]; })());
+      return rest.length?[{id:"",name:"No department yet",people:rest}]:[]; })())
+    .concat(aside.length?[{id:"",name:"No longer here",people:aside,aside:1}]:[]);
   const NW=172, NH=54, GAPX=16, GAPY=16, PERROW=4, HEAD=26, TEAMHEAD=22, TPAD=10;
   const pos={}, bands=[], teamBoxes=[]; let y=0;
   groups.forEach(g=>{
@@ -3304,11 +3327,12 @@ function deptLayout(o){
     });
     if(rest.length) inner+=lay(rest,TPAD,y+inner);
     const h=Math.max(inner,HEAD+NH+GAPY);
-    bands.push({id:g.id,name:g.name,y,h,n:g.people.length,w:PERROW*(NW+GAPX)-GAPX+TPAD*2,headId:g.headId});
+    bands.push({id:g.id,name:g.name,y,h,n:g.people.length,w:PERROW*(NW+GAPX)-GAPX+TPAD*2,headId:g.headId,aside:g.aside});
     y+=h+18;
   });
-  const byId={}; ppl.forEach(p=>byId[p.id]=p);
-  return {pos,parentOf:{},kids:{},loose:[],byId,NW,NH,bands,teamBoxes,treeDepth:-1};
+  const byId={}; everyone.forEach(p=>byId[p.id]=p);
+  Object.keys(pos).forEach(id=>{ const p=everyone.find(x=>x.id===id); if(p&&!personHere(p)) pos[id].aside=1; });
+  return {pos,parentOf:{},kids:{},loose:[],aside,byId,NW,NH,bands,teamBoxes,treeDepth:-1};
 }
 function workGraph(o){
   const L=ogMode==="dept"?deptLayout(o):orgLayout(o);
@@ -3345,7 +3369,8 @@ function workGraph(o){
     const p=L.byId[id], col=deptCol(p), d=deptOf(p), nRep=(L.kids[id]||[]).length;
     const dim=ogFilter&&p.deptId!==ogFilter;
     const isHead=wOf("departments",o.id).some(x=>x.headId===id)||wOf("teams",o.id).some(x=>x.headId===id);
-    return `<g class="og-node${L.pos[id].unplaced?" loose":""}${dim?" dim":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
+    const away=!personHere(p), tag=standingShort(p);
+    return `<g class="og-node${L.pos[id].unplaced?" loose":""}${dim?" dim":""}${away?" away":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
       <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card"/>
       <rect width="3.5" height="${L.NH}" rx="2" fill="${col}"/>
       <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"${isHead?' stroke="#e8c47a" stroke-width="2"':""}/>
@@ -3353,14 +3378,15 @@ function workGraph(o){
       <text x="28" y="${L.NH/2+4}" text-anchor="middle" fill="#fff" font-size="10.5" font-weight="800">${esc(initials(p.name))}</text>
       <text x="49" y="${L.NH/2-3}" fill="var(--txt)" font-size="11.5" font-weight="750">${esc(clip(p.name,16))}</text>
       ${d?`<circle cx="52" cy="${L.NH/2+7.5}" r="3" fill="${col}"/>`:""}
-      <text x="${d?60:49}" y="${L.NH/2+11}" fill="var(--faint)" font-size="9.5">${esc(clip(p.title?(d?p.title:p.title):d||"—",d?18:21))}</text>
+      <text x="${d&&!away?60:49}" y="${L.NH/2+11}" fill="${away?"#c9a227":"var(--faint)"}" font-size="9.5">${
+        away?esc(clip((tag?tag+(p.title?" · ":""):"")+(p.title||""),24)):esc(clip(p.title?(d?p.title:p.title):d||"—",d?18:21))}</text>
       ${nRep?`<circle cx="${L.NW-13}" cy="13" r="8" fill="var(--panel2)" stroke="var(--line2)"/>
         <text x="${L.NW-13}" y="16.5" text-anchor="middle" fill="var(--muted)" font-size="9" font-weight="800">${nRep}</text>`:""}
     </g>`;
   };
   let band="";
   (L.bands||[]).forEach(bd=>{
-    const c=deptColor(bd.id), by=bd.y-minY+PAD, bw=Math.max(bd.w,W_-PAD*2);
+    const c=bd.aside?"#c9a227":deptColor(bd.id), by=bd.y-minY+PAD, bw=Math.max(bd.w,W_-PAD*2);
     const head=bd.headId&&entGet("person",bd.headId);
     band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="${c}" opacity=".07"/>
       <rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="none" stroke="${c}" stroke-width="1" opacity=".22"/>
@@ -3383,6 +3409,12 @@ function workGraph(o){
   if(L.treeDepth>=0&&L.loose.length){
     const y=(L.treeDepth+1)*(L.NH+46)-minY+PAD-4;
     band=`<line x1="${PAD}" y1="${y}" x2="${W_-PAD}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 6"/>`;
+  }
+  // people who are no longer here get their own labelled shelf, so the chart above it stays true
+  if((L.aside||[]).length && L.asideY!=null && ogMode!=="dept"){
+    const ay=L.asideY-minY+PAD-16;
+    band+=`<line x1="${PAD}" y1="${ay}" x2="${W_-PAD}" y2="${ay}" stroke="#c9a227" stroke-width="1" stroke-dasharray="3 6" opacity=".5"/>
+      <text x="${PAD}" y="${ay-6}" fill="#c9a227" font-size="9.5" font-weight="800" letter-spacing=".06em" opacity=".85">NO LONGER HERE</text>`;
   }
   const svg=`<svg id="ogSvg" width="${W_}" height="${H_}" viewBox="0 0 ${W_} ${H_}">${band}${edges}${ids.map(card).join("")}</svg>`;
   const tray=L.loose.length&&L.treeDepth>=0
@@ -3666,7 +3698,7 @@ function entDetailBody(type,rec){
    [name, label, kind, required, options] where kind is text|textarea|date|select|ent:<type> */
 function entFields(type){
   return {
-    person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
+    person:    [["name","Name","text",1],["title","Title / role","text"],["standing","Still here?","select",0,PERSON_STANDING],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
     org:       [["name","Name","text",1],["parentId","Part of","ent:org"],["kind","What it is","select",0,ORG_KINDS],["site","Website","text"],["note","Notes","textarea"]],
@@ -4185,7 +4217,8 @@ function whoToAsk(o,q){
   const T=terms(q); if(!T.length) return [];
   const hit=s=>{ const n=norm(s); return T.filter(t=>n.includes(t)).length; };
   const out=[];
-  (o.people||[]).forEach(p=>{
+  // never send you to someone who has left — their knowledge is in your notes, not at their desk
+  (o.people||[]).filter(personHere).forEach(p=>{
     let score=0; const why=[];
     const rel=relatedTo("person",p.id,true);
     rel.forEach(r=>{

@@ -267,6 +267,14 @@ the connect tools go through `pickPersonThen()` then hand off to the pickers
 that already exist. **The rail sits inside the pan surface, so `armWorkGraph`'s `pointerdown` must
 ignore `.og-tools`** — capturing the pointer swallows every click on it — and `ogFit()` reserves
 `ogRailGutter()` so the fitted view never parks a card underneath it.
+**Not everyone you track still works there.** A person carries a `standing` (`PERSON_STANDING`,
+default "Here"): left, *predecessor — had my role*, changed team, or not an employee. `personHere(p)`
+gates it. They stay a full record — notes, links, citations, search — but come **off the reporting
+chart**, because a chart that shows a predecessor reporting to your manager is a lie about how the
+place works today. `orgLayout`/`deptLayout` partition them into `aside`, drawn under a gold
+"NO LONGER HERE" shelf (its own band in department mode), dimmed and dashed but fully clickable and
+draggable. `whoToAsk()` skips them — never send someone to ask a person who has left; their knowledge
+is in the notes, not at their desk.
 **Organizations sit above departments.** A large employer is a stack of legal entities and brands —
 Mendix ⊂ Siemens Digital Industries Software ⊂ Siemens — and that is the thing a department list
 cannot express. `ENT.org` (list `orgs`, kinds in `ORG_KINDS`) nests via `parentId`; a department
@@ -295,7 +303,7 @@ for not matching — the key was there and the app still said "connect an AI".
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.
 - `o.hired`: `{startDate, title, manager, managerId, acceptedAt}` — present once `status==="hired"`.
-- `o.people[]` gains post-hire fields: `deptId`, `expertise[]`, `at`, `fromCapture`.
+- `o.people[]` gains post-hire fields: `deptId`, `teamId`, `managerId`, `standing`, `expertise[]`, `at`, `fromCapture`.
 - `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name
   drives the Home greeting (`render()`: "Good afternoon, {first}"), the welcome state, and AI briefs
   (`buildBrief` adds a "Candidate (me)" line). Synced like the rest of state.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
-<title>Meanwhile — Interview Tracker</title>
+<title>Meanwhile</title>
 
 <!-- PWA / "Add to Home Screen" -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -64,8 +64,7 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .brand .logo{width:36px;height:36px;flex:0 0 36px;border-radius:10px;overflow:hidden;display:grid;place-items:center}
 .brand .logo img{width:36px;height:36px;object-fit:cover;border-radius:10px}
 .brand .logo svg{width:22px;height:22px}
-.brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.02em}
-.brand small{display:block;color:var(--faint);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.brand h1{font-size:17px;margin:0;font-weight:800;letter-spacing:-.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-btn{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;color:var(--muted);font-weight:600;transition:.15s;width:100%;text-align:left}
 .nav-btn svg{width:19px;height:19px;flex:0 0 19px;opacity:.85}
 .nav-btn:hover{background:var(--panel);color:var(--txt)}
@@ -630,6 +629,16 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ent-ico img{width:100%;height:100%;object-fit:cover}
 .ent-ico svg{width:15px;height:15px}
 .ent-body{flex:1;min-width:0}
+.add-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(130px,100%),1fr));gap:8px}
+.add-tile{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);font-weight:700;font-size:13px;color:var(--txt);text-align:left;min-width:0}
+.add-tile:hover{border-color:var(--accent);background:var(--panel)}
+.add-tile .ai{display:grid;place-items:center;flex:0 0 20px}
+.add-tile .ai svg{width:17px;height:17px}
+.add-tile span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-wrap{display:flex;flex-direction:column;gap:7px;min-width:0}
+.pick-new{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pick-new input{flex:1 1 150px;min-width:0}
 .ent-name{font-weight:750;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ent-meta{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ent-tail{flex:0 0 auto;font-size:11px;font-weight:800;color:var(--faint);white-space:nowrap}
@@ -728,6 +737,20 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .og-node.dim{opacity:.22}
 .og-zoom{display:flex;gap:5px;flex:0 0 auto}
 .og-zoom .x-btn{width:30px;height:30px;font-size:15px;font-weight:800}
+/* A slim tool rail floating over the map's right edge: build and connect live here so the map is
+   something you work in, not just look at. Icon-only with tooltips, so it costs ~40px of canvas. */
+.map-help p{font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 11px}
+.map-help b{color:var(--txt)}
+.og-tools{position:absolute;top:10px;right:10px;z-index:5;display:flex;flex-direction:column;gap:5px;
+  padding:6px;border-radius:13px;background:rgba(16,18,22,.82);backdrop-filter:blur(9px);
+  border:1px solid var(--line);box-shadow:0 6px 22px rgba(0,0,0,.35);max-height:calc(100% - 20px);overflow:auto}
+.og-tool{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--muted);
+  font-weight:800;font-size:13px;background:transparent;border:0;cursor:pointer;flex:0 0 32px}
+.og-tool svg{width:17px;height:17px}
+.og-tool:hover{background:var(--panel2);color:var(--accent3)}
+.og-tool:active{transform:scale(.92)}
+.og-tool-sep{height:1px;background:var(--line);margin:2px 3px;flex:0 0 1px}
+@media(max-width:560px){ .og-tools{top:8px;right:8px;padding:5px;gap:4px} .og-tool{width:29px;height:29px;flex-basis:29px} }
 .og-wrap{position:relative;height:400px;border:1px solid var(--line);border-radius:13px;background:
   radial-gradient(circle at 1px 1px, rgba(255,255,255,.045) 1px, transparent 0) 0 0/22px 22px, var(--bg2);
   overflow:hidden;touch-action:none;cursor:grab}
@@ -801,7 +824,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   <aside class="sidebar">
     <div class="brand">
       <div class="logo"><img src="icon.png" alt="Meanwhile" width="36" height="36"/></div>
-      <div><h1>Meanwhile</h1><small>Track · Prepare · Get hired</small></div>
+      <h1>Meanwhile</h1>
     </div>
     <nav id="nav"></nav>
     <div class="side-spacer"></div>
@@ -824,8 +847,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
         <input id="search" placeholder="Search company, role, person…" autocomplete="off"/>
       </div>
-      <button class="btn ghost" data-act="smart-paste" title="Paste an invite, email, JD or profile — AI fills the entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M5.6 5.6l2 2M16.4 16.4l2 2M3 12h3M18 12h3M5.6 18.4l2-2M16.4 7.6l2-2"/><circle cx="12" cy="12" r="3.2"/></svg><span class="hide-sm">Smart add</span></button>
-      <button class="btn primary" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg><span class="hide-sm">Add role</span></button>
+      <button class="btn ghost" id="topSecondary" data-act="smart-paste" title="Paste an invite, email, JD or profile — AI fills the entry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M5.6 5.6l2 2M16.4 16.4l2 2M3 12h3M18 12h3M5.6 18.4l2-2M16.4 7.6l2-2"/><circle cx="12" cy="12" r="3.2"/></svg><span class="hide-sm">Smart add</span></button>
+      <button class="btn primary" id="topPrimary" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg><span class="hide-sm">Add role</span></button>
       <button class="x-btn" data-act="settings" id="settingsBtn" title="Settings & sync" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="syncDot" style="display:none;position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--good);border:2px solid var(--bg)"></span></button>
     </div>
     <div class="content" id="content"></div>
@@ -1023,6 +1046,7 @@ async function pullNow(opts){
       const remote=row.data, rRev=+row.updated_at||remote.rev||0;
       if(rRev > (state.rev||0)){
         state=remote; persist();
+        adoptSyncedAI();   // a key that arrived with the document should be usable straight away
         if(openId && !getOp()) closeDrawer(); else if(openId) renderDrawer();
         render(); if(!opts.silent) toast("Synced latest from cloud");
       } else if((state.rev||0) > rRev){
@@ -1164,6 +1188,7 @@ function render(){
   document.body.classList.toggle("no-data", !state.opportunities.length);
   renderNav();
   renderFab();
+  tuneTopbar();
   const v=VIEWS.find(x=>x.id===view);
   const name=(getProfile().name||"").trim();
   // On Home, lead with a personal greeting when a name is set
@@ -1185,6 +1210,43 @@ function render(){
 }
 /* The Capture button follows you everywhere once you're employed — capture is the whole game
    (see POST-HIRE). Hidden pre-hire so nothing new clutters the job-search app. */
+/* Once you work somewhere, the header is still offering to add another job — the wrong tool for
+   the room. On the Work view the two actions become the ones that matter now: record what just
+   happened, and add a person/team/project. Everywhere else the job-search actions stay put. */
+function tuneTopbar(){
+  const sec=document.getElementById("topSecondary"), pri=document.getElementById("topPrimary"),
+        sch=document.getElementById("search");
+  if(!sec||!pri) return;
+  const atWork = view==="work" && employers().length>0;
+  if(atWork){
+    sec.dataset.act="work-add"; sec.title="Add a person, team, project or anything else you've learned";
+    sec.innerHTML=`${I.plus}<span class="hide-sm">Add</span>`;
+    pri.dataset.act="capture"; pri.title="Capture what just happened";
+    pri.innerHTML=`${I.note}<span class="hide-sm">Capture</span>`;
+    if(sch) sch.placeholder="Search people, projects, notes…";
+  } else {
+    sec.dataset.act="smart-paste"; sec.title="Paste an invite, email, JD or profile — AI fills the entry";
+    sec.innerHTML=`${I.ai}<span class="hide-sm">Smart add</span>`;
+    pri.dataset.act="add"; pri.title="Add a role";
+    pri.innerHTML=`${I.plus}<span class="hide-sm">Add role</span>`;
+    if(sch) sch.placeholder="Search company, role, person…";
+  }
+}
+/* One place to add any kind of record, so you never have to know which tab it lives under. */
+function openAddRecord(){
+  const o=workOp(); if(!o) return;
+  const types=["person","department","team","project","problem","system","process","decision","question","info"];
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.plus}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Add to ${esc(o.company)}</h2>
+      <div style="font-size:12.5px;color:var(--faint)">Or just capture a note and let it work this out for you</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <button class="btn primary" style="width:100%;margin-bottom:12px" data-act="capture">${I.note} Capture a note</button>
+  <div class="add-grid">${types.map(t=>{
+    const c=ENT[t]||{};
+    return `<button class="add-tile" data-addent="${t}"><span class="ai" style="color:${cssCol(c.col)}">${c.icon||I.plus}</span><span>${esc(c.label||t)}</span></button>`;
+  }).join("")}</div>`);
+}
 function renderFab(){
   const want = employers().length>0;
   let fab=document.getElementById("captureFab");
@@ -2987,7 +3049,7 @@ function workOrg(o){
         <span class="dept-dot"></span>
         <div style="flex:1;min-width:0">
           <div class="dept-name" data-ent="department|${d.id}">${esc(d.name)}</div>
-          <div class="dept-meta">${inDept.length} ${inDept.length===1?"person":"people"}${teams.length?` · ${teams.length} ${teams.length===1?"team":"teams"}`:""}</div>
+          <div class="dept-meta">${(()=>{const par=deptParentName(d.id);return par?`part of ${esc(par)} · `:"";})()}${inDept.length} ${inDept.length===1?"person":"people"}${teams.length?` · ${teams.length} ${teams.length===1?"team":"teams"}`:""}</div>
         </div>
         ${headChip(o,d.headId)}
         <button class="btn sm ghost" data-entedit="department|${d.id}">${I.edit}</button>
@@ -3230,7 +3292,9 @@ function workGraph(o){
     const head=bd.headId&&entGet("person",bd.headId);
     band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="${c}" opacity=".07"/>
       <rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="none" stroke="${c}" stroke-width="1" opacity=".22"/>
-      <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan>${
+      <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}${
+        (()=>{const par=bd.id&&deptParentName(bd.id);return par?`<tspan dx="8" fill="var(--faint)" font-size="9" font-weight="700" letter-spacing="0">in ${esc(par)}</tspan>`:"";})()
+      }<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan>${
         head?`<tspan dx="12" fill="var(--muted)" font-size="9.5" font-weight="700" letter-spacing="0">▲ ${esc(head.name)}</tspan>`:""}</text>`;
   });
   // teams sit inside their department as their own softly-bordered region
@@ -3268,10 +3332,70 @@ function workGraph(o){
       </div>
     </div>
     ${legend}
-    <div class="og-wrap" id="ogWrap"><div class="og-pan" id="ogPan">${svg}</div></div>
+    <div class="og-wrap" id="ogWrap"><div class="og-pan" id="ogPan">${svg}</div>
+      <div class="og-tools" role="toolbar" aria-label="Map tools">
+        <button class="og-tool" data-ogtool="person" title="Add a person" aria-label="Add a person">${I.user}</button>
+        <button class="og-tool" data-ogtool="department" title="Add a department or business unit" aria-label="Add a department">${I.people}</button>
+        <button class="og-tool" data-ogtool="team" title="Add a team inside a department" aria-label="Add a team">${I.project}</button>
+        <i class="og-tool-sep"></i>
+        <button class="og-tool" data-ogtool="reports" title="Draw a reporting line" aria-label="Draw a reporting line">${OG_REPORTS_ICO}</button>
+        <button class="og-tool" data-ogtool="works" title="Link two people who work together" aria-label="Link two people who work together">${I.link}</button>
+        <i class="og-tool-sep"></i>
+        <button class="og-tool" data-ogtool="help" title="How this map works" aria-label="How this map works">?</button>
+      </div>
+    </div>
     ${tray}
-    <div class="sect-note" style="margin:10px 2px 0">Drag a card to move it, drag the background to pan, pinch or scroll to zoom. Tap a card to open someone; tap a department to isolate it. Reporting lines and “works with” links are set on a person's record.</div>`;
+    <div class="sect-note" style="margin:10px 2px 0">Drag cards to arrange, drag the background to pan, pinch to zoom. The tools on the right add people, departments and teams, and draw the lines between them.</div>`;
 }
+// a small org-tree glyph; the icon set has no reporting-line symbol
+const OG_REPORTS_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="5" rx="1.5"/><rect x="2.5" y="16.5" width="6" height="5" rx="1.5"/><rect x="15.5" y="16.5" width="6" height="5" rx="1.5"/><path d="M12 7.5v4M5.5 16.5v-2.5h13v2.5"/></svg>';
+/* The rail's actions. Build tools open the same forms as anywhere else (one code path, one set of
+   validation); connect tools ask "who?" first, then hand off to the picker that already exists. */
+function ogTool(kind){
+  const o=workOp(); if(!o) return;
+  if(kind==="person"||kind==="department"||kind==="team"){ openEntForm(kind,null,o.id); return; }
+  if(kind==="reports"){ pickPersonThen("Whose reporting line?","Pick the person, then say who they report to.",id=>openMgrPicker(id)); return; }
+  if(kind==="works"){ pickPersonThen("Who works with whom?","Pick one person, then tick everyone they work alongside.",id=>openWorksWithPicker(id)); return; }
+  if(kind==="help"){ openMapHelp(); return; }
+}
+let pickPersonNext=null;
+function pickPersonThen(title,note,fn){
+  const o=workOp(); if(!o) return;
+  const ppl=entAll("person",o.id);
+  pickPersonNext=fn;
+  if(!ppl.length){ toast("Add someone first — the ＋ person button above"); return; }
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.user}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${esc(title)}</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${esc(note)}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="card panel" style="padding:5px;max-height:340px;overflow:auto">${
+    ppl.map(p=>entRow("person",p,{tail:`<button class="btn sm ghost" data-pickperson="${p.id}">Pick</button>`})).join("")}</div>`);
+}
+/* Said once, on the map, instead of a paragraph of instructions under it. */
+function openMapHelp(){
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.map}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Working the map</h2>
+      <div style="font-size:12.5px;color:var(--faint)">It's a tool, not a picture</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div class="map-help">
+    <p><b>Moving around.</b> Drag a card to place it where it belongs in your head — that sticks. Drag the background to pan, scroll or pinch to zoom, ⤢ to fit it all back on screen.</p>
+    <p><b>The lines.</b> A solid elbow is a reporting line. A dashed line means two people keep turning up on the same work — Meanwhile infers those from your notes. A heavier dashed line is one you drew yourself, which is how you record the relationships an org chart never shows.</p>
+    <p><b>Real companies aren't tidy.</b> A department can sit inside another one, so business unit → division → department → team is fine, as deep as you need. Someone can sit in one department and work mostly with another; record the first as their department and the second as a “works with” link.</p>
+    <p><b>Nothing here has to be right.</b> Put down what you know, fix it when you learn better. Every card opens for editing, and anything mislabelled can be turned into another kind of record.</p>
+  </div>
+  <button class="btn primary" style="width:100%;margin-top:12px" data-act="cancel-editor">Got it</button>`);
+}
+/* Departments nest, so a name alone is ambiguous — "Operations" inside which business unit?
+   Walks up the parents with a cycle guard, because a user can always point two at each other. */
+function deptPath(id,sep){
+  const out=[]; const seen=new Set();
+  let d=entGet("department",id);
+  while(d && !seen.has(d.id) && out.length<8){ seen.add(d.id); out.unshift(d.name||"—"); d=d.parentId?entGet("department",d.parentId):null; }
+  return out.join(sep||" › ");
+}
+function deptParentName(id){ const d=entGet("department",id); const p=d&&d.parentId?entGet("department",d.parentId):null; return p?p.name:""; }
 function clip(s,n){ s=String(s||""); return s.length>n?s.slice(0,n-1)+"…":s; }
 
 /* Pan / zoom / drag. Pointer events so a finger and a mouse take the same path. */
@@ -3291,7 +3415,8 @@ function armWorkGraph(){
   if(svg){                       // size the canvas to the chart rather than always 400px
     const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
     const z=Math.min(1,(wrap.clientWidth-16)/w);
-    wrap.style.height=Math.round(Math.max(210,Math.min(420,h*Math.max(.3,z)+34)))+"px";
+    // the floor accommodates the tool rail, so it never hangs off a short map
+    wrap.style.height=Math.round(Math.max(252,Math.min(420,h*Math.max(.3,z)+34)))+"px";
   }
   ogFit();
   // The flag lives on the element, not on the module: every render builds a NEW #ogWrap, and a
@@ -3301,6 +3426,8 @@ function armWorkGraph(){
   let mode=null, startX=0, startY=0, orig=null, nodeId=null, moved=false, pts=new Map(), pinch=0;
   const pt=e=>({x:e.clientX,y:e.clientY});
   wrap.addEventListener("pointerdown",e=>{
+    // the tool rail floats over the canvas; capturing its pointer would swallow the click
+    if(e.target.closest(".og-tools")) return;
     const n=e.target.closest("[data-node]");
     pts.set(e.pointerId,pt(e));
     if(pts.size===2){ mode="pinch"; pinch=ogDist(pts); orig={...ogView}; return; }
@@ -3450,7 +3577,7 @@ function entFields(type){
     person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
-    department:[["name","Name","text",1],["headId","Head of department","ent:person"],["note","Notes","textarea"]],
+    department:[["name","Name","text",1],["parentId","Part of","ent:department"],["headId","Head of department","ent:person"],["note","What they do","textarea"]],
     team:      [["name","Name","text",1],["deptId","Department","ent:department"],["headId","Team lead","ent:person"],["note","What they do","textarea"]],
     info:      [["title","What is it","text",1],["kind","Kind","select",0,INFO_KINDS],["summary","In a sentence","textarea"],["note","Detail","textarea"]],
     system:    [["name","Name","text",1],["ownerId","Owner","ent:person"],["note","Notes","textarea"]],
@@ -3458,6 +3585,30 @@ function entFields(type){
     decision:  [["title","Decision","text",1],["madeBy","Made by","text"],["date","When","text"],["reason","Why","textarea"],["alternatives","Alternatives considered","textarea"],["note","Notes","textarea"]],
     question:  [["q","Question","text",1],["status","Status","select",0,QUESTION_STATUS],["answer","Answer","textarea"]],
   }[type]||[];
+}
+/* Create the thing the picker is picking, without leaving the form. The record is real
+   immediately (entities are cheap and editable on their own), so the select just gains it. */
+function addEntInline(btn){
+  const wrap=btn.closest(".pick-wrap"); if(!wrap) return;
+  const [field,type]=(btn.dataset.newadd||"").split("|");
+  const inp=wrap.querySelector("input[data-newent]"), sel=wrap.querySelector("select");
+  const name=(inp&&inp.value||"").trim();
+  if(!name){ if(inp) inp.focus(); return; }
+  const opId=(workOp()||{}).id || (editorEl&&editorEl.dataset.entOpId) || "";
+  const existing=entAll(type,opId).find(r=>canonThing(entName(type,r))===canonThing(name));
+  const made=existing||createEnt(type,opId,name,{});
+  if(!made){ toast("Couldn't create that"); return; }
+  if(!existing) save();
+  if(sel){
+    if(!sel.querySelector(`option[value="${made.id}"]`)){
+      const opt=document.createElement("option");
+      opt.value=made.id; opt.textContent=entName(type,made);
+      sel.insertBefore(opt, sel.querySelector('option[value="__new"]'));
+    }
+    sel.value=made.id; sel.dataset.prev=made.id;
+  }
+  const row=wrap.querySelector(".pick-new"); if(row) row.hidden=true;
+  toast(existing?`Using the ${((ENT[type]||{}).label||type).toLowerCase()} you already had`:`${entName(type,made)} added`);
 }
 function openEntForm(type,rec,opId){
   opId=opId||(rec&&(rec.opId||entOpId(type,rec.id)))||(workOp()||{}).id;
@@ -3470,9 +3621,21 @@ function openEntForm(type,rec,opId){
     else if(kind==="tags") input=`<input name="${n}" value="${esc((v||[]).join?(v||[]).join(", "):(v||""))}" placeholder="Salesforce, forecasting"/>`;
     else if(kind==="select") input=`<select name="${n}">${(opts||[]).map(x=>`<option ${v===x?"selected":""}>${esc(x)}</option>`).join("")}</select>`;
     else if(kind&&kind.indexOf("ent:")===0){
+      // Every picker can create what it is picking. Leaving a half-filled form to go and make a
+      // department, then coming back, is the kind of errand that stops people recording anything.
       const t=kind.slice(4);
       const pool=entAll(t,opId).filter(r=>!(rec&&r.id===rec.id));   // no self-reporting
-      input=`<select name="${n}"><option value="">— none —</option>${pool.map(r=>`<option value="${r.id}" ${v===r.id?"selected":""}>${esc(entName(t,r))}</option>`).join("")}</select>`;
+      const noun=(ENT[t]&&ENT[t].label||t).toLowerCase();
+      input=`<div class="pick-wrap">
+        <select name="${n}" data-entpick="${n}|${t}"><option value="">— none —</option>${
+          pool.map(r=>`<option value="${r.id}" ${v===r.id?"selected":""}>${esc(entName(t,r))}</option>`).join("")
+        }<option value="__new">＋ New ${esc(noun)}…</option></select>
+        <div class="pick-new" hidden>
+          <input placeholder="Name of the new ${esc(noun)}" data-newent="${n}|${t}" autocomplete="off"/>
+          <button type="button" class="btn sm primary" data-newadd="${n}|${t}">Add</button>
+          <button type="button" class="btn sm ghost" data-newcancel="${n}">Cancel</button>
+        </div>
+      </div>`;
     }
     else input=`<input name="${n}" value="${esc(v||"")}" ${req?"required":""}/>`;
     return `<div class="form-row"><label>${esc(l)}${req?" *":""}</label>${input}</div>`;
@@ -4787,6 +4950,20 @@ function aiKey(){
   if(sh&&sh.key&&sh.engine===(aiCfg.engine||"google")&&engineIsFree(sh.engine)) return sh.key;
   return "";
 }
+/* Syncing the key was only half the promise. A second device starts on the default engine, so a
+   synced Groq key sat in the document and was refused for not matching — the key was there and the
+   app still said "connect an AI". A device with no key of its own now adopts the whole synced
+   setup (engine, key, model) so it genuinely just works, and the settings screen shows it. A device
+   that has its own key is never touched. */
+function adoptSyncedAI(){
+  const sh=state.ai;
+  if(!sh||!sh.key||!engineIsFree(sh.engine)) return false;
+  if(aiCfg.key) return false;                       // this device already has its own
+  if(aiCfg.engine===sh.engine && aiCfg.key===sh.key) return false;
+  aiCfg.engine=sh.engine; aiCfg.key=sh.key; aiCfg.model=sh.model||"";
+  saveAICfg();
+  return true;
+}
 function aiSyncOn(){ return aiCfg.syncKey!==false; }   // opt-out, on by default for free engines
 // providers that can read an uploaded PDF directly
 function engineReadsPDF(){ return ["proxy","anthropic","google"].includes(aiEngine()); }
@@ -5378,7 +5555,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -5427,6 +5604,14 @@ document.addEventListener("click",e=>{
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
+  if(act==="work-add"){ openAddRecord(); return; }
+  if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
+  if(t.dataset.addent){ const ty=t.dataset.addent; closeEditor(); openEntForm(ty,null,(workOp()||{}).id); return; }
+  if(t.dataset.newadd!==undefined){ addEntInline(t); return; }
+  if(t.dataset.newcancel!==undefined){
+    const wrap=t.closest(".pick-wrap"); if(wrap){ const r=wrap.querySelector(".pick-new"); if(r) r.hidden=true; }
+    return;
+  }
   if(act==="import"){ $("#fileInput").click(); return; }
   if(act==="sample"){ loadSample(); return; }
   if(act==="settings"){ openSettings(); return; }
@@ -5532,6 +5717,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.og){ ogZoom(t.dataset.og); return; }
   if(t.dataset.ogmode){ ogMode=t.dataset.ogmode; ogFilter=""; render(); return; }
   if(t.dataset.ogdept!=null){ ogFilter=ogFilter===t.dataset.ogdept?"":t.dataset.ogdept; render(); return; }
+  if(t.dataset.ogtool){ ogTool(t.dataset.ogtool); return; }
   if(t.dataset.wop){ workOpId=t.dataset.wop; if(view!=="work"){ view="work"; workTab="overview"; } render(); return; }
   if(act==="hire"){ openHire(openId||t.dataset.hire); return; }
   if(act==="capture"){ openCapture(); return; }
@@ -5619,6 +5805,14 @@ document.addEventListener("keydown",e=>{
 
 // stage select in drawer footer
 document.addEventListener("change",e=>{
+  // picking "＋ New …" in any entity picker opens an inline name field instead of sending you away
+  if(e.target.dataset && e.target.dataset.entpick && e.target.value==="__new"){
+    const wrap=e.target.closest(".pick-wrap"); const row=wrap&&wrap.querySelector(".pick-new");
+    e.target.value=e.target.dataset.prev||"";
+    if(row){ row.hidden=false; const inp=row.querySelector("input"); if(inp){ inp.value=""; inp.focus(); } }
+    return;
+  }
+  if(e.target.dataset && e.target.dataset.entpick) e.target.dataset.prev=e.target.value;
   if(e.target.id==="stageSel"){ const o=getOp();
     // "Hired" isn't just a status — it starts 90-day mode, so collect the three things it needs
     if(e.target.value==="hired"&&!(o.hired&&o.hired.startDate)){ e.target.value=o.status; openHire(o.id); return; }
@@ -6227,7 +6421,7 @@ function googleCalEventUrl(ev){
 /* ============================ BOOT ============================ */
 // register a tiny inline manifest so Android shows "Install"
 try{
-  const mani={name:"Meanwhile — Interview Tracker",short_name:"Meanwhile",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+  const mani={name:"Meanwhile",short_name:"Meanwhile",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
   const link=document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(new Blob([JSON.stringify(mani)],{type:"application/manifest+json"})); document.head.appendChild(link);
 }catch(e){}
 // register the service worker for true offline (web/PWA); harmless when opened via file://
@@ -6235,6 +6429,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
 }
 
+adoptSyncedAI();   // a key already in the vault from another device works on this one from boot
 render();
 initSync();
 initNative();

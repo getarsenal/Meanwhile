@@ -768,6 +768,24 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .og-chip{cursor:pointer}
 .og-chip:hover{border-color:var(--accent);color:var(--txt)}
 @media(max-width:560px){ .og-wrap{height:330px} }
+/* An indented ladder rather than a tree drawing: a corporate stack is read top-to-bottom, and
+   indentation carries the nesting without needing any of the map's machinery. */
+.org-ladder{display:flex;flex-direction:column}
+.org-row{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--line);
+  padding-left:calc(4px + var(--d) * 18px);min-width:0;flex-wrap:wrap}
+.org-row:last-child{border-bottom:none}
+.org-row.me{background:linear-gradient(90deg,rgba(94,106,210,.13),transparent 70%);border-radius:10px}
+.org-rail{width:9px;height:9px;border-radius:3px;background:var(--line);flex:0 0 9px}
+.org-row.me .org-rail{background:var(--accent)}
+.org-name{font-weight:800;font-size:14px;color:var(--txt);background:none;border:0;padding:0;cursor:pointer;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.org-name:hover{color:var(--accent2)}
+.org-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);
+  background:rgba(94,106,210,.16);border-radius:999px;padding:3px 8px;flex:0 0 auto}
+.org-kind{font-size:11px;color:var(--faint);font-weight:700;flex:0 0 auto}
+.org-meta{font-size:11.5px;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.org-acts{margin-left:auto;display:flex;gap:6px;flex:0 0 auto}
+@media(max-width:560px){ .org-row{padding-left:calc(4px + var(--d) * 13px)} .org-acts{margin-left:0;width:100%} }
 .dept-card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--dc);
   border-radius:14px;padding:14px;margin-bottom:12px}
 .dept-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
@@ -901,7 +919,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
 
 /* Post-hire (see the POST-HIRE section): everything you learn once you're inside a company.
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
-const WORK_LISTS = ["captures","projects","problems","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
+const WORK_LISTS = ["captures","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
@@ -1235,7 +1253,7 @@ function tuneTopbar(){
 /* One place to add any kind of record, so you never have to know which tab it lives under. */
 function openAddRecord(){
   const o=workOp(); if(!o) return;
-  const types=["person","department","team","project","problem","system","process","decision","question","info"];
+  const types=["person","org","department","team","project","problem","system","process","decision","question","info"];
   openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.plus}</div>
     <div><h2 style="margin:0;font-size:18px;font-weight:850">Add to ${esc(o.company)}</h2>
@@ -2181,10 +2199,15 @@ function wAdd(k,rec){ rec.id=rec.id||uid(); rec.at=rec.at||Date.now(); W()[k].pu
 /* One registry so every entity type gets lists, detail views, forms and graph nodes for free.
    People are the exception on purpose — they stay on o.people so a person you met in an
    interview is literally the same record as the colleague you work with. */
+/* Big companies are stacks of legal entities and brands: Mendix is inside Siemens Digital
+   Industries Software, which is inside Siemens. Knowing where you actually sit — and which
+   name on an email belongs to which part — is half of understanding a large employer. */
+const ORG_KINDS=["Parent company","Business group","Division","Subsidiary","Brand or product company","Joint venture","Acquired company","Other"];
 const ENT = {
   person:    {list:"people",      icon:I.user,     col:"#6d8bc4", label:"Person",     plural:"People",         name:r=>r.name},
   project:   {list:"projects",    icon:I.project,  col:"#8a72bd", label:"Project",    plural:"Projects",       name:r=>r.name},
   problem:   {list:"problems",    icon:I.problem,  col:"#cf7273", label:"Problem",    plural:"Problems",       name:r=>r.title},
+  org:       {list:"orgs",        icon:I.building, col:"#c9a227", label:"Organization",plural:"Organizations", name:r=>r.name},
   department:{list:"departments", icon:I.people,   col:"#bf8a4f", label:"Department", plural:"Departments",    name:r=>r.name},
   team:      {list:"teams",       icon:I.people,   col:"#7c9cc4", label:"Team",       plural:"Teams",          name:r=>r.name},
   info:      {list:"infos",       icon:I.info,     col:"#9b8ec4", label:"Company info",plural:"Company info",  name:r=>r.title},
@@ -3032,10 +3055,58 @@ function headChip(o,id){
   const p=entGet("person",id); if(!p) return "";
   return `<span class="head-chip" data-ent="person|${p.id}">${I.crown}${esc(p.name)}</span>`;
 }
+/* The corporate structure, drawn as an indented ladder: Siemens → Siemens Digital Industries
+   Software → Mendix, with the one you actually work for called out. Departments hang off whichever
+   organization owns them, which is the thing a flat department list cannot express. */
+function orgLadder(o){
+  const orgs=entAll("org",o.id);
+  const emp=employerOrg(o);
+  if(!orgs.length){
+    return `<div class="card panel" style="margin-bottom:16px">
+      <div class="panel-title">${I.building} Corporate structure</div>
+      <div class="ent-empty">Big employers are stacks of companies — a brand inside a business group inside a parent.
+        Add the ones above you and Meanwhile will show where you actually sit.<br><br>
+        <button class="btn primary sm" data-addent="org">${I.plus} Add an organization</button></div></div>`;
+  }
+  const depts=wOf("departments",o.id);
+  // A user can point two organizations at each other; without this the recursion never returns.
+  const drawn=new Set();
+  const row=(g,depth)=>{
+    if(drawn.has(g.id)||depth>8) return "";
+    drawn.add(g.id);
+    const isEmp=emp&&emp.id===g.id;
+    const kids=orgChildren(o.id,g.id);
+    const mine=depts.filter(d=>d.orgId===g.id);
+    const ppl=(o.people||[]).filter(p=>mine.some(d=>d.id===p.deptId)).length;
+    return `<div class="org-row${isEmp?" me":""}" style="--d:${Math.min(depth,5)}">
+      <span class="org-rail"></span>
+      <button class="org-name" data-ent="org|${g.id}">${esc(g.name)}</button>
+      ${isEmp?`<span class="org-badge">you work here</span>`:""}
+      ${g.kind?`<span class="org-kind">${esc(g.kind)}</span>`:""}
+      <span class="org-meta">${mine.length?`${mine.length} ${mine.length===1?"department":"departments"}`:""}${mine.length&&ppl?" · ":""}${ppl?`${ppl} ${ppl===1?"person":"people"}`:""}</span>
+      <span class="org-acts">
+        ${isEmp?"":`<button class="btn sm ghost" data-setemporg="${g.id}" title="Mark this as the company you work for">This is us</button>`}
+        <button class="btn sm ghost" data-entedit="org|${g.id}">${I.edit}</button>
+      </span>
+    </div>` + kids.map(k=>row(k,depth+1)).join("");
+  };
+  // orphans (a parent that was deleted) still have to show up somewhere
+  const roots=orgChildren(o.id,"");
+  const rootHTML=roots.map(g=>row(g,0)).join("");
+  // anything a deleted (or looping) parent left unreachable still has to appear somewhere
+  const strandedHTML=orgs.filter(g=>!drawn.has(g.id)).map(g=>row(g,0)).join("");
+  return `<div class="card panel" style="margin-bottom:16px">
+    <div class="panel-title">${I.building} Corporate structure
+      <button class="btn sm ghost" style="margin-left:auto" data-addent="org">${I.plus} Add</button></div>
+    <div class="org-ladder">${rootHTML}${strandedHTML}</div>
+    ${emp?"":`<div class="sect-note" style="margin:10px 2px 0">Tap <b>This is us</b> on the one that employs you and everything above it becomes your reporting lineage.</div>`}
+  </div>`;
+}
 function workOrg(o){
   const depts=wOf("departments",o.id).slice().sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   const ppl=o.people||[];
-  let h=`<div class="sect-note">How this place is arranged — departments, the teams inside them, and who runs each. Tap anything to open it.</div>`;
+  let h=`<div class="sect-note">How this place is arranged — the companies above you, the departments inside, the teams inside those. Tap anything to open it.</div>`;
+  h+=orgLadder(o);
   h+=`<div class="card panel" style="margin-bottom:16px"><div class="panel-title">${I.map} The map</div>${workGraph(o)}</div>`;
   if(!depts.length){
     h+=`<div class="card panel"><div class="ent-empty">No departments yet. Add one and you can start placing people and teams inside it.</div></div>`;
@@ -3049,7 +3120,8 @@ function workOrg(o){
         <span class="dept-dot"></span>
         <div style="flex:1;min-width:0">
           <div class="dept-name" data-ent="department|${d.id}">${esc(d.name)}</div>
-          <div class="dept-meta">${(()=>{const par=deptParentName(d.id);return par?`part of ${esc(par)} · `:"";})()}${inDept.length} ${inDept.length===1?"person":"people"}${teams.length?` · ${teams.length} ${teams.length===1?"team":"teams"}`:""}</div>
+          <div class="dept-meta">${(()=>{const g=d.orgId&&entGet("org",d.orgId);const par=deptParentName(d.id);
+            return (g?`${esc(g.name)} · `:"")+(par?`part of ${esc(par)} · `:"");})()}${inDept.length} ${inDept.length===1?"person":"people"}${teams.length?` · ${teams.length} ${teams.length===1?"team":"teams"}`:""}</div>
         </div>
         ${headChip(o,d.headId)}
         <button class="btn sm ghost" data-entedit="department|${d.id}">${I.edit}</button>
@@ -3293,7 +3365,10 @@ function workGraph(o){
     band+=`<rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="${c}" opacity=".07"/>
       <rect x="${PAD-10}" y="${by-6}" width="${bw+20}" height="${bd.h}" rx="16" fill="none" stroke="${c}" stroke-width="1" opacity=".22"/>
       <text x="${PAD+2}" y="${by+11}" fill="${c}" font-size="10.5" font-weight="800" letter-spacing=".06em">${esc(bd.name.toUpperCase())}${
-        (()=>{const par=bd.id&&deptParentName(bd.id);return par?`<tspan dx="8" fill="var(--faint)" font-size="9" font-weight="700" letter-spacing="0">in ${esc(par)}</tspan>`:"";})()
+        (()=>{ const d=bd.id&&entGet("department",bd.id); if(!d) return "";
+          const g=d.orgId&&entGet("org",d.orgId); const par=deptParentName(bd.id);
+          const where=[g&&g.name,par].filter(Boolean).join(" · ");
+          return where?`<tspan dx="8" fill="var(--faint)" font-size="9" font-weight="700" letter-spacing="0">in ${esc(where)}</tspan>`:""; })()
       }<tspan dx="9" fill="var(--faint)" font-size="10" font-weight="700" letter-spacing="0">${bd.n}</tspan>${
         head?`<tspan dx="12" fill="var(--muted)" font-size="9.5" font-weight="700" letter-spacing="0">▲ ${esc(head.name)}</tspan>`:""}</text>`;
   });
@@ -3335,7 +3410,8 @@ function workGraph(o){
     <div class="og-wrap" id="ogWrap"><div class="og-pan" id="ogPan">${svg}</div>
       <div class="og-tools" role="toolbar" aria-label="Map tools">
         <button class="og-tool" data-ogtool="person" title="Add a person" aria-label="Add a person">${I.user}</button>
-        <button class="og-tool" data-ogtool="department" title="Add a department or business unit" aria-label="Add a department">${I.people}</button>
+        <button class="og-tool" data-ogtool="org" title="Add a company, business group or division" aria-label="Add an organization">${I.building}</button>
+        <button class="og-tool" data-ogtool="department" title="Add a department" aria-label="Add a department">${I.people}</button>
         <button class="og-tool" data-ogtool="team" title="Add a team inside a department" aria-label="Add a team">${I.project}</button>
         <i class="og-tool-sep"></i>
         <button class="og-tool" data-ogtool="reports" title="Draw a reporting line" aria-label="Draw a reporting line">${OG_REPORTS_ICO}</button>
@@ -3353,7 +3429,7 @@ const OG_REPORTS_ICO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
    validation); connect tools ask "who?" first, then hand off to the picker that already exists. */
 function ogTool(kind){
   const o=workOp(); if(!o) return;
-  if(kind==="person"||kind==="department"||kind==="team"){ openEntForm(kind,null,o.id); return; }
+  if(kind==="org"||kind==="person"||kind==="department"||kind==="team"){ openEntForm(kind,null,o.id); return; }
   if(kind==="reports"){ pickPersonThen("Whose reporting line?","Pick the person, then say who they report to.",id=>openMgrPicker(id)); return; }
   if(kind==="works"){ pickPersonThen("Who works with whom?","Pick one person, then tick everyone they work alongside.",id=>openWorksWithPicker(id)); return; }
   if(kind==="help"){ openMapHelp(); return; }
@@ -3387,6 +3463,18 @@ function openMapHelp(){
   </div>
   <button class="btn primary" style="width:100%;margin-top:12px" data-act="cancel-editor">Got it</button>`);
 }
+/* The corporate ladder. Same shape as deptPath but over organizations, and it is the one that
+   answers "where do I actually sit" at a company like Siemens. Cycle-guarded: a user can always
+   point two records at each other, and this must not hang the whole view when they do. */
+function orgPath(id){
+  const out=[]; const seen=new Set();
+  let g=entGet("org",id);
+  while(g && !seen.has(g.id) && out.length<10){ seen.add(g.id); out.unshift(g); g=g.parentId?entGet("org",g.parentId):null; }
+  return out;
+}
+function orgChildren(opId,parentId){ return entAll("org",opId).filter(g=>(g.parentId||"")===(parentId||"")); }
+// the org record standing for the company you actually work for, if you've said which
+function employerOrg(o){ return o&&o.hired&&o.hired.orgId ? entGet("org",o.hired.orgId) : null; }
 /* Departments nest, so a name alone is ambiguous — "Operations" inside which business unit?
    Walks up the parents with a cycle guard, because a user can always point two at each other. */
 function deptPath(id,sep){
@@ -3401,12 +3489,16 @@ function clip(s,n){ s=String(s||""); return s.length>n?s.slice(0,n-1)+"…":s; }
 /* Pan / zoom / drag. Pointer events so a finger and a mouse take the same path. */
 let ogView={x:0,y:0,z:1}, ogMode="org", ogFilter="";
 function ogApply(){ const el=document.getElementById("ogPan"); if(el) el.style.transform=`translate(${ogView.x}px,${ogView.y}px) scale(${ogView.z})`; }
+// The tool rail floats over the top-right of the canvas, so the fitted view keeps a gutter clear
+// of it — otherwise the first card lands underneath and the rail eats the tap meant for the person.
+function ogRailGutter(){ const r=document.querySelector(".og-tools"); return r?Math.round(r.getBoundingClientRect().width)+14:0; }
 function ogFit(){
   const wrap=document.getElementById("ogWrap"), svg=document.getElementById("ogSvg");
   if(!wrap||!svg) return;
   const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
-  const z=Math.min(1, (wrap.clientWidth-16)/w, (wrap.clientHeight-16)/h);
-  ogView={z:Math.max(.3,z), x:(wrap.clientWidth-w*z)/2, y:10};
+  const usable=Math.max(120, wrap.clientWidth-16-ogRailGutter());
+  const z=Math.min(1, usable/w, (wrap.clientHeight-16)/h);
+  ogView={z:Math.max(.3,z), x:Math.max(8,(usable-w*z)/2), y:10};
   ogApply();
 }
 function armWorkGraph(){
@@ -3414,7 +3506,7 @@ function armWorkGraph(){
   const svg=document.getElementById("ogSvg");
   if(svg){                       // size the canvas to the chart rather than always 400px
     const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
-    const z=Math.min(1,(wrap.clientWidth-16)/w);
+    const z=Math.min(1,Math.max(120,wrap.clientWidth-16-ogRailGutter())/w);
     // the floor accommodates the tool rail, so it never hangs off a short map
     wrap.style.height=Math.round(Math.max(252,Math.min(420,h*Math.max(.3,z)+34)))+"px";
   }
@@ -3577,7 +3669,8 @@ function entFields(type){
     person:    [["name","Name","text",1],["title","Title / role","text"],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
-    department:[["name","Name","text",1],["parentId","Part of","ent:department"],["headId","Head of department","ent:person"],["note","What they do","textarea"]],
+    org:       [["name","Name","text",1],["parentId","Part of","ent:org"],["kind","What it is","select",0,ORG_KINDS],["site","Website","text"],["note","Notes","textarea"]],
+    department:[["name","Name","text",1],["orgId","Organization","ent:org"],["parentId","Part of","ent:department"],["headId","Head of department","ent:person"],["note","What they do","textarea"]],
     team:      [["name","Name","text",1],["deptId","Department","ent:department"],["headId","Team lead","ent:person"],["note","What they do","textarea"]],
     info:      [["title","What is it","text",1],["kind","Kind","select",0,INFO_KINDS],["summary","In a sentence","textarea"],["note","Detail","textarea"]],
     system:    [["name","Name","text",1],["ownerId","Owner","ent:person"],["note","Notes","textarea"]],
@@ -3775,8 +3868,8 @@ const CONVERT_TO={
   question:["info"],
 };
 // what each type calls its name and its body, so text survives the move
-const ENT_NAMEF={project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
-const ENT_BODYF={project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
+const ENT_NAMEF={org:"name",project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
+const ENT_BODYF={org:"note",project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
 function convertEnt(fromType,id,toType){
   const rec=entGet(fromType,id); if(!rec||fromType===toType||!ENT[toType]) return null;
   const opId=rec.opId||entOpId(fromType,id);
@@ -5555,7 +5648,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -5718,6 +5811,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.ogmode){ ogMode=t.dataset.ogmode; ogFilter=""; render(); return; }
   if(t.dataset.ogdept!=null){ ogFilter=ogFilter===t.dataset.ogdept?"":t.dataset.ogdept; render(); return; }
   if(t.dataset.ogtool){ ogTool(t.dataset.ogtool); return; }
+  if(t.dataset.setemporg){ const o=workOp(); if(o){ o.hired=o.hired||{}; o.hired.orgId=t.dataset.setemporg; o.updatedAt=Date.now(); save(); render(); toast("Marked as your employer"); } return; }
   if(t.dataset.wop){ workOpId=t.dataset.wop; if(view!=="work"){ view="work"; workTab="overview"; } render(); return; }
   if(act==="hire"){ openHire(openId||t.dataset.hire); return; }
   if(act==="capture"){ openCapture(); return; }

@@ -262,11 +262,21 @@ placeholder changes, because "Smart add / Add role" is the wrong tool once you a
 Everywhere else the job-search actions stay. Apply the same test anywhere pre-hire language leaks in.
 **The map is a tool, not a picture.** `.og-tools` is a slim rail floating over `#ogWrap`'s right edge:
 add person / department / team, draw a reporting line, link two people, and `?` (`openMapHelp()`).
-`ogTool()` routes them; the connect tools go through `pickPersonThen()` then hand off to the pickers
+`ogTool()` routes them (org / person / department / team / reporting line / works-with / help);
+the connect tools go through `pickPersonThen()` then hand off to the pickers
 that already exist. **The rail sits inside the pan surface, so `armWorkGraph`'s `pointerdown` must
-ignore `.og-tools`** — capturing the pointer swallows every click on it.
-**Departments nest** (`parentId`, an `ent:department` field on department), so business unit →
-division → department → team goes as deep as needed; `deptPath()` walks up with a cycle guard.
+ignore `.og-tools`** — capturing the pointer swallows every click on it — and `ogFit()` reserves
+`ogRailGutter()` so the fitted view never parks a card underneath it.
+**Organizations sit above departments.** A large employer is a stack of legal entities and brands —
+Mendix ⊂ Siemens Digital Industries Software ⊂ Siemens — and that is the thing a department list
+cannot express. `ENT.org` (list `orgs`, kinds in `ORG_KINDS`) nests via `parentId`; a department
+belongs to one via `orgId`, so different departments can hang off different levels of the stack.
+`o.hired.orgId` marks the one that actually employs you (`employerOrg()`), and `orgPath()` walks the
+lineage with a cycle guard. `orgLadder()` draws it as an indented ladder at the top of the Departments
+tab, badging your employer; **its recursion needs its own `drawn` set** — the cycle guard on the path
+walk does not protect a tree render, and two orgs pointing at each other overflowed the stack.
+**Departments nest too** (`parentId`, an `ent:department` field), so division → department → team goes
+as deep as needed; `deptPath()` walks up with the same guard.
 **Every `ent:` picker creates what it picks** — `openEntForm` renders a `.pick-wrap` with a `＋ New …`
 option; choosing it reveals an inline name field and `addEntInline()` creates the record (reusing an
 existing one on a name match) without leaving the form.
@@ -280,7 +290,7 @@ for not matching — the key was there and the app still said "connect an AI".
 
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
-- `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], departments[], systems[],
+- `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], orgs[], departments[], systems[],
   processes[], decisions[], questions[], links[], milestones[], reports[] }` — every record carries
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.

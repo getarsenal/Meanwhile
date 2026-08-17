@@ -632,6 +632,19 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ai-models{margin-top:8px}
 .ai-models .chip{cursor:pointer;max-width:100%}
 .ai-models .chip.on{border-color:var(--accent);color:var(--accent3)}
+#lockGate{position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;padding:24px;
+  padding-top:calc(24px + env(safe-area-inset-top))}
+.lock-card{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:11px}
+.lock-mark{width:56px;height:56px;border-radius:16px;margin:0 auto 4px}
+.lock-card h2{margin:0;font-size:21px;font-weight:850;letter-spacing:-.02em}
+.lock-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.6}
+.lock-card input{width:100%;text-align:center;font-size:15px;padding:12px}
+.lock-err{font-size:12.5px;color:var(--bad);font-weight:700;min-height:17px;line-height:1.4}
+.lock-foot{font-size:11.5px;color:var(--faint);line-height:1.6;margin-top:6px}
+.lock-warn{background:rgba(198,164,92,.12);border:1px solid rgba(198,164,92,.34);border-radius:12px;
+  padding:11px 13px;font-size:12.5px;color:var(--muted);line-height:1.65}
+.lock-warn b{color:var(--warn)}
+.lock-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
 .add-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(130px,100%),1fr));gap:8px}
 .add-tile{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
   background:var(--panel2);font-weight:700;font-size:13px;color:var(--txt);text-align:left;min-width:0}
@@ -934,6 +947,12 @@ const QUESTION_STATUS = ["Open","Answered","Dismissed"];
 // a recurring meeting, an acronym everyone uses. One type with a kind, so it stays searchable.
 const INFO_KINDS = ["Product or offering","Meeting or ritual","Term or acronym","Policy or rule","How we're organised","Tool or resource","Other"];
 
+/* Declared before the first load(): reaching a `let` from above its declaration throws, and
+   load()'s own try/catch would swallow it — turning a perfectly good encrypted vault into an
+   empty app. That is the single most expensive bug this file could have. */
+let lockKey = null;                      // this session's key. Never written down, anywhere.
+let lockMeta = null;                     // {salt, iter} — travels with the ciphertext
+let lockedBlob = null;                   // the sealed vault, while it is still sealed
 let state = load();
 let view = "dashboard";
 let searchQ = "";
@@ -949,8 +968,15 @@ let workTab = "overview";
 
 /* ============================ STORAGE ============================ */
 function load(){
-  try{ const r = localStorage.getItem(LS_KEY); if(r){ const s=JSON.parse(r); return migrate(s); } }catch(e){}
-  return { opportunities:[], meta:{created:Date.now()}, rev:0 };
+  const fresh = () => ({ opportunities:[], meta:{created:Date.now()}, rev:0 });
+  let raw=null; try{ raw = localStorage.getItem(LS_KEY); }catch(e){ return fresh(); }
+  if(!raw) return fresh();
+  let s=null; try{ s = JSON.parse(raw); }catch(e){ return fresh(); }   // genuinely corrupt
+  // Sealed: hold it aside for the unlock screen. Deliberately outside any try/catch — if this
+  // ever threw and were swallowed, the app would look empty and the next save would overwrite
+  // an encrypted vault nobody could get back.
+  if(isSealed(s)){ lockedBlob = s; return { opportunities:[], meta:{created:Date.now()}, rev:s.rev||0 }; }
+  try{ return migrate(s); }catch(e){ return fresh(); }
 }
 function migrate(s){
   s.opportunities=s.opportunities||[];
@@ -978,6 +1004,7 @@ function saveDev(){ try{ localStorage.setItem(DEV_KEY, JSON.stringify(devPrefs))
 let storageBlocked = false;
 const STORAGE_LIMIT = 5 * 1024 * 1024;
 function persist(){
+  if(lockKey) return persistSealed();        // locked vaults are written as ciphertext, never plain
   let json;
   try{ json = JSON.stringify(state); }catch(e){ return false; }
   try{
@@ -989,6 +1016,67 @@ function persist(){
     storageBlocked = true; devPrefs.bytes = json.length; saveDev();
     renderStorageAlarm(); return false;
   }
+}
+
+/* ============================ LOCK (passphrase encryption) ============================
+   A password checked in JavaScript on a static page is theatre — anyone can read the source.
+   So the passphrase is not a gate, it is the key: the whole document is encrypted with it
+   before it is written to this browser or pushed to your vault. Someone with your sync code,
+   or with your Supabase table open in front of them, sees ciphertext.
+
+   AES-256-GCM with a key derived by PBKDF2-SHA256. GCM authenticates, so a wrong passphrase
+   fails to decrypt rather than returning garbage — no separate password check is needed, and
+   there is nothing stored anywhere that could verify a guess offline beyond the file itself.
+   `rev` rides outside the ciphertext because sync has to compare versions without the key. */
+const KDF_ITER = 310000;                 // OWASP's PBKDF2-SHA256 floor
+const b64enc = buf => { const B=new Uint8Array(buf); let s=""; for(let i=0;i<B.length;i++) s+=String.fromCharCode(B[i]); return btoa(s); };
+const b64dec = str => Uint8Array.from(atob(str), c=>c.charCodeAt(0));
+function cryptoOK(){ return !!(window.crypto && window.crypto.subtle && window.isSecureContext); }
+function isSealed(x){ return !!(x && x.__enc); }
+function vaultLocked(){ return !!lockedBlob; }
+function vaultEncrypted(){ return !!lockKey || !!lockedBlob; }
+async function deriveLockKey(pass, saltB64, iter){
+  const salt = saltB64 ? b64dec(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  const key  = await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:iter||KDF_ITER, hash:"SHA-256"},
+                 base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+  return { key, salt:(saltB64||b64enc(salt)), iter:(iter||KDF_ITER) };
+}
+async function sealDoc(doc, key, meta){
+  key=key||lockKey; meta=meta||lockMeta;
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, key, new TextEncoder().encode(JSON.stringify(doc)));
+  return { __enc:1, v:1, kdf:"PBKDF2-SHA256", iter:meta.iter, salt:meta.salt,
+           iv:b64enc(iv), ct:b64enc(ct), rev:doc.rev||0 };
+}
+async function openDoc(env, key){
+  const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64dec(env.iv)}, key||lockKey, b64dec(env.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+/* Writes are async once encryption is on, so the newest document always wins the queue and a
+   burst of edits collapses into one write rather than racing. */
+let sealQueue = null, sealBusy = false;
+function persistSealed(){
+  sealQueue = state;
+  if(sealBusy) return true;
+  sealBusy = true;
+  (async()=>{
+    while(sealQueue){
+      const doc = sealQueue; sealQueue = null;
+      let json;
+      try{ json = JSON.stringify(await sealDoc(doc)); }
+      catch(e){ break; }                       // if it cannot be sealed it does NOT get written plain
+      try{
+        localStorage.setItem(LS_KEY, json);
+        devPrefs.bytes = json.length; saveDev();
+        if(storageBlocked){ storageBlocked=false; renderStorageAlarm(); }
+      }catch(e){
+        storageBlocked = true; devPrefs.bytes = json.length; saveDev(); renderStorageAlarm();
+      }
+    }
+    sealBusy = false;
+  })();
+  return true;
 }
 function dataHealth(){
   const bytes = devPrefs.bytes || 0;
@@ -1002,6 +1090,109 @@ function renderStorageAlarm(){
     <button class="btn sm" data-act="storage-help">What to do</button></div>`);
   document.body.appendChild(bar);
   openStorageHelp();
+}
+/* The unlock screen. Deliberately not a "login": there is no account and no server checking
+   anything — the passphrase is what turns the ciphertext back into your notes. */
+function renderLockGate(){
+  if(!vaultLocked()){ const g=document.getElementById("lockGate"); if(g) g.remove(); return; }
+  if(document.getElementById("lockGate")) return;
+  const g=el(`<div id="lockGate">
+    <form class="lock-card" autocomplete="off">
+      <img src="icon.png" class="lock-mark" alt=""/>
+      <h2>Meanwhile is locked</h2>
+      <p>Your notes are encrypted on this device. Enter your passphrase to open them.</p>
+      <input id="lockPass" type="password" placeholder="Passphrase" autocomplete="current-password" autofocus/>
+      <div id="lockErr" class="lock-err"></div>
+      <button class="btn primary" type="submit" style="width:100%">Unlock</button>
+      <div class="lock-foot">No passphrase, no way in — not even for me. If you've lost it, the only way
+        back is a backup file you exported before turning encryption on.
+        <span data-act="lock-import" style="color:var(--accent3);cursor:pointer;font-weight:700">Restore from a backup</span></div>
+    </form></div>`);
+  document.body.appendChild(g);
+  g.querySelector("form").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const inp=document.getElementById("lockPass"), err=document.getElementById("lockErr");
+    const pass=inp.value; if(!pass) return;
+    err.textContent="Checking…";
+    try{
+      const { key, salt, iter } = await deriveLockKey(pass, lockedBlob.salt, lockedBlob.iter);
+      const doc = await openDoc(lockedBlob, key);
+      lockKey=key; lockMeta={salt,iter}; lockedBlob=null;
+      state=migrate(doc);
+      g.remove(); render();
+      if(syncOn()) pullNow({silent:true});
+      toast("Unlocked");
+    }catch(ex){
+      err.textContent="That passphrase doesn't open this vault.";
+      inp.select();
+    }
+  });
+  setTimeout(()=>{ const i=document.getElementById("lockPass"); if(i) i.focus(); },60);
+}
+/* Turning it on. Two things are non-negotiable here: you are told plainly that nothing can
+   recover a forgotten passphrase, and you cannot proceed without a backup file in hand. */
+function openLockSetup(){
+  if(!cryptoOK()){
+    openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:rgba(198,164,92,.18);color:var(--warn);display:grid;place-items:center">${I.bell}</div>
+      <div><h2 style="margin:0;font-size:18px;font-weight:850">Encryption needs a secure page</h2></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.7">Browsers only hand out the crypto tools on <b>https</b> pages (or localhost). Open Meanwhile at its https address and this will be available.</p>
+      <button class="btn primary" style="width:100%" data-act="cancel-editor">OK</button>`);
+    return;
+  }
+  const backedUp = !!devPrefs.lastExport;
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.lock||I.system}</div>
+    <div><h2 style="margin:0;font-size:18px;font-weight:850">Encrypt this vault</h2>
+      <div style="font-size:12.5px;color:var(--faint)">A passphrase only you know</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:4px 0 12px">Everything — your notes, the people, the whole map — gets encrypted on this device before it is saved or synced. Someone with your sync code, or looking straight at your database, sees nothing but noise.</p>
+  <div class="lock-warn">
+    <b>There is no recovery.</b> No reset link, no support address, nothing I can do. Forget the passphrase and the notes are gone for good. That is what makes it worth doing — but export a backup first, and keep it somewhere safe.
+  </div>
+  <div class="form-row" style="margin-top:12px"><label>Step 1 — take a backup${backedUp?` <span style="color:var(--good);font-weight:700">· last one ${esc(relDays(daysUntil(devPrefs.lastExport)))}</span>`:""}</label>
+    <button type="button" class="btn ${backedUp?"ghost":"primary"}" data-act="export" style="width:100%">${I.copy} Export a backup file now</button></div>
+  <div class="form-2" style="margin-top:6px">
+    <div class="form-row"><label>Step 2 — passphrase</label><input id="lockNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"/></div>
+    <div class="form-row"><label>Type it again</label><input id="lockNew2" type="password" autocomplete="new-password" placeholder="Confirm"/></div>
+  </div>
+  <div id="lockSetErr" class="lock-err"></div>
+  <label class="keysync" style="margin-top:8px"><input type="checkbox" id="lockAck"/>
+    <span>I understand that if I forget this passphrase, my notes cannot be recovered by anyone.</span></label>
+  <div style="display:flex;gap:10px;margin-top:14px">
+    <button class="btn primary" style="flex:1" data-act="lock-enable">${I.check} Encrypt my vault</button>
+    <button class="btn ghost" data-act="cancel-editor">Cancel</button>
+  </div>`);
+}
+async function enableLock(){
+  const a=document.getElementById("lockNew"), b=document.getElementById("lockNew2"),
+        ack=document.getElementById("lockAck"), err=document.getElementById("lockSetErr");
+  const p1=(a&&a.value)||"", p2=(b&&b.value)||"";
+  if(p1.length<8){ err.textContent="Use at least 8 characters — longer is better than complicated."; return; }
+  if(p1!==p2){ err.textContent="Those two don't match."; return; }
+  if(!ack||!ack.checked){ err.textContent="Please tick the box — it matters."; return; }
+  if(!devPrefs.lastExport && !confirm("You haven't exported a backup on this device. If you forget the passphrase the data is gone for good.\n\nEncrypt anyway?")) return;
+  err.textContent="Encrypting…";
+  try{
+    const { key, salt, iter } = await deriveLockKey(p1);
+    lockKey=key; lockMeta={salt,iter};
+    persist();                       // rewrites localStorage as ciphertext
+    if(syncOn()) await pushNow();    // and re-seals what is in the vault
+    closeEditor(); render();
+    toast("Encrypted ✓ — you'll be asked for this next time");
+  }catch(e){
+    lockKey=null; lockMeta=null;
+    err.textContent="Couldn't encrypt: "+e.message;
+  }
+}
+async function disableLock(){
+  if(!lockKey) return;
+  if(!confirm("Turn encryption off?\n\nYour notes go back to being stored as plain text on this device and in your vault.")) return;
+  lockKey=null; lockMeta=null;
+  persist();
+  if(syncOn()) await pushNow();
+  render(); toast("Encryption off");
 }
 function openStorageHelp(){
   const h=dataHealth();
@@ -1055,8 +1246,11 @@ async function rpc(fn, body){
 function schedulePush(){ if(!syncOn()) return; clearTimeout(pushTimer); pushTimer=setTimeout(pushNow, 1500); }
 async function pushNow(){
   if(!syncOn()) return;
+  if(vaultLocked()) return;                  // still sealed on this device — nothing to say yet
   try{ setSyncState("saving");
-    await rpc("set_vault",{ p_code:sync.code, p_data:state, p_updated: state.rev||0 });
+    // the vault leaves this device already encrypted; rev stays outside so sync can compare
+    const payload = lockKey ? await sealDoc(state) : state;
+    await rpc("set_vault",{ p_code:sync.code, p_data:payload, p_updated: state.rev||0 });
     setSyncState("idle");
   }catch(e){ setSyncState("error", e.message); }
 }
@@ -1068,7 +1262,20 @@ async function pullNow(opts){
     const rows = await rpc("get_vault",{ p_code:sync.code });
     const row = Array.isArray(rows)?rows[0]:rows;
     if(row && row.data){
-      const remote=row.data, rRev=+row.updated_at||remote.rev||0;
+      let remote=row.data; const rRev=+row.updated_at||remote.rev||0;
+      if(isSealed(remote)){
+        // An encrypted vault we cannot open must never be treated as "nothing there" and
+        // overwritten — that would destroy it. Stop, and say which key is missing.
+        if(!lockKey){
+          setSyncState("error","Vault is encrypted — unlock on this device to sync");
+          pulling=false; return;
+        }
+        try{ remote = await openDoc(remote); }
+        catch(e){
+          setSyncState("error","That vault was encrypted with a different passphrase");
+          pulling=false; return;
+        }
+      }
       if(rRev > (state.rev||0)){
         state=remote; persist();
         adoptSyncedAI();   // a key that arrived with the document should be usable straight away
@@ -1491,6 +1698,24 @@ function dataStatusBox(){
       <button class="btn primary sm" data-act="export">${I.copy} Export backup</button>
       <button class="btn ghost sm" data-act="import">↑ Import backup</button>
     </div>
+    ${lockBox()}
+  </div>`;
+}
+/* Encryption lives with the data section, because that is what it is about — not "security
+   settings" in the abstract, but whether these particular notes are readable by anyone else. */
+function lockBox(){
+  const on = !!lockKey;
+  return `<div class="lock-row" style="border-top:1px solid var(--line);padding-top:12px;margin-top:14px">
+    <div style="flex:1 1 220px;min-width:0">
+      <div style="font-size:13px;font-weight:800">${on?"🔒 Encrypted with your passphrase":"Encryption"}</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:3px">${on
+        ? "Your notes are unreadable without the passphrase — on this device and in your vault. You'll be asked for it when you open Meanwhile."
+        : cryptoOK()
+          ? "Lock these notes behind a passphrase. They're encrypted before they're saved or synced, so a sync code alone won't open them."
+          : "Available on the https version of this page."}</div>
+    </div>
+    ${on ? `<button class="btn ghost sm" data-act="lock-off">Turn off</button>`
+         : cryptoOK() ? `<button class="btn ghost sm" data-act="lock-setup">${I.check} Set a passphrase</button>` : ""}
   </div>`;
 }
 
@@ -5794,6 +6019,10 @@ document.addEventListener("click",e=>{
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
+  if(act==="lock-setup"){ openLockSetup(); return; }
+  if(act==="lock-enable"){ enableLock(); return; }
+  if(act==="lock-off"){ disableLock(); return; }
+  if(act==="lock-import"){ const f=$("#fileInput"); if(f) f.click(); return; }
   if(act==="groq-refresh"){
     const box=document.getElementById("groqModels"); if(box) box.innerHTML=`<div class="sect-note" style="margin:0 2px">Asking Groq what your key can run…</div>`;
     groqDiscover(true).then(list=>{
@@ -6636,6 +6865,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 
 adoptSyncedAI();   // a key already in the vault from another device works on this one from boot
 render();
+renderLockGate();  // if the vault is sealed, nothing is readable until it is opened
 initSync();
 initNative();
 // attachments: move any legacy inline blobs into the file vault, then bin unreferenced ones

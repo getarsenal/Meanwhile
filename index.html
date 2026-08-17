@@ -953,6 +953,7 @@ const INFO_KINDS = ["Product or offering","Meeting or ritual","Term or acronym",
 let lockKey = null;                      // this session's key. Never written down, anywhere.
 let lockMeta = null;                     // {salt, iter} — travels with the ciphertext
 let lockedBlob = null;                   // the sealed vault, while it is still sealed
+let remoteLocked = false;                // ...and whether it arrived from the cloud, not from disk
 let state = load();
 let view = "dashboard";
 let searchQ = "";
@@ -1078,6 +1079,16 @@ function persistSealed(){
   })();
   return true;
 }
+/* Encrypting is asynchronous, so unlike the plaintext path a save is not on disk the instant it
+   is made. The window is a millisecond or two, but "I closed the tab and lost the last note" is
+   exactly the failure this whole feature exists to avoid — so hold the tab if one is in flight. */
+function sealPending(){ return !!(sealBusy || sealQueue); }
+window.addEventListener("beforeunload", e=>{
+  if(!sealPending()) return;
+  e.preventDefault(); e.returnValue = "";   // the prompt buys the write the moment it needs
+  return "";
+});
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden && lockKey) persistSealed(); });
 function dataHealth(){
   const bytes = devPrefs.bytes || 0;
   return { bytes, pct: Math.min(100, Math.round(bytes/STORAGE_LIMIT*100)), tight: bytes > STORAGE_LIMIT*0.7, blocked: storageBlocked };
@@ -1117,8 +1128,12 @@ function renderLockGate(){
     try{
       const { key, salt, iter } = await deriveLockKey(pass, lockedBlob.salt, lockedBlob.iter);
       const doc = await openDoc(lockedBlob, key);
-      lockKey=key; lockMeta={salt,iter}; lockedBlob=null;
-      state=migrate(doc);
+      const cameFromCloud = remoteLocked;
+      lockKey=key; lockMeta={salt,iter}; lockedBlob=null; remoteLocked=false;
+      // A vault opened from the cloud still obeys the usual rule: newer wins. Adopting the key
+      // matters either way, so this device can now read and re-seal what it pushes.
+      if(!cameFromCloud || (doc.rev||0) > (state.rev||0)) state=migrate(doc);
+      persist();
       g.remove(); render();
       if(syncOn()) pullNow({silent:true});
       toast("Unlocked");
@@ -1265,10 +1280,13 @@ async function pullNow(opts){
       let remote=row.data; const rRev=+row.updated_at||remote.rev||0;
       if(isSealed(remote)){
         // An encrypted vault we cannot open must never be treated as "nothing there" and
-        // overwritten — that would destroy it. Stop, and say which key is missing.
+        // overwritten — that would destroy it. And a device that has never been locked has no
+        // sealed blob of its own, so without this it would have nowhere to type the passphrase:
+        // hand it the remote one and put the unlock screen up.
         if(!lockKey){
-          setSyncState("error","Vault is encrypted — unlock on this device to sync");
-          pulling=false; return;
+          lockedBlob = remote; remoteLocked = true;
+          setSyncState("error","Vault is encrypted — enter your passphrase");
+          renderLockGate(); pulling=false; return;
         }
         try{ remote = await openDoc(remote); }
         catch(e){

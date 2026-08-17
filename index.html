@@ -629,6 +629,9 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ent-ico img{width:100%;height:100%;object-fit:cover}
 .ent-ico svg{width:15px;height:15px}
 .ent-body{flex:1;min-width:0}
+.ai-models{margin-top:8px}
+.ai-models .chip{cursor:pointer;max-width:100%}
+.ai-models .chip.on{border-color:var(--accent);color:var(--accent3)}
 .add-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(130px,100%),1fr));gap:8px}
 .add-tile{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);
   background:var(--panel2);font-weight:700;font-size:13px;color:var(--txt);text-align:left;min-width:0}
@@ -5068,6 +5071,34 @@ function aiEngine(){
    instead of on every device. Paid keys are attached to a card, so they stay on the device where
    you entered them and are never written into the document that syncs. */
 const FREE_ENGINES=["google","groq"];
+/* Groq's catalogue moves. These are only the tie-breaker order for choosing among whatever the
+   key can actually run — never the source of truth, which is the account's own /models list. */
+const GROQ_PREF=["llama-3.3-70b-versatile","llama-3.1-8b-instant","meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct","openai/gpt-oss-120b","openai/gpt-oss-20b",
+  "qwen/qwen3-32b","moonshotai/kimi-k2-instruct","gemma2-9b-it"];
+// speech, safety and embedding models answer a chat request with a 400, so they are not candidates
+const GROQ_SKIP=/whisper|tts|guard|embed|prompt-?guard|distil-whisper|vision|compound/i;
+function groqUsable(ids){
+  const chat=(ids||[]).filter(id=>!GROQ_SKIP.test(id));
+  const rank=id=>{ const i=GROQ_PREF.indexOf(id); return i<0?GROQ_PREF.length+(/70b|120b|maverick/i.test(id)?0:1):i; };
+  return chat.sort((a,b)=>rank(a)-rank(b));
+}
+function groqCached(){ try{ return groqUsable(JSON.parse(localStorage.getItem("meanwhile_groq_models")||"[]")); }catch(e){ return []; } }
+/* Ask the key what it can run. Cached for a day so it costs one call, not one per request. */
+async function groqDiscover(force){
+  const K="meanwhile_groq_models", T="meanwhile_groq_models_at";
+  const age=Date.now()-(+localStorage.getItem(T)||0);
+  if(!force && age<864e5){ const c=groqCached(); if(c.length) return c; }
+  try{
+    const r=await fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+aiKey()}});
+    if(!r.ok) return groqCached();
+    const j=await r.json();
+    const ids=(j.data||[]).map(m=>m.id).filter(Boolean);
+    if(!ids.length) return groqCached();
+    try{ localStorage.setItem(K,JSON.stringify(ids)); localStorage.setItem(T,String(Date.now())); }catch(e){}
+    return groqUsable(ids);
+  }catch(e){ return groqCached(); }
+}
 function engineIsFree(e){ return FREE_ENGINES.includes(e||aiCfg.engine||"google"); }
 // the key in play: this device's, or the synced one if this device hasn't got its own
 function aiKey(){
@@ -5153,20 +5184,41 @@ async function aiCall(prompt, doc, opts){
     const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
   }
   if(eng==="groq"){
-    // OpenAI-compatible, free tier (runs Llama). Model fallback guards against renames.
-    const models=[aiCfg.model||"llama-3.3-70b-versatile","llama-3.1-8b-instant"].filter((m,i,a)=>m&&a.indexOf(m)===i);
+    // OpenAI-compatible and free, but Groq retires model names on its own schedule — a hard-coded
+    // list goes stale and the app dies with a 404 naming a model the user never chose. So we ask
+    // the key what it can actually run (GET /models) and cache that, falling back to a static
+    // preference order only if the catalogue call itself fails.
     const base={messages:[{role:"user",content:prompt}],max_tokens:maxTok}; if(wantJson) base.response_format={type:"json_object"};
-    let res,lastStatus=0,lastErr="";
-    for(const model of models){
-      res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiKey()},body:JSON.stringify(Object.assign({model},base))});
-      if(res.ok) break; lastStatus=res.status; lastErr=(await res.text()).slice(0,200);
-      if(![404,400].includes(res.status)) break;
+    const attempt=async model=>fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
+      headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiKey()},
+      body:JSON.stringify(Object.assign({model},base))});
+    let res,lastStatus=0,lastErr="",tried=[];
+    const run=async list=>{
+      for(const model of list){
+        if(!model||tried.includes(model)) continue;
+        tried.push(model);
+        res=await attempt(model);
+        if(res.ok) return true;
+        lastStatus=res.status; lastErr=(await res.text()).slice(0,200);
+        if(![404,400].includes(res.status)) return false;   // a real error, not a dead model name
+      }
+      return false;
+    };
+    let done=await run([aiCfg.model, ...groqCached(), ...GROQ_PREF]);
+    // everything we knew about is gone — re-read the catalogue once and try what it says
+    if(!done && [404,400].includes(lastStatus)){
+      const fresh=await groqDiscover(true);
+      if(fresh.length) done=await run(fresh);
     }
-    if(!res||!res.ok){
+    if(!done){
       if(lastStatus===429) throw new Error("Groq rate limit — wait a few seconds and retry (the free tier resets quickly).");
       if(lastStatus===401) throw new Error("That Groq key looks invalid — re-copy it from console.groq.com/keys.");
+      if([404,400].includes(lastStatus)) throw new Error("Groq has no model this key can run right now. Open AI settings and pick one from the list — it reads them straight from your account.");
       throw new Error("Groq "+lastStatus+" "+lastErr);
     }
+    // remember what worked, so the next call goes straight there
+    const won=tried[tried.length-1];
+    if(won && aiCfg.model!==won){ aiCfg.model=won; saveAICfg(); }
     const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
   }
   if(eng==="google"){
@@ -5462,11 +5514,23 @@ function aiEngineFields(){
           copying them between devices. Gemini and Groq are free-tier — those it will carry across for you.</span></div>`}
     <div class="ai-keylinks">🔑 Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a> · <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (free) ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
     <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${mph}"/></div>
+    ${eng==="groq"?`<div id="groqModels" class="ai-models">${groqModelChips()}</div>`:""}
   </div>
   <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
     <div class="form-row"><label>Proxy URL <span style="color:var(--faint);font-weight:500">— defaults to your Supabase function</span></label><input id="aiProxy" value="${esc(aiCfg.proxyUrl||"")}" placeholder="${esc(aiProxyUrl()||"https://xxxx.supabase.co/functions/v1/ai")}"/></div>
   </div>
   <div class="note-block" style="margin-top:6px;font-size:12px">${needsKey?"Your key is stored only in this browser (like the sync code) and used to call your chosen provider directly — your data goes to them, not to us. <b>Gemini and Groq are free</b> (no card); ChatGPT &amp; Claude need paid API credits (separate from a ChatGPT/Claude subscription). (PDF résumé reading works on Gemini, Claude, or the proxy.)":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>`;
+}
+/* Groq retires model names, so rather than making the user guess, show what their own key can run
+   right now — read from their account, one tap to choose. */
+function groqModelChips(){
+  const cached=groqCached();
+  if(!cached.length) return `<div class="sect-note" style="margin:0 2px">Leave the model blank and Meanwhile picks one that works.
+    <span data-act="groq-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">See what your key can run ↻</span></div>`;
+  return `<div class="sect-note" style="margin:0 2px 6px">What this key can run — tap to pick one.
+      <span data-act="groq-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">Refresh ↻</span></div>
+    <div class="ask-chips">${cached.slice(0,10).map(m=>
+      `<span class="chip${aiCfg.model===m?" on":""}" data-groqmodel="${esc(m)}" title="${esc(m)}">${esc(m)}</span>`).join("")}</div>`;
 }
 // Inline section rendered inside Settings, right under Cloud sync
 function aiIntegrationBox(){
@@ -5681,7 +5745,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -5730,8 +5794,22 @@ document.addEventListener("click",e=>{
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
+  if(act==="groq-refresh"){
+    const box=document.getElementById("groqModels"); if(box) box.innerHTML=`<div class="sect-note" style="margin:0 2px">Asking Groq what your key can run…</div>`;
+    groqDiscover(true).then(list=>{
+      const b2=document.getElementById("groqModels");
+      if(b2) b2.innerHTML=list.length?groqModelChips():`<div class="sect-note" style="margin:0 2px">Couldn't reach Groq — check the key.</div>`;
+    }).catch(()=>{});
+    return;
+  }
   if(act==="work-add"){ openAddRecord(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
+  if(t.dataset.groqmodel){
+    const inp=document.getElementById("aiModel"); if(inp) inp.value=t.dataset.groqmodel;
+    aiCfg.model=t.dataset.groqmodel; saveAICfg();
+    const box=document.getElementById("groqModels"); if(box) box.innerHTML=groqModelChips();
+    toast("Model set to "+t.dataset.groqmodel); return;
+  }
   if(t.dataset.addent){ const ty=t.dataset.addent; closeEditor(); openEntForm(ty,null,(workOp()||{}).id); return; }
   if(t.dataset.newadd!==undefined){ addEntInline(t); return; }
   if(t.dataset.newcancel!==undefined){

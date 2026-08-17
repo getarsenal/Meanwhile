@@ -89,6 +89,14 @@ you paste into a new AI chat to prep for interviews.
 - `ASK AI` — pipeline-aware assistant surfaced at the top of Insights (`askAICard()`). `pipelineContext()`
   builds a compact all-roles+offers summary; `askPrompt(q)` wraps it + résumé; `runAsk()` answers inline
   (`data-act="ask-ai"`, suggestion chips via `data-ask`), copy-prompt fallback in paste mode.
+- Groq reliability: **the model list comes from the account, not from us.** Groq retires model names
+  on its own schedule, so a hard-coded list goes stale and the app dies with a 404 naming a model the
+  user never picked (`llama-3.1-8b-instant` did exactly this). `groqDiscover()` reads
+  `GET /openai/v1/models` with the key and caches it for a day; `groqUsable()` drops the speech,
+  safety and embedding models (they 400 on a chat call) and ranks the rest by `GROQ_PREF`, which is
+  only a tie-breaker. `aiCall` tries the remembered model → cache → `GROQ_PREF`, then **re-reads the
+  catalogue once** if everything 404s, and remembers whichever model answered. AI settings shows the
+  key's own models as tappable chips (`groqModelChips`/`data-groqmodel`).
 - Gemini reliability: `aiCall` tries `gemini-2.0-flash`→`1.5-flash`→`2.0-flash-lite`, falling through on
   **404/400/429** (each free-tier model has its own quota), with friendly messages for quota/bad-key.
 - `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.

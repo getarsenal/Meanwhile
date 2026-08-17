@@ -48,8 +48,13 @@ you paste into a new AI chat to prep for interviews.
   `load()`'s try/catch would swallow it, turning an encrypted vault into an empty app that the next
   save overwrites. For the same reason `load()` no longer wraps the sealed-vault branch in a catch.
   `persist()` delegates to `persistSealed()` (async, newest-wins queue) and **never falls back to
-  writing plaintext** if sealing fails. `pullNow` refuses to touch a sealed remote it cannot open
-  rather than treating it as empty. Setup (`openLockSetup`) forces a backup, demands an explicit
+  writing plaintext** if sealing fails. Encryption is async, so a save is not on disk the instant it
+  is made — `sealPending()` + a `beforeunload` guard hold the tab while a write is in flight, and
+  `visibilitychange` flushes early. `pullNow` refuses to touch a sealed remote it cannot open rather
+  than treating it as empty — and, because a second device has no sealed blob of its own, it
+  **adopts the remote blob and shows the unlock screen** (`remoteLocked`), which is the only way that
+  device can ever be handed the passphrase; salts are per-vault, so a device must unlock *from* the
+  vault rather than enabling encryption independently. Setup (`openLockSetup`) forces a backup, demands an explicit
   acknowledgement that there is no recovery, and `renderLockGate()` is the unlock screen.
 - `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.

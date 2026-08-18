@@ -319,6 +319,21 @@ every pull: a device with no key of its own takes the whole synced setup (engine
 `aiCfg`. Without it a second device sat on the default engine and refused a perfectly good Groq key
 for not matching — the key was there and the app still said "connect an AI".
 
+**One switch decides what the app is for.** `APP_MODES` / `appMode()` / `setAppMode()`, stored on
+`state.meta.mode`, at the very top of Settings: *Automatic* (show Work once a role is hired),
+*Job hunting* (hide Work), *I'm employed* (Home + Work only). The app used to infer this, which
+broke on any device that hadn't synced the hire — no Work tab and no way to ask for one. Note
+`render()`'s guard: it only bounces you off Work when the mode is **not** "working", or an
+explicit choice gets silently overridden.
+**Knowledge bites** (`ENT.bite`, list `bites`, kinds in `BITE_KINDS`) are the atomic layer: one
+small true thing — what a name used to mean, an unwritten rule, a number — with tags, a source and
+an optional person. **They are deliberately kept out of the general AI context.** A pile of trivia
+in every prompt drags the model toward whatever it contains, so `bitesFor(o,q)` matches them
+against the question and `workRefs(o,q)` appends only those, cited like everything else. No
+question means no bites.
+**`BUILD`** is shown in Settings with a *Check for update* button (`forceUpdate()` unregisters the
+service worker and clears caches). "I don't see the change" has twice been a stale cached file.
+
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
 `employers().length > 0`, so a new user never sees an empty object.
 

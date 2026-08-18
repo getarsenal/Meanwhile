@@ -632,6 +632,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ai-models{margin-top:8px}
 .ai-models .chip{cursor:pointer;max-width:100%}
 .ai-models .chip.on{border-color:var(--accent);color:var(--accent3)}
+.mode-list{display:flex;flex-direction:column;gap:8px}
+.mode-opt{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);text-align:left;cursor:pointer;color:var(--txt);min-width:0}
+.mode-opt.on{border-color:var(--accent);background:rgba(94,106,210,.1)}
+.mode-opt b{display:block;font-size:13.5px;font-weight:800}
+.mode-opt i{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.mode-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--line2);flex:0 0 15px;margin-top:2px}
+.mode-opt.on .mode-dot{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px var(--panel)}
 #lockGate{position:fixed;inset:0;z-index:200;background:var(--bg);display:grid;place-items:center;padding:24px;
   padding-top:calc(24px + env(safe-area-inset-top))}
 .lock-card{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:11px}
@@ -939,7 +947,10 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
 
 /* Post-hire (see the POST-HIRE section): everything you learn once you're inside a company.
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
-const WORK_LISTS = ["captures","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
+/* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
+   out to be a stale cached file, and there was no way to tell from inside the app. */
+const BUILD = "v39 · 2026-08-13";
+const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
@@ -1209,6 +1220,20 @@ async function disableLock(){
   if(syncOn()) await pushNow();
   render(); toast("Encryption off");
 }
+/* "I don't see the change" has twice been a cached copy of an older index.html. The service
+   worker is network-first, but a phone that never regains focus can sit on the old one for a
+   long time — so give the user a button that throws the cache away and reloads. */
+async function forceUpdate(){
+  toast("Fetching the latest…");
+  try{
+    if("serviceWorker" in navigator){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r=>r.unregister()));
+    }
+    if(window.caches){ const keys=await caches.keys(); await Promise.all(keys.map(k=>caches.delete(k))); }
+  }catch(e){}
+  location.reload(true);
+}
 function openStorageHelp(){
   const h=dataHealth();
   openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
@@ -1416,7 +1441,28 @@ const VIEWS = [
   // Work only appears once you've actually got a job — nothing empty is ever shown to a new user
   {id:"work",      name:"Work",     icon:I.building, when:()=>employers().length>0},
 ];
-function navViews(){ return VIEWS.filter(v=>!v.when||v.when()); }
+/* Meanwhile spans two different jobs — finding work, then understanding the place you landed.
+   It used to infer which you were in from whether a role was marked hired, which is fragile:
+   a device that hadn't synced the hire simply had no Work tab and no way to ask for one. Now
+   you can just say, and it stays said. */
+const APP_MODES = [
+  {id:"auto",    label:"Automatic",  note:"Show Work once a role is marked hired"},
+  {id:"hunting", label:"Job hunting",note:"Pipeline, roles and interviews. Hides Work."},
+  {id:"working", label:"I'm employed",note:"Your company, people and notes. Hides the job search."},
+];
+function appMode(){ const m=(state.meta||{}).mode; return APP_MODES.some(x=>x.id===m)?m:"auto"; }
+function setAppMode(m){
+  state.meta=state.meta||{}; state.meta.mode=m; save();
+  const ok=navViews().some(v=>v.id===view);
+  if(!ok) view = m==="working" ? "work" : "dashboard";
+  render();
+}
+function navViews(){
+  const m=appMode();
+  if(m==="hunting") return VIEWS.filter(v=>v.id!=="work");
+  if(m==="working") return VIEWS.filter(v=>["dashboard","work"].includes(v.id));
+  return VIEWS.filter(v=>!v.when||v.when());
+}
 function renderNav(){
   const alerts = state.opportunities.filter(needsFollowup).length;
   const upcoming = state.opportunities.reduce((n,o)=>{ const e=nextEvent(o); return n+(e&&e.du>=0&&e.du<=7?1:0); },0);
@@ -1434,7 +1480,10 @@ function renderNav(){
 function getProfile(){ state.profile=state.profile||{}; return state.profile; }
 function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
-  if(view==="work" && !employers().length) view="dashboard";   // employer deleted / not hired yet
+  // Bounce off Work only when the app is guessing. If you've said you're employed, Work stays put
+  // and shows its own empty state — silently redirecting is how the tab "disappeared" on a device
+  // that simply hadn't synced the hire yet.
+  if(view==="work" && !employers().length && appMode()!=="working") view="dashboard";
   document.body.classList.toggle("no-data", !state.opportunities.length);
   renderNav();
   renderFab();
@@ -1698,6 +1747,25 @@ function riskBanner(){
       <button class="btn ghost sm" data-act="settings">☁ Turn on sync</button>
       <button class="btn ghost sm" data-act="risk-snooze" title="Remind me in a week">Later</button>
     </div></div>`;
+}
+/* The one switch that decides what the whole app is for. Deliberately the first thing in
+   Settings, and deliberately explicit rather than clever. */
+function modeBox(){
+  const m=appMode(), emp=employers().length;
+  return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.building} What are you using Meanwhile for?</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">This decides which sections you see. Change it whenever — nothing is deleted either way.</div>
+    <div class="mode-list">${APP_MODES.map(x=>`
+      <button class="mode-opt${m===x.id?" on":""}" data-mode="${x.id}">
+        <span class="mode-dot"></span>
+        <span style="min-width:0"><b>${esc(x.label)}</b><i>${esc(x.note)}</i></span>
+      </button>`).join("")}</div>
+    ${m==="working"&&!emp?`<div class="sect-note" style="margin:10px 2px 0">You haven't marked a role as hired on this device yet — open the role and tap <b>I got the job</b>, or pull from sync.</div>`:""}
+    <div class="sect-note" style="margin:12px 2px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span>Build <b>${esc(BUILD)}</b></span>
+      <button class="btn ghost sm" data-act="force-update">↻ Check for update</button>
+    </div>
+  </div>`;
 }
 function dataStatusBox(){
   const h=dataHealth(), last=devPrefs.lastExport||0;
@@ -2459,11 +2527,21 @@ function wAdd(k,rec){ rec.id=rec.id||uid(); rec.at=rec.at||Date.now(); W()[k].pu
 const PERSON_STANDING=["Here","Left the company","Predecessor — had my role","Changed team","Not an employee"];
 function personHere(p){ return !p||!p.standing||p.standing==="Here"; }
 function standingShort(p){ return personHere(p)?"":(p.standing==="Predecessor — had my role"?"predecessor":p.standing==="Not an employee"?"external":p.standing==="Changed team"?"moved on":"left"); }
+/* Knowledge bites. Not projects, not decisions, not people — just the small true things you
+   pick up and would otherwise forget: that Altare used to own a product you sell, that the
+   Tuesday sync is really a pricing review, that "ICX" means one thing to sales and another to
+   support. Atomic, taggable, and joinable to anything else in the map.
+
+   They are deliberately kept OUT of the general AI context. A pile of trivia in every prompt
+   drags the model toward whatever it happens to contain; these are reference material, pulled
+   in when a question actually touches them. See `bitesFor()`. */
+const BITE_KINDS=["Fact","Term or acronym","History","Naming or branding","Unwritten rule","Gotcha","Preference","Number","Other"];
 const ORG_KINDS=["Parent company","Business group","Division","Subsidiary","Brand or product company","Joint venture","Acquired company","Other"];
 const ENT = {
   person:    {list:"people",      icon:I.user,     col:"#6d8bc4", label:"Person",     plural:"People",         name:r=>r.name},
   project:   {list:"projects",    icon:I.project,  col:"#8a72bd", label:"Project",    plural:"Projects",       name:r=>r.name},
   problem:   {list:"problems",    icon:I.problem,  col:"#cf7273", label:"Problem",    plural:"Problems",       name:r=>r.title},
+  bite:      {list:"bites",       icon:I.spark,    col:"#5b9c97", label:"Knowledge bite",plural:"Knowledge bites", name:r=>r.fact},
   org:       {list:"orgs",        icon:I.building, col:"#c9a227", label:"Organization",plural:"Organizations", name:r=>r.name},
   department:{list:"departments", icon:I.people,   col:"#bf8a4f", label:"Department", plural:"Departments",    name:r=>r.name},
   team:      {list:"teams",       icon:I.people,   col:"#7c9cc4", label:"Team",       plural:"Teams",          name:r=>r.name},
@@ -3262,6 +3340,8 @@ function entRowMeta(type,r){
     const st=personHere(r)?"":(r.standing==="Predecessor — had my role"?"your predecessor":r.standing);
     return [st,r.title,personHere(r)?dept:"",knows.length?"knows "+knows.slice(0,2).join(", "):"",owns.length?"owns "+owns.map(x=>entLabel(x.type,x.id)).slice(0,2).join(", "):"",n?`${n} ${n===1?"interaction":"interactions"}`:""].filter(Boolean).join(" · ");
   }
+  if(type==="bite") return [r.kind, (r.tags||[]).map(x=>"#"+x).join(" "),
+    r.personId?entLabel("person",r.personId):"", r.source?"via "+r.source:""].filter(Boolean).join(" · ");
   if(type==="project") return [r.status,r.deptId?entLabel("department",r.deptId):"",r.ownerId?"owner "+entLabel("person",r.ownerId):"no owner recorded",r.description].filter(Boolean).join(" · ");
   if(type==="problem") return [r.status,r.discovered?"found "+fmtDate(r.discovered):"",r.description].filter(Boolean).join(" · ");
   if(type==="system")  return [r.ownerId?"owner "+entLabel("person",r.ownerId):"no owner recorded",r.note].filter(Boolean).join(" · ");
@@ -3418,7 +3498,8 @@ function workSimpleList(o,type,note){
 }
 function workKnowledge(o){
   let h=`<div class="sect-note">What you know about this place: the things to look up, the tools you depend on, how work gets done and why. <span data-wtab="org" style="color:var(--accent3);cursor:pointer;font-weight:700">The org map moved to Departments →</span></div>`;
-  [["info","Products, meetings, acronyms — the things you have to just know."],["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["capture","Everything you've captured."]].forEach(([type,note])=>{
+  [["bite","Small true things you'd otherwise forget — what a name used to mean, an unwritten rule, a number."],
+   ["info","Products, meetings, acronyms — the things you have to just know."],["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["capture","Everything you've captured."]].forEach(([type,note])=>{
     let list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
     if(type==="question") list=list.sort((a,b)=>(a.status==="Open"?0:1)-(b.status==="Open"?0:1)||b.at-a.at);
     h+=`<div class="section-head"><h3>${esc(ENT[type].plural)}</h3><div class="line"></div>${list.length?`<span class="tag">${list.length}</span>`:""}</div>`;
@@ -3947,6 +4028,8 @@ function entFields(type){
     person:    [["name","Name","text",1],["title","Title / role","text"],["standing","Still here?","select",0,PERSON_STANDING],["deptId","Department","ent:department"],["teamId","Team","ent:team"],["managerId","Reports to","ent:person"],["expertise","Knows / expertise","tags"],["email","Email","text"],["linkedin","LinkedIn","text"],["notes","Notes","textarea"]],
     project:   [["name","Name","text",1],["description","What it is","textarea"],["status","Status","select",0,PROJECT_STATUS],["ownerId","Owner","ent:person"],["deptId","Department","ent:department"],["myRole","My role","text"],["start","Started","date"],["target","Target date","date"],["note","Notes","textarea"]],
     problem:   [["title","Problem","text",1],["description","What's wrong","textarea"],["status","Status","select",0,PROBLEM_STATUS],["discovered","Discovered","date"],["attempts","Tried so far","textarea"],["solution","Solution / outcome","textarea"],["note","Notes","textarea"]],
+    bite:      [["fact","The fact","textarea",1],["tags","Tags","tags"],["kind","Kind","select",0,BITE_KINDS],
+                ["source","Where you learned it","text"],["personId","From / about who","ent:person"],["note","Why it matters","textarea"]],
     org:       [["name","Name","text",1],["parentId","Part of","ent:org"],["kind","What it is","select",0,ORG_KINDS],["site","Website","text"],["note","Notes","textarea"]],
     department:[["name","Name","text",1],["orgId","Organization","ent:org"],["parentId","Part of","ent:department"],["headId","Head of department","ent:person"],["note","What they do","textarea"]],
     team:      [["name","Name","text",1],["deptId","Department","ent:department"],["headId","Team lead","ent:person"],["note","What they do","textarea"]],
@@ -4146,8 +4229,8 @@ const CONVERT_TO={
   question:["info"],
 };
 // what each type calls its name and its body, so text survives the move
-const ENT_NAMEF={org:"name",project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
-const ENT_BODYF={org:"note",project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
+const ENT_NAMEF={bite:"fact",org:"name",project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
+const ENT_BODYF={bite:"note",org:"note",project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
 function convertEnt(fromType,id,toType){
   const rec=entGet(fromType,id); if(!rec||fromType===toType||!ENT[toType]) return null;
   const opId=rec.opId||entOpId(fromType,id);
@@ -4356,9 +4439,25 @@ function changedCard(o){
 /* ============================ ASK MEANWHILE ============================
    Not a general chatbot: it answers from your records, cites the note each claim came from,
    and is told to say "I don't have anything on that" rather than fill the gap with invention. */
-function workRefs(o){
+/* Bites stay out of the general context on purpose. Dumping every scrap of trivia into every
+   prompt pulls the model toward whatever the pile happens to contain — the user's own example
+   was a defunct brand name that should be findable, not influential. So they are retrieved:
+   matched against the question, and only then handed over, cited like everything else. */
+function bitesFor(o,q,cap){
+  const all=entAll("bite",o.id);
+  if(!all.length) return [];
+  const T=terms(q||"");
+  if(!T.length) return [];
+  const score=b=>{
+    const hay=norm([b.fact,(b.tags||[]).join(" "),b.kind,b.note,b.source].filter(Boolean).join(" "));
+    return T.reduce((n,t)=>n+(hay.includes(t)?1:0),0);
+  };
+  return all.map(b=>({b,s:score(b)})).filter(x=>x.s>0)
+    .sort((a,b)=>b.s-a.s).slice(0,cap||12).map(x=>x.b);
+}
+function workRefs(o,q){
   const refs={}; const L=[]; let n={};
-  const key=t=>({person:"p",project:"pr",problem:"pb",department:"d",team:"tm",system:"s",process:"pc",decision:"dc",question:"q",info:"in",capture:"c"})[t];
+  const key=t=>({person:"p",project:"pr",problem:"pb",department:"d",team:"tm",system:"s",process:"pc",decision:"dc",question:"q",info:"in",capture:"c",bite:"kb",org:"g"})[t];
   const reg=(t,rec)=>{ const k=key(t); n[k]=(n[k]||0)+1; const id=k+n[k]; refs[id]={t,id:rec.id}; return id; };
   ["person","department","team","system","project","problem","process","decision","question","info"].forEach(t=>{
     const list=entAll(t,o.id); if(!list.length) return;
@@ -4370,6 +4469,12 @@ function workRefs(o){
       L.push(line.length>240?line.slice(0,240)+"…":line);
     });
   });
+  const hits = bitesFor(o,q);
+  if(hits.length){
+    L.push("","KNOWLEDGE BITES that touch this question:");
+    hits.forEach(bt=>{ const id=reg("bite",bt);
+      L.push(`[${id}] ${bt.fact}${bt.kind?` (${bt.kind})`:""}${(bt.tags||[]).length?` #${bt.tags.join(" #")}`:""}`); });
+  }
   const caps=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,40);
   if(caps.length){
     L.push("","MY NOTES (newest first):");
@@ -4405,6 +4510,7 @@ Question: ${q}`;
 let askRefs={};
 // a citation reads as a name for a record and as a date for a note — never a wall of note text
 function citeLabel(t,id){
+  if(t==="bite"){ const b=entGet("bite",id); return b?clip(b.fact,42):""; }
   if(t==="capture"){ const c=wFind("captures",id); return c?`${fmtDate(ymdOf(c.at))} note`:""; }
   return entLabel(t,id);
 }
@@ -4443,7 +4549,7 @@ async function runWorkAsk(q){
   const inp=$("#wAskInput"); q=(q||(inp?inp.value:"")||"").trim();
   if(!q){ toast("Type a question"); return; }
   if(inp&&q!==inp.value) inp.value=q;
-  const ctx=workRefs(o); askRefs=ctx.refs;
+  const ctx=workRefs(o,q); askRefs=ctx.refs;   // the question decides which bites come along
   if(aiEngine()==="paste"||aiEngine()==="off"){ copy(askWorkPrompt(o,q,ctx),"Prompt copied — paste into any AI"); return; }
   const ans=$("#wAskAnswer"), acts=$("#wAskActions");
   if(ans){ ans.style.display="block"; ans.textContent="Looking through your notes…"; } if(acts) acts.style.display="none";
@@ -5112,6 +5218,7 @@ function openSettings(){
     </div>
   </div>
 
+  ${modeBox()}
   ${aiIntegrationBox()}
   ${dataStatusBox()}
 
@@ -5988,7 +6095,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -6037,6 +6144,7 @@ document.addEventListener("click",e=>{
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
+  if(act==="force-update"){ forceUpdate(); return; }
   if(act==="lock-setup"){ openLockSetup(); return; }
   if(act==="lock-enable"){ enableLock(); return; }
   if(act==="lock-off"){ disableLock(); return; }
@@ -6051,6 +6159,7 @@ document.addEventListener("click",e=>{
   }
   if(act==="work-add"){ openAddRecord(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
+  if(t.dataset.mode){ setAppMode(t.dataset.mode); openSettings(); toast("Switched to "+(APP_MODES.find(x=>x.id===t.dataset.mode)||{}).label); return; }
   if(t.dataset.groqmodel){
     const inp=document.getElementById("aiModel"); if(inp) inp.value=t.dataset.groqmodel;
     aiCfg.model=t.dataset.groqmodel; saveAICfg();

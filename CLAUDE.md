@@ -245,7 +245,17 @@ AI only phrases the recommendation over candidates it can't add to. **What am I 
 (`knowledgeGaps`) is likewise computed, so every gap is a fact about your notes. Same principle in
 `reportData/reportText` for the 30/60/90 reviews: numbers computed, narrative generated.
 
-**Mislabelled records** (`convertEnt`/`openConvertPicker`, offered on any type in `CONVERT_TO`)
+**Nothing is filed forever.** `convertEnt` moves a record to **any** other type — including
+person↔anything — keeping its links, the notes that mention it, its original `at` and a
+`convertedFrom` breadcrumb. `CONVERT_LIKELY` only *orders* the options (`convertTargets()` appends
+the rest from `CONVERT_ALL`); nothing is forbidden, because you rarely know what a thing is when you
+first write it down. `ENT_NAMEF`/`ENT_BODYF` map each type's name and body field so the text
+survives — **person included** (`name`/`notes`), or converting *to* a person silently drops it.
+Converting a person away clears every pointer that assumed one: `managerId`, department/team
+`headId`, project/system `ownerId`, bite `personId`. `openConvertPicker` is a tile grid plus **one
+optional "connect it to" dropdown** — that is the "Joe Smith is actually someone's dog" case: the
+fact stops being a contact but stays hung off the person it came from (`RELATES_TO`).
+**Mislabelled records** (`convertEnt`/`openConvertPicker`, offered on every type)
 move to another type keeping their links, the notes that mention them and their original `at`;
 `ENT_NAMEF`/`ENT_BODYF` map each type's name and body field so the text survives.
 

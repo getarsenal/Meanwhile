@@ -949,7 +949,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v39 · 2026-08-13";
+const BUILD = "v40 · 2026-08-13";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -3160,7 +3160,9 @@ function createEnt(type,opId,name,f,viaCapture){
     type==="system"    ? {name,note:f.note||"",ownerId:""} :
     type==="process"   ? {name,note:f.note||"",steps:""} :
     type==="decision"  ? {title:name,madeBy:f.madeBy||"",date:f.date||"",reason:f.reason||"",alternatives:"",note:""} :
-    type==="question"  ? {q:name,status:"Open",answer:""} : {name});
+    type==="question"  ? {q:name,status:"Open",answer:""} :
+    type==="bite"      ? {fact:name,kind:BITE_KINDS.includes(f.kind)?f.kind:"Fact",tags:f.tags||[],source:f.source||"",personId:f.personId||"",note:f.note||""} :
+    type==="org"       ? {name,kind:ORG_KINDS.includes(f.kind)?f.kind:"Other",parentId:"",site:"",note:f.note||""} : {name});
   return wAdd(ENT[type].list,rec);
 }
 function ensureEnt(type,opId,name,f,via){ const r=resolveEnt(type,name,opId); return r.rec&&r.conf>=1?r.rec:createEnt(type,opId,name,f,via); }
@@ -4015,7 +4017,7 @@ function entDetailBody(type,rec){
       <button class="btn ghost sm" data-mpprep="${rec.id}">${I.cal} Prep to meet</button>
       <button class="btn ghost sm" data-workswithpick="${rec.id}">${I.link} Works with…</button>
       <button class="btn ghost sm" data-mergewith="${rec.id}">${I.people} Merge…</button>`:""}
-    ${(CONVERT_TO[type]||[]).length?`<button class="btn ghost sm" data-convert="${type}|${rec.id}">${I.process} Not a ${esc(ENT[type].label.toLowerCase())}?</button>`:""}
+    <button class="btn ghost sm" data-convert="${type}|${rec.id}">${I.process} Not a ${esc(ENT[type].label.toLowerCase())}?</button>
     <button class="btn ghost sm danger" data-entdel="${type}|${rec.id}">${I.trash} Delete</button>
   </div>`;
   return h;
@@ -4219,29 +4221,47 @@ function setPersonDept(personId,deptId){
 }
 /* ---- "That isn't a project." Records get mislabelled — by you in a hurry or by the AI reading a
    note. Moving one keeps its history: every link, every note that mentions it, its original date. ---- */
-const CONVERT_TO={
-  project:["info","problem","process","system","decision"],
-  problem:["info","project","process","decision"],
-  process:["info","project","system","decision"],
-  system: ["info","project","process"],
-  decision:["info","process","project"],
-  info:   ["project","problem","process","system","decision"],
-  question:["info"],
+/* Every record can become any other kind. A CRM that files something as a contact forever is the
+   thing this is meant to fix — you rarely know what a thing is when you first write it down.
+   The order is just "what this is most often actually was"; nothing is forbidden. */
+const CONVERT_LIKELY={
+  person:  ["bite","info","org","department","team"],
+  project: ["info","problem","process","system","decision","bite"],
+  problem: ["info","project","process","decision","bite"],
+  process: ["info","project","system","decision","bite"],
+  system:  ["info","project","process","bite"],
+  decision:["info","process","project","bite"],
+  info:    ["bite","project","problem","process","system","decision"],
+  question:["info","bite","problem"],
+  bite:    ["info","question","decision","person"],
+  org:     ["department","info","team","bite"],
+  department:["team","org","info"],
+  team:    ["department","org","info"],
 };
+const CONVERT_ALL = ["person","bite","info","project","problem","question","decision","process","system","department","team","org"];
+function convertTargets(type){
+  const likely=(CONVERT_LIKELY[type]||[]).filter(t=>t!==type&&ENT[t]);
+  return likely.concat(CONVERT_ALL.filter(t=>t!==type&&!likely.includes(t)&&ENT[t]));
+}
 // what each type calls its name and its body, so text survives the move
-const ENT_NAMEF={bite:"fact",org:"name",project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
-const ENT_BODYF={bite:"note",org:"note",project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
+const ENT_NAMEF={person:"name",bite:"fact",org:"name",project:"name",problem:"title",department:"name",team:"name",system:"name",process:"name",decision:"title",question:"q",info:"title"};
+const ENT_BODYF={person:"notes",bite:"note",org:"note",project:"description",problem:"description",department:"note",team:"note",system:"note",process:"steps",decision:"reason",question:"answer",info:"summary"};
 function convertEnt(fromType,id,toType){
   const rec=entGet(fromType,id); if(!rec||fromType===toType||!ENT[toType]) return null;
   const opId=rec.opId||entOpId(fromType,id);
   const name=entName(fromType,rec);
-  const body=[rec[ENT_BODYF[fromType]],rec.note,rec.notes].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join("\n");
-  const made=createEnt(toType,opId,name,{},rec.fromCapture||"");
+  // a person's title is part of what they were, so it survives into the new record's body
+  const body=[rec[ENT_BODYF[fromType]],fromType==="person"?rec.title:"",rec.note,rec.notes]
+    .filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join("\n");
+  const seedTags = fromType==="bite" ? (rec.tags||[]) : [];
+  const made=createEnt(toType,opId,name,{tags:seedTags},rec.fromCapture||"");
   if(!made) return null;
   if(body) made[ENT_BODYF[toType]]=body;
   made.at=rec.at||Date.now();                       // it was learned when it was learned
   made.convertedFrom=ENT[fromType].label;
   if(toType==="info"&&!made.kind) made.kind="Other";
+  if(toType==="bite"&&!made.source&&fromType==="person") made.source=rec.name||"";
+  if(toType==="person"){ made.title=made.title||""; }
   // the graph comes with it
   const w=W();
   w.links.forEach(l=>{
@@ -4249,15 +4269,32 @@ function convertEnt(fromType,id,toType){
     if(l.tt===fromType&&l.tid===id){ l.tt=toType; l.tid=made.id; }
   });
   w.captures.forEach(c=>(c.entities||[]).forEach(e=>{ if(e.t===fromType&&e.id===id){ e.t=toType; e.id=made.id; } }));
-  ["projects","systems"].forEach(k=>W()[k].forEach(r=>{ if(r.ownerId===id&&fromType==="person") r.ownerId=made.id; }));
+  ["projects","systems"].forEach(k=>W()[k].forEach(r=>{ if(r.ownerId===id) r.ownerId=(toType==="person"?made.id:""); }));
+  if(fromType==="person"){
+    // nobody should still report to, or be led by, a record that is no longer a person
+    state.opportunities.forEach(op=>(op.people||[]).forEach(p=>{ if(p.managerId===id) p.managerId=""; }));
+    ["departments","teams"].forEach(k=>W()[k].forEach(r=>{ if(r.headId===id) r.headId=""; }));
+    W().bites.forEach(bt=>{ if(bt.personId===id) bt.personId=(toType==="person"?made.id:""); });
+  }
   dedupeLinks();
   entDelete(fromType,id);
   return made;
 }
 function openConvertPicker(type,id){
   const rec=entGet(type,id); if(!rec) return;
-  const opts=CONVERT_TO[type]||[];
-  if(!opts.length){ toast("This one can't be moved"); return; }
+  const opts=convertTargets(type);
+  const opId=rec.opId||entOpId(type,id);
+  // One optional dropdown, not one per type: "…and connect it to". This is the Joe-Smith-is-a-dog
+  // case — the fact stops being a contact but should still hang off the person it came from.
+  const others=[];
+  ["person","project","problem","system","process","decision","info","department","team","org","bite"].forEach(t=>{
+    entAll(t,opId).forEach(r=>{ if(t===type&&r.id===id) return; others.push({t,r}); });
+  });
+  const relate = others.length ? `<div class="form-row" style="margin-top:14px">
+      <label>…and connect it to <span style="color:var(--faint);font-weight:500">— optional</span></label>
+      <select id="convRel"><option value="">— nothing —</option>${
+        others.slice(0,300).map(x=>`<option value="${x.t}|${x.r.id}">${esc(ENT[x.t].label)}: ${esc(clip(entName(x.t,x.r),44))}</option>`).join("")
+      }</select></div>` : "";
   openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
     <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.process}</div>
     <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">What is this really?</h2>
@@ -4265,10 +4302,17 @@ function openConvertPicker(type,id){
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
   <div class="sect-note">Currently a <b>${esc(ENT[type].label.toLowerCase())}</b>. Moving it keeps everything — its connections, the notes that mention it, and the date you learned it.</div>
   <div class="conv-grid">${opts.map(t=>`<button class="conv-opt" data-convto="${type}|${id}|${t}">
-      <span class="conv-ico" style="background:${ENT[t].col}22;color:${ENT[t].col}">${ENT[t].icon}</span>
-      <span><b>${esc(ENT[t].label)}</b><small>${esc(CONVERT_HINT[t]||"")}</small></span></button>`).join("")}</div>`);
+      <span class="conv-ico" style="background:${cssCol(ENT[t].col)}22;color:${cssCol(ENT[t].col)}">${ENT[t].icon}</span>
+      <span><b>${esc(ENT[t].label)}</b><small>${esc(CONVERT_HINT[t]||"")}</small></span></button>`).join("")}</div>
+  ${relate}`);
 }
 const CONVERT_HINT={
+  person:"Someone real, with a role and a place in the org",
+  bite:"One small true thing worth remembering",
+  org:"A company, business group or division",
+  department:"A part of the company people sit in",
+  team:"A group inside a department",
+  question:"Something you still need to find out",
   info:"A product, a meeting, an acronym — something to know, not something to do",
   project:"A piece of work with people and a status",
   problem:"Something broken, being looked at, or lived with",
@@ -6321,8 +6365,16 @@ document.addEventListener("click",e=>{
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
   if(t.dataset.convert){ const [ty,id]=t.dataset.convert.split("|"); openConvertPicker(ty,id); return; }
   if(t.dataset.convto){ const [ty,id,to]=t.dataset.convto.split("|");
+    const relSel=document.getElementById("convRel"); const rel=relSel?relSel.value:"";
     const made=convertEnt(ty,id,to);
-    if(made){ save(); closeEditor(); render(); openEnt(to,made.id); toast(`Now filed as ${ENT[to].label.toLowerCase()}`); }
+    if(made){
+      if(rel){ const [rt,rid]=rel.split("|");
+        const opId=made.opId||entOpId(to,made.id);
+        addLink(opId,to,made.id,"RELATES_TO",rt,rid,1,[]);
+      }
+      save(); closeEditor(); render(); openEnt(to,made.id);
+      toast(`Now filed as ${ENT[to].label.toLowerCase()}`+(rel?" and connected":""));
+    }
     else toast("Couldn't move that one");
     return; }
   if(t.dataset.setdept){ openDeptPicker(t.dataset.setdept); return; }

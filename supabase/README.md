@@ -16,6 +16,11 @@ seeing another's notes.
 1. **Run the SQL.** Dashboard → **SQL Editor → New query** → paste the `SYNC_SQL` block (copy it
    from the app: Settings → *Copy setup SQL*) → **Run**. Expect “Success. No rows returned.”
    It is safe to run more than once.
+   Supabase shows a *“Potential issue detected — this query includes destructive operations”*
+   dialog; click **Run query**. It triggers on the four `drop policy if exists` lines (which drop
+   access *rules*, recreated immediately after, so the script stays re-runnable) and on
+   `revoke all … from anon` (the hardening). There is no `drop table` / `delete` / `truncate`
+   in it, and it never touches the legacy `vaults` table.
    The table is `user_vaults`, deliberately **not** `vaults` — reusing the name would collide with
    the old code-keyed table on a project that already ran the legacy SQL.
 

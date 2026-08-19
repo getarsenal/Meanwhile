@@ -290,7 +290,14 @@ move to another type keeping their links, the notes that mention them and their 
 `ENT_NAMEF`/`ENT_BODYF` map each type's name and body field so the text survives.
 
 **Work view** (`renderWork`): hero with the day-N-of-90 ring, then tabs
-`overview | people | org | projects | problems | knowledge | timeline | ask`. The **org** tab
+`overview | people | org | projects | problems | knowledge | timeline | ask`. The **people** tab is
+the reporting tree, not a flat list: `peopleTree()` walks `personManager()` (so a `managerId` *or* a
+`REPORTS_TO` link both count) and `pplRow()` indents each report under its manager, with a badge
+showing how many report to them. Siblings stay ordered most-contact-first, so a flat org degrades to
+the old list. The `anc` array carries, per level, whether that ancestor has a following sibling —
+that is what decides where the vertical guide lines continue. Cycle guard and a depth cap, because a
+reporting loop is a typo, not a crash; anyone stranded by one is still listed. People who have left
+(`personHere`) come off the tree into a "No longer here" group, same rule as the chart. The **org** tab
 (`workOrg`) is the map plus every department with its teams, heads and members; Knowledge is now
 purely what-you-know (company info, systems, processes, decisions, questions, notes). `careerTimeline()` merges
 pre-hire events (discovered/applied/rounds) with post-hire ones (milestones, captures, entities).

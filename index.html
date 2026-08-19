@@ -864,6 +864,20 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .dept-pill b{color:var(--txt);font-weight:800}
 .dept-pill.add{border-style:dashed;color:var(--accent3)}
 .dept-pill .n{background:rgba(191,138,79,.18);color:var(--warn);border-radius:999px;padding:0 7px;font-size:11px;font-weight:800}
+/* People as a reporting tree. --d is the row's depth, --x the column a guide line sits in.
+   The indent is capped on narrow screens so a deep chain can't push a name off the side. */
+.ppl-row{position:relative}
+.ppl-row>.ent-row{margin-left:calc(var(--d) * var(--ppl-step,22px))}
+.ppl-rail,.ppl-vert,.ppl-tall{position:absolute;left:calc(var(--x) * var(--ppl-step,22px) + 11px);width:11px;pointer-events:none}
+.ppl-rail{top:0;height:50%;border-left:1.5px solid var(--line2);border-bottom:1.5px solid var(--line2);border-bottom-left-radius:8px}
+.ppl-vert{top:50%;bottom:0;border-left:1.5px solid var(--line2)}
+.ppl-tall{top:0;bottom:0;border-left:1.5px solid var(--line2)}
+.rep-n{display:inline-flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);
+  border-radius:999px;padding:2px 8px;font-size:11px;font-weight:800;color:var(--muted);flex:0 0 auto}
+.rep-n svg{width:12px;height:12px}
+.ppl-gone-head{font-size:11px;font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 7px}
+.ppl-gone{opacity:.62}
+@media(max-width:560px){ .ppl-row{--ppl-step:15px} }
 
 .w-switch{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch}
 .sect-note{font-size:12.5px;color:var(--faint);line-height:1.6;margin:-4px 2px 12px}
@@ -3518,11 +3532,51 @@ function personInteractions(p){
   const rounds=o?(o.rounds||[]).filter(r=>r.interviewers&&String(r.interviewers).toLowerCase().includes((p.name||"").split(" ")[0].toLowerCase())):[];
   return caps.map(c=>({t:"capture",at:c.at,rec:c})).concat(rounds.map(r=>({t:"round",at:r.date?new Date(r.date+"T12:00").getTime():0,rec:r}))).sort((a,b)=>b.at-a.at);
 }
+/* The list is the reporting tree. Direct reports sit indented on the lines under their manager,
+   so the shape of the place reads at a glance without opening the map. Order within a level is
+   still most-contact-first, because that's the useful order when the hierarchy is flat.
+   `anc` carries, for each level above this row, whether that ancestor has a following sibling —
+   which is what decides where the vertical guide lines continue. */
+function peopleTree(o){
+  const all=(o.people||[]).slice();
+  const here=all.filter(personHere), gone=all.filter(p=>!personHere(p));
+  const byId={}; here.forEach(p=>{ byId[p.id]=p; });
+  const kids={};
+  here.forEach(p=>{ const m=personManager(p); if(m&&byId[m]&&m!==p.id) (kids[m]=kids[m]||[]).push(p); });
+  const rank=(a,b)=>(kids[b.id]||[]).length-(kids[a.id]||[]).length
+    || personInteractions(b).length-personInteractions(a).length
+    || (a.name||"").localeCompare(b.name||"");
+  const rows=[]; const seen=new Set();
+  const walk=(p,depth,anc)=>{
+    if(seen.has(p.id)||depth>12) return;   // a reporting line that loops is a typo, not a crash
+    seen.add(p.id);
+    const ks=(kids[p.id]||[]).slice().sort(rank);
+    rows.push({p,depth,anc:anc.slice(),reports:ks.length});
+    ks.forEach((k,i)=>walk(k,depth+1,anc.concat([i<ks.length-1])));
+  };
+  const roots=here.filter(p=>{ const m=personManager(p); return !m||!byId[m]||m===p.id; }).sort(rank);
+  roots.forEach(r=>walk(r,0,[]));
+  here.filter(p=>!seen.has(p.id)).sort(rank).forEach(p=>walk(p,0,[]));   // stranded by a loop
+  return {rows,gone:gone.sort(rank),linked:here.some(p=>{ const m=personManager(p); return m&&byId[m]; })};
+}
+function pplRow(p,depth,anc,reports){
+  const last=(personInteractions(p)[0]||{}).at;
+  const tail=[
+    reports?`<span class="rep-n" title="${reports} direct ${reports===1?"report":"reports"}">${I.people}${reports}</span>`:"",
+    last?`<span>${esc(relDays(daysUntil(ymdOf(last))))}</span>`:""
+  ].filter(Boolean).join("");
+  // one vertical per ancestor level that still has siblings below, plus the elbow into this row
+  const guides=(anc||[]).map((more,j)=>{
+    if(j===anc.length-1) return `<span class="ppl-rail" style="--x:${j}"></span>${more?`<span class="ppl-vert" style="--x:${j}"></span>`:""}`;
+    return more?`<span class="ppl-tall" style="--x:${j}"></span>`:"";
+  }).join("");
+  return `<div class="ppl-row" style="--d:${Math.min(depth,12)}">${guides}${entRow("person",p,{tail})}</div>`;
+}
 function workPeople(o){
   const ppl=(o.people||[]).slice();
   if(!ppl.length) return `<div class="card panel"><div class="ent-empty">Nobody yet. Capture a note about someone you met and they'll appear here — along with anyone you met while interviewing.</div></div>`;
-  ppl.sort((a,b)=>personInteractions(b).length-personInteractions(a).length||(a.name||"").localeCompare(b.name||""));
   const depts=wOf("departments",o.id);
+  const {rows,gone,linked}=peopleTree(o);
   let h=`<div class="sect-note">Everyone you've met here — the same records you built while interviewing, now with what they know and who they work with.</div>`;
   h+=`<div class="dept-strip">${depts.map(d=>{
       const n=ppl.filter(x=>x.deptId===d.id).length;
@@ -3530,10 +3584,15 @@ function workPeople(o){
     }).join("")}<span class="dept-pill add" data-entadd="department">＋ Department</span></div>`;
   const unfiled=ppl.filter(x=>!x.deptId).length;
   if(depts.length&&unfiled) h+=`<div class="sect-note" style="margin-top:-4px">${unfiled} ${unfiled===1?"person isn't":"people aren't"} in a department yet — open anyone and tap their department to set it.</div>`;
-  h+=`<div class="card panel" style="padding:5px">${ppl.map(p=>{
-    const last=(personInteractions(p)[0]||{}).at;
-    return entRow("person",p,{tail:last?esc(relDays(daysUntil(ymdOf(last)))):""});
-  }).join("")}</div>`;
+  if(!linked&&ppl.length>1) h+=`<div class="sect-note" style="margin-top:-4px">Open anyone and set their manager — they'll stack up underneath them here, and on the map.</div>`;
+  h+=`<div class="card panel" style="padding:5px">${rows.map(r=>pplRow(r.p,r.depth,r.anc,r.reports)).join("")}</div>`;
+  /* People who've left keep their record — the notes and citations still point at them — but they
+     come off the reporting tree, because showing a predecessor under your manager is a lie about
+     how the place works today. Same rule as the org chart. */
+  if(gone.length){
+    h+=`<div class="ppl-gone-head">No longer here</div>
+      <div class="card panel ppl-gone" style="padding:5px">${gone.map(p=>pplRow(p,0,[],0)).join("")}</div>`;
+  }
   h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
     <button class="btn ghost sm" data-act="meeting-prep">${I.cal} Prep for a meeting</button>
     <button class="btn ghost sm" data-entadd="person">${I.plus} Add someone</button></div>`;

@@ -132,6 +132,15 @@ you paste into a new AI chat to prep for interviews.
   (copy-paste fallback). Bring-your-own-LLM; the two genuinely free APIs are Gemini and Groq. `engineReadsPDF()` gates PDF upload to proxy/anthropic/google. The Gemini path has a model fallback
   (`gemini-2.0-flash`→`gemini-1.5-flash`) so a rename never breaks it; `aiCall(prompt, doc)` can send
   a base64 PDF the model reads natively.
+  **`aiCall(prompt, doc, opts)` takes one attachment or an array of them** — one note can be three
+  photos of the same whiteboard. Each provider wants a different envelope and getting it wrong is a
+  400: Claude needs an `image` block for a photo and a `document` block for a PDF; OpenAI and Groq
+  want `image_url` with a **full data URL**; Gemini and the proxy take `inline_data` parts.
+  **Groq is the conditional one** — `groqUsable()` deliberately strips "vision" from the chat list,
+  so `groqVision()` reads the **raw** cached catalogue instead, and its multimodal models reject
+  `response_format:json_object` alongside an image (so it's dropped and `aiParse` does the digging).
+  No vision model in the account → a message naming Gemini as the fix, not a 400.
+  `engineReadsImages()` gates the camera buttons; it's wider than `engineReadsPDF()`.
   `aiPrompt()` builds the extraction prompt against a fixed JSON schema; `aiParse()` is a defensive
   JSON extractor; `spReview()/spApply()` map the result to a new opportunity or merge into a matched
   one (adding round/people). **Job URL → auto-fill**: `fetchJobUrl()` → `readUrlText()` walks the
@@ -209,6 +218,27 @@ back to the notes that established each edge. Vocabulary is fixed in `REL_LABEL`
 `webkitSpeechRecognition` (`capVoice`, feature-detected), then `capExtract()` → `capturePrompt()` →
 `buildPlan()` → **review screen** (`capReview`) → `capApply()`. With no AI configured it still saves
 the raw note. The FAB (`renderFab`) appears app-wide once you have an employer.
+
+**A photo is a note** (`capShots`, the "shots" plumbing in FILES). The fastest note is the one you
+never type: point a camera at a whiteboard, a page of handwriting or a printed org chart, or ⌘V a
+screenshot on a laptop. `capShotBar()` offers camera (`capture="environment"`, touch only) and
+library; `capArmDrop()` adds paste + drag-drop on the modal `.card`. `imgToShot()` downscales to
+`SHOT_MAX` 1500px / JPEG 0.82 (**on a white ground** — JPEG has no alpha and a PNG screenshot would
+otherwise go black) and puts the bytes in **IndexedDB**, `SHOT_LIMIT` 4 per note. `shotDocs()`
+turns them into aiCall attachments; `hydrateShots()` fills `<img data-shot>` from IDB after render,
+because bytes never go on `state`.
+`shotRules(n)` is appended to `capturePrompt` and the schema grows a **`transcript`** field: the
+model writes out everything legible verbatim, and only then extracts records. It's told to read
+*every* box of an org chart (lines → `REPORTS_TO`, bands → departments, inner boxes → teams), to
+treat a business card as one person, and to say the picture is unreadable rather than invent.
+`capReview` shows the transcription in an **editable box** — handwriting gets misread and the moment
+to fix it is while the original is still on screen — and `capFinalText()` folds your typed text and
+the (corrected) transcript into one `capture.text`, because search, citations, Ask Meanwhile and
+re-reading all work on that one field. Smart add has the same intake (`spShots`) for the pre-hire
+funnel: a posting on a screen, a business card, a flyer.
+**`fileRecordsIn(doc)` must list every attachment.** `allFileRecords`, `exportData` (which zips a
+deep copy against the live doc by position) and `sweepOrphanFiles` all read it — a file record
+missing from there gets its bytes binned as an orphan.
 
 **Capture is an agent, not an extractor.** `CAPTURE_SCHEMA` lets the model come back with more than
 records: `ask_me` (up to 3 clarifying questions, with quick-answer `options`), `updates` (change a
@@ -353,6 +383,7 @@ service worker and clears caches). "I don't see the change" has twice been a sta
   processes[], decisions[], questions[], links[], milestones[], reports[] }` — every record carries
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.
+  `capture.shots[]`: `{name,type,size,ref,w,h}` — photos on a note; bytes in IndexedDB, never on `state`.
 - `o.hired`: `{startDate, title, manager, managerId, acceptedAt}` — present once `status==="hired"`.
 - `o.people[]` gains post-hire fields: `deptId`, `teamId`, `managerId`, `standing`, `expertise[]`, `at`, `fromCapture`.
 - `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name

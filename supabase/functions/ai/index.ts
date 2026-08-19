@@ -36,16 +36,22 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
   try {
-    const { prompt, doc, maxTokens, json } = await req.json().catch(() => ({}));
+    const { prompt, doc, docs, maxTokens, json } = await req.json().catch(() => ({}));
     if (!prompt || typeof prompt !== "string") return json({ error: "missing prompt" }, 400);
 
     const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_API_KEY");
     if (!key) return json({ error: "GEMINI_API_KEY secret is not set" }, 500);
 
-    // optional document (e.g. a PDF résumé) Gemini reads natively via inline_data
-    const parts = doc && doc.data
-      ? [{ inline_data: { mime_type: doc.mime || "application/pdf", data: doc.data } }, { text: prompt }]
-      : [{ text: prompt }];
+    // Optional attachments Gemini reads natively via inline_data: a PDF résumé, or photos of a
+    // whiteboard / org chart / business card. `docs` is the current shape; `doc` is still accepted
+    // so an app build older than multi-attachment keeps working against a new deploy.
+    const list: Array<{ data?: string; mime?: string }> =
+      Array.isArray(docs) && docs.length ? docs : doc && doc.data ? [doc] : [];
+    const parts: Record<string, unknown>[] = list
+      .filter((d) => d && d.data)
+      .slice(0, 6)
+      .map((d) => ({ inline_data: { mime_type: d.mime || "application/pdf", data: d.data } }));
+    parts.push({ text: prompt });
 
     // JSON for extraction (default); plain prose when json === false (e.g. thank-you notes)
     const generationConfig: Record<string, unknown> = {

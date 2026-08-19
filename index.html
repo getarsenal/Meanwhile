@@ -677,6 +677,23 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .cap-mic .pulse{width:9px;height:9px;border-radius:50%;background:var(--hot);animation:pulse 1.1s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 .cap-hint{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;line-height:1.5}
+/* photographing a note: the buttons, the thumbnails, and the full-size view */
+.cap-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cap-tool{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:11px;border:1.5px dashed var(--line2);color:var(--muted);font-weight:700;font-size:12.5px;transition:.15s;min-width:0}
+.cap-tool:hover{border-color:var(--accent);color:var(--accent3)}
+.cap-tool svg{width:17px;height:17px;flex:0 0 17px}
+.cap-tool span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cap-tool-hint{font-size:11.5px;color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+.shot-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.shot-cell{position:relative;flex:0 0 auto}
+.shot-thumb{width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px solid var(--line2);background:var(--card2);cursor:zoom-in;display:block}
+.shot-x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.shot-x svg{width:12px;height:12px}
+.shot-x:hover{color:var(--bad);border-color:var(--bad)}
+#editorOverlay .card.drop-on{outline:2px dashed var(--accent);outline-offset:-6px}
+.shot-view{position:fixed;inset:0;z-index:400;background:rgba(6,8,20,.92);display:grid;place-items:center;padding:20px;cursor:zoom-out;padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.shot-view img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
+.rev-sub{font-size:11.5px;color:var(--faint);margin:9px 0 6px;line-height:1.5}
 
 .rev-group{margin-bottom:14px}
 .rev-head svg{width:14px;height:14px;flex:0 0 14px}
@@ -949,7 +966,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v40 · 2026-08-13";
+const BUILD = "v41 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1425,6 +1442,8 @@ const I = {
   question:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 4M12 17.3h.01"/></svg>',
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3h9L20 8.5v11A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
+  camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.2-2.1a1 1 0 0 1 .87-.5h6.46a1 1 0 0 1 .87.5L17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5Z"/><circle cx="12" cy="13" r="3.4"/></svg>',
+  image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4.5" width="18" height="15" rx="2.2"/><circle cx="8.6" cy="10" r="1.6"/><path d="m3.6 17.4 4.7-4.4a1.6 1.6 0 0 1 2.2 0l3.1 3 1.9-1.7a1.6 1.6 0 0 1 2.2 0l2.7 2.5"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4.5A1.5 1.5 0 0 1 20 5.5v12a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 17.5Z"/><path d="M12 6v14"/></svg>',
   crown:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8.5 6.5 12 12 5l5.5 7L21 8.5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>',
   map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 3.5-6 2.4V21l6-2.4 6 2.4 6-2.4V3.5L15 5.9Z"/><path d="M9 3.5v15M15 5.9v15"/></svg>',
@@ -2695,14 +2714,90 @@ function timelineHTML(o,limit){
 /* ============================ QUICK CAPTURE ============================
    The one thing the user has to do. Talk or type what happened; Meanwhile files it. */
 function capTitle(c){ const t=(c.text||"").trim().replace(/\s+/g," "); return t.length>62?t.slice(0,62)+"…":(t||"Note"); }
-let capOpId=null, capRec=null, capBase="", capEditId=null, capPrefill="";
+let capOpId=null, capRec=null, capBase="", capEditId=null, capPrefill="", capShots=[];
 function openCapture(opId, editId){
   const emp=employers(); if(!emp.length){ toast("Mark a role as hired first"); return; }
   capEditId = editId || null;
   const ex = capEditId ? wFind("captures",capEditId) : null;
   capPrefill = ex ? (ex.text||"") : "";
+  capShots = ex ? (ex.shots||[]).slice() : [];
   capOpId = (ex && ex.opId) || opId || (workOp()||emp[0]).id;
   openEditor(captureBody());
+  hydrateShots(editorEl); capArmDrop();
+}
+/* ---- Photos on a note ----
+   The fastest note is the one you don't type. A phone camera pointed at a whiteboard, a
+   notebook page or a printed org chart is a note; so is ⌘V of a screenshot on a laptop. The
+   picture goes to the model to be read AND stays on the note, because a transcription is not
+   the same thing as being able to look at the original again. */
+function capShotStrip(){
+  if(!capShots.length) return "";
+  return `<div class="shot-strip" id="capShots">${capShots.map((s,i)=>`<div class="shot-cell">
+      ${shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)}
+      <button class="shot-x" data-capshotdel="${i}" title="Remove">${I.x}</button>
+    </div>`).join("")}</div>`;
+}
+function capShotBar(){
+  if(!engineReadsImages()) return "";
+  const touch = matchMedia("(pointer:coarse)").matches;
+  return `<div class="cap-tools">
+    ${touch?`<button class="cap-tool" data-act="cap-camera">${I.camera}<span>Photo</span></button>`:""}
+    <button class="cap-tool" data-act="cap-image">${I.image}<span>${touch?"Library":"Add a picture"}</span></button>
+    ${!touch?`<span class="cap-tool-hint">or paste a screenshot / drop one in</span>`:""}
+  </div>`;
+}
+// one picker for both buttons; `cam` asks the phone for the camera rather than the library
+function capPickImages(cam){
+  pickImages(cam, async files=>{
+    for(const f of files){
+      if(capShots.length>=SHOT_LIMIT){ toast(`Up to ${SHOT_LIMIT} pictures per note`); break; }
+      capShots.push(await imgToShot(f));
+    }
+    capRedrawShots();
+  });
+}
+function pickImages(cam, done){
+  const inp=document.createElement("input");
+  inp.type="file"; inp.accept="image/*"; inp.multiple=!cam;
+  if(cam) inp.setAttribute("capture","environment");
+  inp.onchange=async()=>{
+    const files=[...(inp.files||[])].filter(isImageFile);
+    if(!files.length) return;
+    const big=files.find(f=>f.size>25*1024*1024);
+    if(big){ toast("⚠ That picture is too big (max 25MB)"); return; }
+    toast(files.length>1?`Reading ${files.length} pictures…`:"Reading the picture…");
+    try{ await done(files); }catch(e){ toast("⚠ Couldn't read that picture"); }
+  };
+  inp.click();
+}
+// redraw just the strip so a half-typed note isn't lost to a re-render
+function capRedrawShots(){
+  const host=document.getElementById("capShotHost"); if(!host) return;
+  host.innerHTML=capShotStrip();
+  hydrateShots(host);
+}
+// ⌘V of a screenshot, and drag-and-drop onto the modal — both land in the same place
+function capArmDrop(){
+  const box=editorEl&&editorEl.querySelector(".card"); if(!box||box.dataset.shotBound) return;
+  box.dataset.shotBound="1";
+  const take=async files=>{
+    const imgs=[...files].filter(isImageFile); if(!imgs.length) return false;
+    for(const f of imgs){ if(capShots.length>=SHOT_LIMIT){ toast(`Up to ${SHOT_LIMIT} pictures per note`); break; } capShots.push(await imgToShot(f)); }
+    capRedrawShots(); return true;
+  };
+  box.addEventListener("paste",async e=>{
+    if(!engineReadsImages()) return;
+    const files=[...((e.clipboardData||{}).files||[])];
+    if(files.length && await take(files)) e.preventDefault();
+  });
+  box.addEventListener("dragover",e=>{ if(engineReadsImages()){ e.preventDefault(); box.classList.add("drop-on"); } });
+  box.addEventListener("dragleave",()=>box.classList.remove("drop-on"));
+  box.addEventListener("drop",async e=>{
+    box.classList.remove("drop-on");
+    if(!engineReadsImages()) return;
+    const files=[...((e.dataTransfer||{}).files||[])];
+    if(files.length){ e.preventDefault(); await take(files); }
+  });
 }
 function captureBody(){
   const emp=employers(); const o=opById(capOpId)||emp[0];
@@ -2715,6 +2810,8 @@ function captureBody(){
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
   <textarea id="capText" class="cap-ta" placeholder="Met Mike today. He's the Salesforce guy. Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting…">${esc(capPrefill)}</textarea>
+  <div id="capShotHost">${capShotStrip()}</div>
+  ${capShotBar()}
   ${voice?`<button class="cap-mic" id="capMic" data-act="cap-mic" style="margin-top:10px">${I.mic}<span>${editing?"Add to it by voice":"Dictate it instead"}</span></button>`:""}
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="cap-go">${I.ai} ${editing?"Save &amp; re-read it":"Save &amp; organize"}</button>
@@ -2722,7 +2819,7 @@ function captureBody(){
   </div>
   <div class="cap-hint">${editing
     ? "Re-reading picks up anything new. What it already filed from this note stays put — nothing gets duplicated."
-    : "Write it how you'd say it. Meanwhile pulls out the people, systems, projects and problems — you review before anything is saved."}</div>`;
+    : "Write it how you'd say it — or photograph a whiteboard, a page of your handwriting or an org chart and let it do the reading. You review before anything is saved."}</div>`;
 }
 function capStopVoice(){
   if(capRec){ try{ capRec.stop(); }catch(e){} capRec=null; }
@@ -2752,9 +2849,10 @@ function capReadOp(){ const s=document.getElementById("capOp"); if(s) capOpId=s.
 function capSaveRaw(){
   capReadOp(); capStopVoice();
   const ta=document.getElementById("capText"); const text=(ta?ta.value:"").trim();
-  if(!text){ toast("Nothing to save yet"); return; }
+  if(!text && !capShots.length){ toast("Nothing to save yet"); return; }
+  const shots=capShots.slice();
   const ex=capEditId?wFind("captures",capEditId):null;
-  const c=ex ? Object.assign(ex,{text,editedAt:Date.now()}) : wAdd("captures",{opId:capOpId,text,entities:[]});
+  const c=ex ? Object.assign(ex,{text,shots,editedAt:Date.now()}) : wAdd("captures",{opId:capOpId,text,shots,entities:[]});
   save(); closeEditor(); if(view==="work") render();
   toast(ex?"Note updated":"Note saved");
   return c;
@@ -2797,10 +2895,31 @@ function openQuestionsText(opId){
   const q=wOf("questions",opId).filter(x=>x.status==="Open").map(x=>x.q);
   return q.length?`\nOPEN QUESTIONS I've already recorded (if this note answers one, put it in "answers" using its exact wording):\n- ${q.join("\n- ")}\n`:"";
 }
-function capturePrompt(o,text,answered){
+/* With pictures attached the job grows a first step — read them — and the schema grows a
+   "transcript" so what it saw is written down verbatim and kept on the note. Everything after
+   that is the same pipeline: the same records, the same review screen, the same guards. */
+function shotRules(n){
+  if(!n) return "";
+  return `
+--- ${n===1?"THERE IS A PICTURE":`THERE ARE ${n} PICTURES`} ATTACHED ---
+Read ${n===1?"it":"them"} first. ${n>1?"Treat them as one note — they may be pages of the same thing.\n":""}It could be a page of handwriting, a whiteboard or flipchart, a printed or projected slide, an org chart, a screenshot of a directory / chat / email, a business card, or a badge.
+- "transcript": write out everything legible, verbatim, keeping the layout's meaning (bullets stay bullets, a table stays rows). If a word is genuinely unreadable put [?] rather than guessing it. This is the note's permanent text, so it matters more than being brief.
+- Then extract records from what you read exactly as you would from typed text.
+- If it is an ORG CHART or a directory: read EVERY box or row, not just the top. Each becomes a person with their title. Every connecting line from a person up to their boss is a REPORTS_TO relationship (from the report, to the manager). A labelled band, column or swimlane is usually a department; a box grouping people inside one is usually a team.
+- If it is a BUSINESS CARD or badge: one person, with their title, company, email and phone in "note".
+- If it is a SLIDE or diagram of process or architecture: the boxes are usually systems or processes and the arrows between them are relationships.
+- Do not describe the picture ("a photo of a whiteboard with blue marker"). Read what it says.
+- Never invent something that is not legible. If the picture is too blurry or dark to read, say so in "summary" and return empty arrays.
+--- END PICTURES ---
+`;
+}
+function capturePrompt(o,text,answered,nShots){
   const prior = (answered&&answered.length)
     ? `\n--- I ANSWERED YOUR QUESTIONS ---\n${answered.map(a=>`Q: ${a.ask}\nA: ${a.answer}`).join("\n")}\n--- END ---\nUse these answers. Don't ask them again. Only ask something new if it genuinely blocks a decision.\n`
     : "";
+  const schema = nShots
+    ? CAPTURE_SCHEMA.replace('{\n "summary"','{\n "transcript": "",         // everything legible in the picture(s), written out verbatim\n "summary"')
+    : CAPTURE_SCHEMA;
   return `You are the organizational memory of one person and you are about to file a note for them. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
 ${knownEntitiesText(o.id)}${openQuestionsText(o.id)}${prior}
 Your job: read the note, work out what it means for what they already know, and propose what to record. They review everything before it is saved, so propose confidently — but never invent.
@@ -2818,11 +2937,11 @@ Rules:
 - tasks: at most 1, only if the note implies something THEY need to do next. Resolve relative dates to YYYY-MM-DD.
 - advice: at most 2, one line each — what's worth chasing, who's worth talking to. Only from what's here.
 - Leave arrays empty rather than guessing. Return ONLY the JSON object, no markdown.
-
-${CAPTURE_SCHEMA}
+${shotRules(nShots||0)}
+${schema}
 
 --- THE NOTE ---
-${text}
+${text||(nShots?"(no typed text — everything is in the picture"+(nShots>1?"s":"")+")":"")}
 --- END ---`;
 }
 
@@ -2871,18 +2990,19 @@ let capPlan=null;   // the reviewable extraction: {opId, text, summary, items:[]
 async function capExtract(){
   capReadOp(); capStopVoice();
   const ta=document.getElementById("capText"); const text=(ta?ta.value:"").trim();
-  if(!text){ toast("Write or dictate something first"); return; }
+  if(!text && !capShots.length){ toast("Write, dictate or photograph something first"); return; }
   const o=opById(capOpId); if(!o) return;
   if(aiEngine()==="paste"||aiEngine()==="off"){
     capSaveRaw();
-    toast("Saved — connect an AI in Settings to auto-organize notes");
+    toast(capShots.length?"Photo saved — connect an AI in Settings to read it":"Saved — connect an AI in Settings to auto-organize notes");
     return;
   }
   const btn=editorEl&&editorEl.querySelector('[data-act="cap-go"]');
-  if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
+  if(btn){ btn.textContent=capShots.length?"Reading the picture…":"Reading…"; btn.disabled=true; }
   try{
-    const out=await aiCall(capturePrompt(o,text),null,{maxTokens:3000});
-    capPlan=buildPlan(o,text,aiParse(out));
+    const docs=await shotDocs(capShots);
+    const out=await aiCall(capturePrompt(o,text,null,docs.length),docs,{maxTokens:docs.length?4000:3000});
+    capPlan=buildPlan(o,text,aiParse(out),capShots);
     capAnswered=[];
     capReview();
   }catch(err){
@@ -2905,8 +3025,10 @@ async function capRefine(){
   const btn=editorEl&&editorEl.querySelector('[data-act="cap-refine"]');
   if(btn){ btn.textContent="Re-reading with your answers…"; btn.disabled=true; }
   try{
-    const out=await aiCall(capturePrompt(o,p.text,capAnswered),null,{maxTokens:3000});
-    const next=buildPlan(o,p.text,aiParse(out));
+    // the pictures go back in too — the answers are extra context, not a replacement for them
+    const docs=await shotDocs(p.shots||[]);
+    const out=await aiCall(capturePrompt(o,p.text,capAnswered,docs.length),docs,{maxTokens:docs.length?4000:3000});
+    const next=buildPlan(o,p.text,aiParse(out),p.shots);
     next.answeredLog=capAnswered.slice();
     capPlan=next;
     capReview();
@@ -2916,7 +3038,7 @@ async function capRefine(){
   }
 }
 // turn the model's JSON into a reviewable plan, resolved against what already exists
-function buildPlan(o,text,d){
+function buildPlan(o,text,d,shots){
   const items=[]; const seen={};
   const add=(type,name,rec,extra)=>{
     if(!name||!String(name).trim()) return;
@@ -2978,10 +3100,22 @@ function buildPlan(o,text,d){
     id:"q"+i, ask:String(q.ask).trim(), why:(q.why||"").trim(),
     options:(q.options||[]).filter(Boolean).map(String).slice(0,4), answer:""
   }));
+  // what it read off the picture, kept separate from what you typed until you approve it
+  const transcript=String(d.transcript||"").trim().slice(0,20000);
   return {opId:o.id,captureId:capEditId||null,text,summary:(d.summary||"").trim(),
     understood:(d.understood||[]).filter(Boolean).map(String).slice(0,5),
     advice:(d.advice||[]).filter(Boolean).map(String).slice(0,2),
+    shots:(shots||[]).slice(), transcript,
     items,rels,ops,asks};
+}
+/* The note's final wording: what you typed, then what the picture said. Kept as one block of
+   text because everything downstream — search, citations, Ask Meanwhile, re-reading — works on
+   capture.text, and a transcript filed somewhere else would be invisible to all of it. */
+function capFinalText(p){
+  const typed=(p.text||"").trim(), tr=(p.transcript||"").trim();
+  if(!tr) return typed;
+  if(!typed) return tr;
+  return typed+"\n\n— from the picture —\n"+tr;
 }
 // run the proposed non-record operations. Same rule as everything else: only what was ticked.
 function applyOps(o,plan,capId){
@@ -3021,6 +3155,17 @@ function capReview(){
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>`;
   if((p.understood||[]).length){
     h+=`<div class="cap-under">${p.understood.map(u=>`<div>${esc(u)}</div>`).join("")}</div>`;
+  }
+  /* What it read off the picture, editable before it becomes the note. Handwriting gets
+     misread and the moment to fix that is now, while you can still see the original. */
+  if((p.shots||[]).length){
+    h+=`<div class="rev-group"><div class="rev-head">${I.camera}${p.shots.length===1?"The picture":p.shots.length+" pictures"}</div>
+      <div class="shot-strip">${p.shots.map(s=>shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)).join("")}</div>
+      ${p.transcript
+        ? `<div class="rev-sub">What I read — correct anything it got wrong; this becomes the note.</div>
+           <textarea id="capTranscript" class="cap-ta" style="min-height:120px">${esc(p.transcript)}</textarea>`
+        : `<div class="rev-sub">I couldn't read any text off ${p.shots.length===1?"it":"them"}. The picture is still saved with the note.</div>`}
+    </div>`;
   }
   if((p.answeredLog||[]).length){
     h+=`<details class="cap-answered"><summary>You answered ${p.answeredLog.length} ${p.answeredLog.length===1?"question":"questions"}</summary>
@@ -3100,14 +3245,20 @@ function capReview(){
     <button class="btn ghost" data-act="cap-back">← Edit note</button>
   </div>`;
   spSetBody(h);
+  hydrateShots(editorEl);
 }
 function capApply(){
   const p=capPlan; if(!p) return;
   const o=opById(p.opId); if(!o) return;
+  // any correction you made to the transcription wins over what the model read
+  const tEl=document.getElementById("capTranscript");
+  if(tEl) p.transcript=tEl.value.trim();
+  const text=capFinalText(p);
+  const shots=(p.shots||[]).slice();
   const existing=p.captureId?wFind("captures",p.captureId):null;
   const cap=existing
-    ? Object.assign(existing,{text:p.text,summary:p.summary||existing.summary,editedAt:Date.now(),entities:existing.entities||[]})
-    : wAdd("captures",{opId:o.id,text:p.text,summary:p.summary,entities:[]});
+    ? Object.assign(existing,{text,shots,summary:p.summary||existing.summary,editedAt:Date.now(),entities:existing.entities||[]})
+    : wAdd("captures",{opId:o.id,text,shots,summary:p.summary,entities:[]});
   const resolved={};   // "type|canonname" → {t,id}
   p.items.forEach(it=>{
     if(!it.on||it.choice==="") return;   // unticked, or an ambiguous person you didn't resolve
@@ -3942,6 +4093,7 @@ function ogZoom(dir){
 function openEnt(type,id){
   const rec=entGet(type,id); if(!rec){ toast("That's been deleted"); return; }
   openEditor(entDetailBody(type,rec));
+  if(type==="capture") hydrateShots(editorEl);
 }
 function entDetailBody(type,rec){
   const opId=entOpId(type,rec.id), o=opById(opId);
@@ -3988,7 +4140,10 @@ function entDetailBody(type,rec){
 
   const shown=rows.filter(r=>r[1]);
   if(shown.length) h+=`<dl class="kv">${shown.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${/^<(a|span)/.test(String(v))?v:esc(v)}</dd>`).join("")}</dl>`;
-  if(type==="capture") h+=`<div class="note-block" style="white-space:pre-wrap">${esc(rec.text||"")}</div>`;
+  if(type==="capture"){
+    if((rec.shots||[]).length) h+=`<div class="shot-strip">${rec.shots.map(s=>shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)).join("")}</div>`;
+    h+=`<div class="note-block" style="white-space:pre-wrap">${esc(rec.text||"")}</div>`;
+  }
   else if(rec.notes) h+=`<div class="note-block">${esc(rec.notes)}</div>`;
 
   // everything this connects to, grouped by relationship — the graph, read out loud
@@ -5478,6 +5633,13 @@ function groqUsable(ids){
   return chat.sort((a,b)=>rank(a)-rank(b));
 }
 function groqCached(){ try{ return groqUsable(JSON.parse(localStorage.getItem("meanwhile_groq_models")||"[]")); }catch(e){ return []; } }
+/* The multimodal ones, picked from the RAW catalogue — groqUsable() deliberately drops anything
+   named "vision" from the chat list, which is exactly the model we want when there's a photo. */
+const GROQ_VISION=/scout|maverick|vision|llava|multimodal/i;
+function groqVision(){
+  let raw=[]; try{ raw=JSON.parse(localStorage.getItem("meanwhile_groq_models")||"[]")||[]; }catch(e){}
+  return raw.filter(id=>id&&GROQ_VISION.test(id)&&!/whisper|tts|guard|embed/i.test(id));
+}
 /* Ask the key what it can run. Cached for a day so it costs one call, not one per request. */
 async function groqDiscover(force){
   const K="meanwhile_groq_models", T="meanwhile_groq_models_at";
@@ -5518,6 +5680,10 @@ function adoptSyncedAI(){
 function aiSyncOn(){ return aiCfg.syncKey!==false; }   // opt-out, on by default for free engines
 // providers that can read an uploaded PDF directly
 function engineReadsPDF(){ return ["proxy","anthropic","google"].includes(aiEngine()); }
+/* Providers that can LOOK at a photo. Wider than PDF: every modern chat model reads images,
+   including the OpenAI-compatible ones, so a snapshot of a whiteboard works almost everywhere.
+   Groq is conditional — its catalogue only sometimes carries a multimodal model (see groqVision). */
+function engineReadsImages(){ return ["proxy","anthropic","google","openai","groq"].includes(aiEngine()); }
 const AI_SCHEMA=`Return ONLY a JSON object (no markdown, no commentary) with exactly these keys:
 {
  "company": "",            // employer name; "" if unknown
@@ -5533,8 +5699,14 @@ const AI_SCHEMA=`Return ONLY a JSON object (no markdown, no commentary) with exa
  "nextActionDate": "",     // YYYY-MM-DD
  "notes": ""               // 1–3 sentences of anything else useful
 }`;
-function aiPrompt(text){
-  return `You extract structured job-search data. Today is ${todayYMD()}. The pasted content below may be a calendar invite, a recruiter or interview email, a job posting, or a LinkedIn / contact profile. Pull the details into the exact JSON schema. Resolve relative dates (e.g. "next Tuesday", "tomorrow 3pm") to absolute YYYY-MM-DD / 24h HH:MM using today's date. Use "" (or null for round/person) for anything not stated — never invent. If it is about a person/contact rather than a role, fill "person" and leave "round" null.
+function aiPrompt(text,nShots){
+  const pics = nShots ? `
+
+--- ${nShots===1?"THERE IS A PICTURE":`THERE ARE ${nShots} PICTURES`} ATTACHED ---
+Read ${nShots===1?"it":"them"} first and treat what you read as the pasted content. It is most likely a job posting on a screen, a business card, an event badge, a printed flyer, or a screenshot of an email or a message. A business card or badge is a "contact": fill "person" (name, title, email, any phone or note) and set "company". Read what it says — do not describe the picture. Never invent anything that isn't legible.
+--- END PICTURES ---
+` : "";
+  return `You extract structured job-search data. Today is ${todayYMD()}. The pasted content below may be a calendar invite, a recruiter or interview email, a job posting, or a LinkedIn / contact profile.${pics} Pull the details into the exact JSON schema. Resolve relative dates (e.g. "next Tuesday", "tomorrow 3pm") to absolute YYYY-MM-DD / 24h HH:MM using today's date. Use "" (or null for round/person) for anything not stated — never invent. If it is about a person/contact rather than a role, fill "person" and leave "round" null.
 
 ${AI_SCHEMA}
 
@@ -5549,23 +5721,34 @@ function aiParse(s){
   if(a>=0&&b>a) t=t.slice(a,b+1);
   return JSON.parse(t);
 }
-// prompt + optional doc {data:base64-no-prefix, mime}; opts.json=false for prose (default JSON)
+/* prompt + optional attachment(s). `doc` is {data:base64-no-prefix, mime} — or an ARRAY of them,
+   because one note can be three photos of the same whiteboard. opts.json=false for prose. */
 async function aiCall(prompt, doc, opts){
-  const eng=aiEngine(); const wantJson = !(opts&&opts.json===false); const maxTok=(opts&&opts.maxTokens)||(doc?2048:wantJson?1024:1400);
+  const eng=aiEngine(); const wantJson = !(opts&&opts.json===false);
+  const docs = doc ? (Array.isArray(doc)?doc:[doc]).filter(d=>d&&d.data) : [];
+  const imgs = docs.filter(d=>/^image\//i.test(d.mime||""));
+  const dataUrl = d => "data:"+(d.mime||"image/jpeg")+";base64,"+d.data;
+  const maxTok=(opts&&opts.maxTokens)||(docs.length?2048:wantJson?1024:1400);
   if(eng==="proxy"){
-    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify({prompt,doc:doc||undefined,maxTokens:maxTok,json:wantJson})});
+    // `doc` as well as `docs` so a proxy deployed before multi-attachment still gets the first one
+    const res=await fetch(aiProxyUrl(),{method:"POST",headers:Object.assign({"Content-Type":"application/json"}, sync.key?{Authorization:"Bearer "+sync.key, apikey:sync.key}:{}), body:JSON.stringify({prompt,doc:docs[0]||undefined,docs:docs.length?docs:undefined,maxTokens:maxTok,json:wantJson})});
     if(!res.ok) throw new Error("Proxy "+res.status+" "+(await res.text()).slice(0,140));
     const j=await res.json(); return j.text||j.output||(typeof j==="string"?j:JSON.stringify(j));
   }
   if(eng==="anthropic"){
-    const content = doc ? [{type:"document",source:{type:"base64",media_type:doc.mime||"application/pdf",data:doc.data}},{type:"text",text:prompt}] : prompt;
+    // a photo is an "image" block and a PDF is a "document" one — same envelope, different type
+    const blocks = docs.map(d=>{ const mime=d.mime||"application/pdf";
+      return /^image\//i.test(mime) ? {type:"image",source:{type:"base64",media_type:mime,data:d.data}}
+                                    : {type:"document",source:{type:"base64",media_type:mime,data:d.data}}; });
+    const content = blocks.length ? blocks.concat([{type:"text",text:prompt}]) : prompt;
     const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":aiCfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:aiCfg.model||"claude-haiku-4-5",max_tokens:maxTok,messages:[{role:"user",content}]})});
     if(!res.ok) throw new Error("Claude "+res.status+" "+(await res.text()).slice(0,180));
     const j=await res.json(); return (j.content||[]).map(b=>b.text||"").join("");
   }
   if(eng==="openai"){
     const model=aiCfg.model||"gpt-4o-mini";
-    const body={model,messages:[{role:"user",content:prompt}],max_tokens:maxTok};
+    const content = imgs.length ? imgs.map(d=>({type:"image_url",image_url:{url:dataUrl(d)}})).concat([{type:"text",text:prompt}]) : prompt;
+    const body={model,messages:[{role:"user",content}],max_tokens:maxTok};
     if(wantJson) body.response_format={type:"json_object"};
     const res=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiCfg.key},body:JSON.stringify(body)});
     if(!res.ok){ const tx=(await res.text()).slice(0,300);
@@ -5582,7 +5765,10 @@ async function aiCall(prompt, doc, opts){
     // list goes stale and the app dies with a 404 naming a model the user never chose. So we ask
     // the key what it can actually run (GET /models) and cache that, falling back to a static
     // preference order only if the catalogue call itself fails.
-    const base={messages:[{role:"user",content:prompt}],max_tokens:maxTok}; if(wantJson) base.response_format={type:"json_object"};
+    const content = imgs.length ? imgs.map(d=>({type:"image_url",image_url:{url:dataUrl(d)}})).concat([{type:"text",text:prompt}]) : prompt;
+    // Groq's multimodal models reject response_format alongside an image, so with a photo we ask
+    // for JSON in words and let aiParse dig it out of whatever comes back.
+    const base={messages:[{role:"user",content}],max_tokens:maxTok}; if(wantJson&&!imgs.length) base.response_format={type:"json_object"};
     const attempt=async model=>fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
       headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiKey()},
       body:JSON.stringify(Object.assign({model},base))});
@@ -5598,10 +5784,18 @@ async function aiCall(prompt, doc, opts){
       }
       return false;
     };
-    let done=await run([aiCfg.model, ...groqCached(), ...GROQ_PREF]);
+    // a photo needs a multimodal model, which is a different (and smaller) set than the chat one
+    let cands=[aiCfg.model, ...groqCached(), ...GROQ_PREF];
+    if(imgs.length){
+      let vis=groqVision(); if(!vis.length){ await groqDiscover(true); vis=groqVision(); }
+      if(!vis.length) throw new Error("This Groq key has no model that can read pictures right now. Gemini's free tier can — switch the engine in AI settings.");
+      cands=vis;
+    }
+    let done=await run(cands);
     // everything we knew about is gone — re-read the catalogue once and try what it says
     if(!done && [404,400].includes(lastStatus)){
-      const fresh=await groqDiscover(true);
+      await groqDiscover(true);
+      const fresh = imgs.length ? groqVision() : groqCached();
       if(fresh.length) done=await run(fresh);
     }
     if(!done){
@@ -5616,7 +5810,7 @@ async function aiCall(prompt, doc, opts){
     const j=await res.json(); return (((j.choices||[])[0]||{}).message||{}).content||"";
   }
   if(eng==="google"){
-    const parts = doc ? [{inline_data:{mime_type:doc.mime||"application/pdf",data:doc.data}},{text:prompt}] : [{text:prompt}];
+    const parts = docs.map(d=>({inline_data:{mime_type:d.mime||"application/pdf",data:d.data}})).concat([{text:prompt}]);
     const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
     const body=JSON.stringify({contents:[{parts}],generationConfig:genCfg});
     // try the chosen/default model, then fall back to others. Each free-tier model has its OWN
@@ -5639,8 +5833,41 @@ async function aiCall(prompt, doc, opts){
   throw new Error("paste-mode");
 }
 
-let spData=null, spText="", spSourceUrl="", spMatchId="";
-function openSmartPaste(keepText){ spData=null; spSourceUrl=""; spMatchId=""; if(!keepText) spText=""; openEditor(smartPasteBody()); }
+let spData=null, spText="", spSourceUrl="", spMatchId="", spShots=[];
+function openSmartPaste(keepText){ spData=null; spSourceUrl=""; spMatchId=""; spShots=[]; if(!keepText) spText=""; openEditor(smartPasteBody()); spArmDrop(); }
+// same picture intake as a note, aimed at the pre-hire funnel: a posting on a screen, a
+// business card from a career fair, a photo of a recruiter's whiteboard at a booth
+function spShotStrip(){
+  if(!spShots.length) return "";
+  return `<div class="shot-strip">${spShots.map((s,i)=>`<div class="shot-cell">
+    ${shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)}
+    <button class="shot-x" data-spshotdel="${i}" title="Remove">${I.x}</button></div>`).join("")}</div>`;
+}
+function spRedrawShots(){ const h=document.getElementById("spShotHost"); if(!h) return; h.innerHTML=spShotStrip(); hydrateShots(h); }
+function spPickImages(cam){
+  pickImages(cam, async files=>{
+    for(const f of files){ if(spShots.length>=SHOT_LIMIT){ toast(`Up to ${SHOT_LIMIT} pictures`); break; } spShots.push(await imgToShot(f)); }
+    spRedrawShots();
+  });
+}
+function spArmDrop(){
+  const box=editorEl&&editorEl.querySelector(".card"); if(!box||box.dataset.spShotBound) return;
+  box.dataset.spShotBound="1";
+  const take=async files=>{
+    const imgs=[...files].filter(isImageFile); if(!imgs.length) return false;
+    for(const f of imgs){ if(spShots.length>=SHOT_LIMIT) break; spShots.push(await imgToShot(f)); }
+    spRedrawShots(); return true;
+  };
+  box.addEventListener("paste",async e=>{
+    if(!engineReadsImages()) return;
+    const files=[...((e.clipboardData||{}).files||[])];
+    if(files.length && await take(files)) e.preventDefault();
+  });
+  box.addEventListener("dragover",e=>{ if(engineReadsImages()){ e.preventDefault(); box.classList.add("drop-on"); } });
+  box.addEventListener("dragleave",()=>box.classList.remove("drop-on"));
+  box.addEventListener("drop",async e=>{ box.classList.remove("drop-on"); if(!engineReadsImages()) return;
+    const files=[...((e.dataTransfer||{}).files||[])]; if(files.length){ e.preventDefault(); await take(files); } });
+}
 function aiEngineLabel(){ return {off:"Off",paste:"Copy-paste (no key)",proxy:"Cloud proxy ✓",anthropic:"Claude ✓",openai:"ChatGPT ✓",groq:"Groq ✓",google:"Gemini ✓"}[aiEngine()]; }
 function smartPasteBody(){
   return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:6px">
@@ -5655,6 +5882,12 @@ function smartPasteBody(){
   </div>
   <div style="text-align:center;font-size:11px;color:var(--faint);margin-bottom:10px">— or paste the details below —</div>
   <textarea id="spInput" style="min-height:150px" placeholder="Paste here…">${esc(spText)}</textarea>
+  <div id="spShotHost">${spShotStrip()}</div>
+  ${engineReadsImages()?`<div class="cap-tools">
+    ${matchMedia("(pointer:coarse)").matches?`<button class="cap-tool" data-act="sp-camera">${I.camera}<span>Photo</span></button>`:""}
+    <button class="cap-tool" data-act="sp-image">${I.image}<span>${matchMedia("(pointer:coarse)").matches?"Library":"Add a picture"}</span></button>
+    <span class="cap-tool-hint">a posting on screen, a business card, a flyer</span>
+  </div>`:""}
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="ai-extract">${I.ai} Extract</button>
     <button class="btn ghost" data-act="cancel-editor">Cancel</button>
@@ -5794,11 +6027,12 @@ function spSetBody(html){ const card=editorEl&&editorEl.querySelector(".card");
   if(card){ card.innerHTML=html; snapshotEditor(); const f=card.querySelector("textarea,input"); if(f) setTimeout(()=>f.focus(),40); } }
 async function runExtract(){
   const ta=$("#spInput"); spText=ta?ta.value.trim():"";
-  if(!spText){ toast("Paste something first"); return; }
+  if(!spText && !spShots.length){ toast("Paste or photograph something first"); return; }
   if(aiEngine()==="paste" || aiEngine()==="off"){ return spShowFallback(); }
-  const btn=editorEl&&editorEl.querySelector('[data-act="ai-extract"]'); if(btn){ btn.textContent="Reading…"; btn.disabled=true; }
+  const btn=editorEl&&editorEl.querySelector('[data-act="ai-extract"]'); if(btn){ btn.textContent=spShots.length?"Reading the picture…":"Reading…"; btn.disabled=true; }
   try{
-    const out=await aiCall(aiPrompt(spText));
+    const docs=await shotDocs(spShots);
+    const out=await aiCall(aiPrompt(spText,docs.length),docs,{maxTokens:docs.length?2048:1024});
     spData=aiParse(out);
     spReview();
   }catch(err){
@@ -6139,7 +6373,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -6224,6 +6458,8 @@ document.addEventListener("click",e=>{
   // smart paste / AI ingest
   if(act==="smart-paste"){ openSmartPaste(); return; }
   if(act==="ai-extract"){ runExtract(); return; }
+  if(act==="sp-camera"){ spPickImages(true); return; }
+  if(act==="sp-image"){ spPickImages(false); return; }
   if(act==="ai-fetch-url"){ fetchJobUrl(); return; }
   if(act==="ai-fetch-retry"){ spSetBody(smartPasteBody()); const u=$("#spUrl"); if(u){ u.value=spSourceUrl; } fetchJobUrl(); return; }
   if(act==="aigen-copy"){ copy(aiGenText,"Copied"); return; }
@@ -6337,7 +6573,10 @@ document.addEventListener("click",e=>{
     const el=document.querySelector(`[data-ansfor="${qid}"]`); if(el){ el.value=val; el.focus(); }
     if(capPlan){ const q=(capPlan.asks||[]).find(x=>x.id===qid); if(q) q.answer=val; }
     return; }
-  if(act==="cap-back"){ const txt=capPlan?capPlan.text:""; spSetBody(captureBody()); const ta=document.getElementById("capText"); if(ta) ta.value=txt; return; }
+  if(act==="cap-back"){ const txt=capPlan?capPlan.text:""; if(capPlan) capShots=(capPlan.shots||[]).slice();
+    spSetBody(captureBody()); const ta=document.getElementById("capText"); if(ta) ta.value=txt; hydrateShots(editorEl); capArmDrop(); return; }
+  if(act==="cap-camera"){ capPickImages(true); return; }
+  if(act==="cap-image"){ capPickImages(false); return; }
   if(t.dataset.rev!=null&&capPlan){ const it=planItem(+t.dataset.rev);
     if(it){ if(!it.on&&it.choice===""){ toast("Choose which one it is first"); return; } it.on=!it.on; capReview(); } return; }
   if(t.dataset.ent){ const [ty,id]=t.dataset.ent.split("|"); openEnt(ty,id); return; }
@@ -6363,6 +6602,9 @@ document.addEventListener("click",e=>{
   if(act==="work-gaps"){ openGaps(); return; }
   if(t.dataset.capedit){ openCapture(null,t.dataset.capedit); return; }
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
+  if(t.dataset.capshotdel!==undefined){ capShots.splice(+t.dataset.capshotdel,1); capRedrawShots(); return; }
+  if(t.dataset.spshotdel!==undefined){ spShots.splice(+t.dataset.spshotdel,1); spRedrawShots(); return; }
+  if(t.dataset.shotview){ openShot(t.dataset.shotview); return; }
   if(t.dataset.convert){ const [ty,id]=t.dataset.convert.split("|"); openConvertPicker(ty,id); return; }
   if(t.dataset.convto){ const [ty,id,to]=t.dataset.convto.split("|");
     const relSel=document.getElementById("convRel"); const rel=relSel?relSel.value:"";
@@ -6522,9 +6764,10 @@ document.addEventListener("drop",e=>{ const col=e.target.closest(".col[data-stag
 // A backup has to be the whole thing, so attachments are re-inlined into the file on the way out
 async function exportData(){
   const snap=JSON.parse(JSON.stringify(state));
-  const pairs=[[snap.resume&&snap.resume.file, state.resume&&state.resume.file]];
-  snap.opportunities.forEach((o,i)=>pairs.push([o.jdFile, state.opportunities[i]&&state.opportunities[i].jdFile]));
-  for(const [copy,orig] of pairs){
+  // a backup has to be a whole backup, so the bytes come back out of IndexedDB and inline
+  const copies=fileRecordsIn(snap), origs=fileRecordsIn(state);
+  for(let i=0;i<copies.length;i++){
+    const copy=copies[i], orig=origs[i];
     if(!copy||!orig||copy.data) continue;
     const bytes=await fileBytes(orig);
     if(bytes){ copy.data=bytes; delete copy.ref; }
@@ -6721,13 +6964,18 @@ async function downloadData(f){
   const a=document.createElement("a"); a.href=data; a.download=(f&&f.name)||"file"; document.body.appendChild(a); a.click(); a.remove();
 }
 function fileSizeStr(n){ if(!n) return ""; return n<1024?n+" B":n<1048576?(n/1024).toFixed(0)+" KB":(n/1048576).toFixed(1)+" MB"; }
-// every file record currently referenced anywhere in state
-function allFileRecords(){
+/* Every file record in a given document, in a stable order. exportData relies on that order to
+   zip a deep copy against the live one, and sweepOrphanFiles relies on it being COMPLETE — a
+   file record missing from here gets its bytes binned as an orphan. Add new attachments here. */
+function fileRecordsIn(doc){
   const out=[];
-  if(state.resume&&state.resume.file) out.push(state.resume.file);
-  state.opportunities.forEach(o=>{ if(o.jdFile) out.push(o.jdFile); });
+  if(doc.resume&&doc.resume.file) out.push(doc.resume.file);
+  (doc.opportunities||[]).forEach(o=>{ if(o&&o.jdFile) out.push(o.jdFile); });
+  (((doc.work||{}).captures)||[]).forEach(c=>(c&&c.shots||[]).forEach(s=>{ if(s) out.push(s); }));
   return out.filter(Boolean);
 }
+// every file record currently referenced anywhere in state
+function allFileRecords(){ return fileRecordsIn(state); }
 // one-time move of legacy inline attachments into IndexedDB, then drop the fat from state
 async function migrateFilesToIDB(){
   const legacy=allFileRecords().filter(f=>f.data&&!f.ref);
@@ -6758,7 +7006,7 @@ async function pickFileInto(field, accept){
   inp.click();
 }
 // contact photos stay inline (they're rendered in a dozen places) so they get shrunk to a thumbnail
-function shrinkImage(dataURL, max){
+function shrinkImage(dataURL, max, q){
   max=max||128;
   return new Promise(res=>{
     const img=new Image();
@@ -6767,13 +7015,62 @@ function shrinkImage(dataURL, max){
         const s=Math.min(1,max/Math.max(img.width,img.height));
         const c=document.createElement("canvas");
         c.width=Math.max(1,Math.round(img.width*s)); c.height=Math.max(1,Math.round(img.height*s));
-        c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-        res(c.toDataURL("image/jpeg",0.72));
+        const ctx=c.getContext("2d");
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,c.height);   // JPEG has no alpha; a PNG screenshot would go black
+        ctx.drawImage(img,0,0,c.width,c.height);
+        res(c.toDataURL("image/jpeg",q||0.72));
       }catch(e){ res(dataURL); }
     };
     img.onerror=()=>res(dataURL);
     img.src=dataURL;
   });
+}
+
+/* ---------------- PHOTOS ATTACHED TO A NOTE ("shots") ----------------
+   A picture of a whiteboard, a page of handwriting, a printed org chart, a screenshot of a
+   directory. It goes to the model to be read, and it stays on the note so you can look at the
+   original later. 1500px on the long edge is comfortably enough for the model to read text off
+   and keeps a phone photo from turning a 5MB budget into a 4MB prompt. */
+const SHOT_MAX=1500, SHOT_LIMIT=4;
+function isImageFile(f){ return !!f && (/^image\//i.test(f.type||"") || /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(f.name||"")); }
+// File → {name,type,size,ref,w,h} with the downscaled bytes in IndexedDB
+async function imgToShot(file){
+  const raw=await readAsDataURL(file);
+  const small=await shrinkImage(raw,SHOT_MAX,0.82);
+  const dim=await new Promise(res=>{ const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=()=>res({w:0,h:0}); i.src=small; });
+  const meta={name:file.name||"photo.jpg",type:"image/jpeg",size:Math.round((small.length-small.indexOf(",")-1)*0.75),w:dim.w,h:dim.h};
+  try{ const ref="f_"+uid(); await idbPut(ref,small); return Object.assign(meta,{ref}); }
+  catch(e){ return Object.assign(meta,{data:small}); }   // no IndexedDB: keep it working, sweep can't help
+}
+// a stored shot → the {mime,data} shape aiCall wants (base64 with no data-URL prefix)
+async function shotDoc(shot){
+  const url=await fileBytes(shot); if(!url) return null;
+  const c=url.indexOf(","); if(c<0) return null;
+  const mime=(url.slice(5,url.indexOf(";"))||"image/jpeg");
+  return {mime,data:url.slice(c+1)};
+}
+async function shotDocs(shots){
+  const out=[]; for(const s of (shots||[])){ const d=await shotDoc(s); if(d) out.push(d); }
+  return out;
+}
+// bytes live in IndexedDB, so <img data-shot="ref"> starts blank and gets filled in after render
+async function hydrateShots(root){
+  const els=[...(root||document).querySelectorAll("img[data-shot]:not([data-shot-done])")];
+  for(const el of els){
+    el.setAttribute("data-shot-done","1");
+    try{ const url=await idbGet(el.dataset.shot); if(url) el.src=url; }catch(e){}
+  }
+}
+function shotThumb(s,extra){
+  return `<img data-shot="${esc(s.ref||"")}" alt="${esc(s.name||"photo")}" ${s.data?`src="${safeImg(s.data)}"`:""} class="shot-thumb" ${extra||""}/>`;
+}
+async function openShot(ref){
+  let url=""; try{ url=(await idbGet(ref))||""; }catch(e){}
+  if(!url){ toast("That photo was added on another device"); return; }
+  const w=document.createElement("div"); w.className="shot-view";
+  w.innerHTML=`<img src="${safeImg(url)}" alt=""/>`;
+  w.onclick=()=>w.remove();
+  document.body.appendChild(w);
 }
 
 /* ============================ RÉSUMÉ (global) ============================ */

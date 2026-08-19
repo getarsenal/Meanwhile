@@ -1,4 +1,63 @@
-# Smart add — optional cloud proxy
+# Supabase setup
+
+Two separate things live here: **accounts + sync** (required, dashboard only, no CLI) and the
+optional **Edge Functions** (Smart add proxy, daily digest — CLI needed). Do accounts first.
+
+---
+
+## Accounts & sync — one-time dashboard setup
+
+Sign-in is email + password with optional TOTP two-factor. The vault row is owned by the account
+and scoped by row-level security, so one project can serve several colleagues without any of them
+seeing another's notes.
+
+**Export a backup from the app first** (Settings → Pipeline & data → Export backup).
+
+1. **Run the SQL.** Dashboard → **SQL Editor → New query** → paste the `SYNC_SQL` block (copy it
+   from the app: Settings → *Copy setup SQL*) → **Run**. Expect “Success. No rows returned.”
+   It is safe to run more than once.
+   The table is `user_vaults`, deliberately **not** `vaults` — reusing the name would collide with
+   the old code-keyed table on a project that already ran the legacy SQL.
+
+2. **Set the Site URL.** Authentication → **URL Configuration → Site URL** →
+   `https://getarsenal.github.io/Meanwhile/`.
+   Every confirmation and reset link points here. It defaults to `localhost:3000`, which silently
+   makes every emailed link dead — this is the single most common way the setup "doesn't work".
+
+3. **Choose whether sign-ups must confirm by email.** Authentication → Sign In / Providers →
+   Email → **Confirm email**. Off = instant sign-up, no email infrastructure needed. On = requires
+   step 4 to be working first, or nobody can get in.
+
+4. **Custom SMTP.** Authentication → **Emails → SMTP Settings**. The built-in sender allows only a
+   few messages an hour and is not for real use; password resets need email regardless of step 3.
+   Reuse the Resend key from the digest function:
+   host `smtp.resend.com`, port `465`, user `resend`, password = the Resend API key, sender = an
+   address on a domain verified in Resend. **Until a domain is verified Resend only delivers to
+   your own address** — fine for testing, not fine when a colleague signs up.
+
+5. **Project URL + anon key** (Project Settings → API) into the app under Settings → Project
+   settings. Already filled in if the device was syncing before.
+
+6. **Create the account on the device that already holds the data.** That device's copy is
+   uploaded to the new account. Signing up on a blank device first creates an empty account.
+
+7. Sign in on a second device to confirm. If that device also has data, the app stops and asks
+   which side to keep, naming the counts — it never silently picks.
+
+8. Optional: turn on two-factor in the app; then close the door with Authentication → Sign In /
+   Providers → Email → **Enable sign ups** off, once everyone is in.
+
+Users are listed under Authentication → **Users**; that is also where to remove someone's MFA
+factor if they lose their authenticator.
+
+### Migrating off the sync code
+The legacy `vaults` table and the `set_vault`/`get_vault` RPCs are left untouched and keep working,
+so the old path stays available as a safety net. Delete them only after accounts have been in use
+for a while.
+
+---
+
+## Smart add — optional cloud proxy
 
 Meanwhile's **Smart add** (paste an invite / email / job post / profile → suggested entry)
 works three ways. You pick the engine in **Settings → Smart add engine**:

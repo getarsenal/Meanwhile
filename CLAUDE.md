@@ -38,6 +38,21 @@ you paste into a new AI chat to prep for interviews.
   `devPrefs` (localStorage `meanwhile_device_v1`, never synced) holds device facts: `lastExport`, `bytes`,
   `riskSnoozed`. `backupRisk()/riskBanner()` warn on Home and Work when there's no sync and no recent backup;
   `dataStatusBox()` is the Settings panel that says plainly where the data lives.
+- `LOGIN SCREEN` — `renderAuthGate()` mounts `#authGate`, the first thing you see when signed out.
+  Its own visual world (lit dusk, four drifting blooms + a **grain layer** — without grain those
+  gradients band into stripes on a cheap panel) and deliberately single-theme, so every colour is
+  painted rather than inherited. The backdrop is built **once**; only `#authBody` swaps between
+  views (`signin/signup/mfa/sent/reset/setup`) via `paintAuthPanel()`, because replaying the
+  entrance animation on every state change looks cheap. **`authGateNeeded(force)` is the rule that
+  matters**: a device that knows its project opens here, a stranger who just found the app does
+  **not** — walling them behind a form asking for a database URL is the worst possible first
+  impression, and this app has always worked alone. `force` is how Settings opens it deliberately.
+  `devPrefs.localOnly` remembers "continue without an account". `saveProjectCfg()` treats *no
+  project fields on screen* as "use what's stored", not "the user left it blank" — the sign-in view
+  has no such fields, and getting this wrong aborts every sign-in from the gate.
+  `readInviteLink()`/`inviteLink()` carry the project URL+key in the URL **fragment** (never sent
+  to a server) so a colleague opens one link and lands on sign-in; it is stripped from the address
+  bar immediately.
 - `ACCOUNTS` — **Supabase Auth (GoTrue) over plain fetch**, so a real login costs no dependency and
   no build step. Email+password signup/sign-in, password reset, password change, and **TOTP 2FA**
   (`mfaFactors/mfaPending/mfaVerify/mfaEnroll/mfaUnenroll`); the enroll response carries the QR image
@@ -68,8 +83,11 @@ you paste into a new AI chat to prep for interviews.
   shared-code path through the `set_vault`/`get_vault` RPCs; it still works and is never offered to
   anyone new. The account table is deliberately named `user_vaults`, NOT `vaults` — reusing the name
   would collide with the old code-keyed table on any project that already ran the old SQL. `SYNC_SQL`
-  in Settings creates it. Project URL + anon key live in localStorage `callback_sync_cfg_v1` (NOT in
-  `state`, never synced, never in the repo).
+  in Settings creates it. Project URL + anon key live in localStorage `meanwhile_sync_cfg_v1` (NOT in
+  `state`, never synced, never in the repo). The app was called **Callback** once: `readLS(new,old)`
+  still reads `callback_sync_cfg_v1` / `callback_ai_cfg_v1` as a fallback and leaves them in place,
+  so a device that has been syncing for months doesn't wake up unconfigured. The iOS `appId`,
+  App Group and `callback://` scheme are **not** renamed — they are the app's identity to Apple.
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
 - `emptyState()` is the first screen: four **tappable** rows (`.wf` buttons, each with a `data-act`)
   rather than tiles that only describe features — paste a link, add by hand, connect AI, add résumé.

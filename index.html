@@ -878,6 +878,116 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ppl-gone-head{font-size:11px;font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 7px}
 .ppl-gone{opacity:.62}
 @media(max-width:560px){ .ppl-row{--ppl-step:15px} }
+/* ---------------- THE LOGIN SCREEN ----------------
+   The first thing anyone sees. Deliberately its own visual world — a lit dusk rather than the
+   app's working dark — so signing in feels like arriving somewhere rather than filling in a form.
+   Single-theme on purpose: every colour here is painted explicitly and none of it is inherited. */
+#authGate{
+  position:fixed;inset:0;z-index:300;overflow:auto;
+  display:flex;align-items:center;justify-content:center;
+  background:#0B0A1A;color:#fff;
+  padding:max(28px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right))
+          max(28px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+  -webkit-font-smoothing:antialiased;
+}
+/* the backdrop: four slow blooms over deep indigo. Separate layers so each can drift on its own
+   period — one gradient animated as a whole reads as a loop, four never quite repeat. */
+#authGate .ag-sky{position:absolute;inset:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 8%, #1B1447 0%, #0E0B24 46%, #080715 100%)}
+#authGate .ag-bloom{position:absolute;border-radius:50%;filter:blur(62px);opacity:.62;will-change:transform}
+#authGate .b1{width:58vmax;height:58vmax;left:-16vmax;top:-22vmax;background:#6C5CE7;animation:agDrift1 26s ease-in-out infinite alternate}
+#authGate .b2{width:46vmax;height:46vmax;right:-14vmax;top:-10vmax;background:#8E7CF7;opacity:.5;animation:agDrift2 31s ease-in-out infinite alternate}
+#authGate .b3{width:52vmax;height:52vmax;right:-18vmax;bottom:-24vmax;background:#B762D6;opacity:.46;animation:agDrift3 37s ease-in-out infinite alternate}
+#authGate .b4{width:44vmax;height:44vmax;left:-12vmax;bottom:-20vmax;background:#4433A8;opacity:.5;animation:agDrift4 29s ease-in-out infinite alternate}
+@keyframes agDrift1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(7vmax,5vmax,0) scale(1.13)}}
+@keyframes agDrift2{from{transform:translate3d(0,0,0) scale(1.08)}to{transform:translate3d(-6vmax,7vmax,0) scale(.94)}}
+@keyframes agDrift3{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-8vmax,-6vmax,0) scale(1.16)}}
+@keyframes agDrift4{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(6vmax,-5vmax,0) scale(.96)}}
+/* grain, or those gradients band into stripes on a cheap panel — this is what sells it */
+#authGate .ag-grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+#authGate .ag-vig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(82% 62% at 50% 42%, rgba(0,0,0,0) 36%, rgba(4,3,12,.74) 100%)}
+
+#authGate .ag-col{position:relative;width:100%;max-width:396px;margin:auto;display:flex;flex-direction:column;align-items:center}
+/* the masthead, above the panel */
+#authGate .ag-mark{width:72px;height:72px;border-radius:21px;display:block;
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.09);
+  animation:agRise .62s cubic-bezier(.2,.75,.25,1) both}
+#authGate .ag-name{margin:17px 0 0;font-size:33px;font-weight:850;letter-spacing:-.035em;line-height:1;
+  color:#fff;animation:agRise .62s cubic-bezier(.2,.75,.25,1) .07s both}
+#authGate .ag-tag{margin:9px 0 0;font-size:13.5px;line-height:1.5;text-align:center;
+  color:rgba(255,255,255,.58);max-width:34ch;text-wrap:balance;animation:agRise .62s cubic-bezier(.2,.75,.25,1) .13s both}
+/* the panel: glass, and the bright top edge is what makes it read as glass rather than grey */
+#authGate .ag-panel{width:100%;margin-top:26px;padding:22px;border-radius:20px;
+  background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.055));
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:0 30px 70px -26px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.20);
+  -webkit-backdrop-filter:blur(22px) saturate(150%);backdrop-filter:blur(22px) saturate(150%);
+  animation:agPanel .58s cubic-bezier(.18,.85,.26,1) .18s both}
+@keyframes agRise{from{opacity:0;transform:translateY(13px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes agPanel{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes agSwap{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+#authGate .ag-body{animation:agSwap .3s ease both}
+#authGate h3{margin:0 0 3px;font-size:17px;font-weight:800;letter-spacing:-.015em;color:#fff}
+#authGate .ag-sub{margin:0 0 16px;font-size:12.5px;line-height:1.55;color:rgba(255,255,255,.55)}
+#authGate label{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);margin:0 0 6px}
+#authGate .ag-field{margin-bottom:12px}
+#authGate input{width:100%;padding:12px 13px;font-size:15px;color:#fff;
+  background:rgba(9,8,22,.5);border:1px solid rgba(255,255,255,.15);border-radius:12px;
+  transition:border-color .16s, box-shadow .16s, background .16s}
+#authGate input::placeholder{color:rgba(255,255,255,.3)}
+#authGate input:focus{outline:none;border-color:#9B8CFF;background:rgba(9,8,22,.72);
+  box-shadow:0 0 0 3px rgba(124,106,247,.28)}
+#authGate .ag-code{text-align:center;font-size:27px;font-weight:800;letter-spacing:.32em;padding:13px 6px}
+#authGate .ag-go{width:100%;padding:13px;border-radius:12px;font-size:14.5px;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,#7C6AF7,#9E63E0);border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 12px 26px -12px rgba(124,106,247,.9), inset 0 1px 0 rgba(255,255,255,.28);
+  cursor:pointer;transition:transform .12s, box-shadow .16s, filter .16s}
+#authGate .ag-go:hover{filter:brightness(1.07);box-shadow:0 16px 32px -12px rgba(124,106,247,1)}
+#authGate .ag-go:active{transform:translateY(1px)}
+#authGate .ag-go[disabled]{opacity:.6;cursor:default;filter:none}
+#authGate .ag-alt{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:13px}
+#authGate .ag-link{background:none;border:0;padding:0;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.72);
+  cursor:pointer;transition:color .14s}
+#authGate .ag-link:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+#authGate .ag-err{color:#FFAFAF;font-size:12.5px;font-weight:700;line-height:1.5;margin:11px 0 0;min-height:0}
+#authGate .ag-err:empty{display:none}
+#authGate .ag-foot{margin-top:20px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.44);
+  animation:agRise .6s ease .34s both;line-height:1.6}
+#authGate .ag-foot button{background:none;border:0;padding:0;font-weight:700;color:rgba(255,255,255,.78);
+  cursor:pointer;font-size:12.5px}
+#authGate .ag-foot button:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+#authGate .ag-note{margin-top:14px;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.55;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.66)}
+#authGate .ag-secret{text-align:center;padding:11px;border-radius:12px;margin:0 0 14px;
+  background:rgba(9,8,22,.5);border:1px solid rgba(255,255,255,.13)}
+#authGate .ag-secret code{display:block;margin-top:5px;font-size:13.5px;font-weight:800;letter-spacing:.06em;
+  word-break:break-all;color:#fff}
+#authGate .ag-qr{display:block;width:170px;height:170px;margin:0 auto 14px;background:#fff;border-radius:14px;padding:9px}
+#authGate .ag-qr svg{width:100%;height:100%}
+#authGate .ag-big{font-size:40px;text-align:center;margin-bottom:6px}
+#authGate button:focus-visible,#authGate input:focus-visible{outline:2px solid #B9AEFF;outline-offset:2px}
+@media(max-width:400px){
+  #authGate .ag-mark{width:56px;height:56px;border-radius:16px}
+  #authGate .ag-name{font-size:28px}
+  #authGate .ag-panel{padding:18px;border-radius:17px}
+  #authGate .ag-code{font-size:23px;letter-spacing:.26em}
+}
+/* a short screen (phone in landscape, keyboard up) drops the masthead rather than clipping the form */
+@media(max-height:600px){
+  #authGate{align-items:flex-start}
+  #authGate .ag-tag{display:none}
+  #authGate .ag-mark{width:46px;height:46px;border-radius:13px}
+  #authGate .ag-name{font-size:24px;margin-top:12px}
+  #authGate .ag-panel{margin-top:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  #authGate .ag-bloom{animation:none}
+  #authGate .ag-mark,#authGate .ag-name,#authGate .ag-tag,#authGate .ag-panel,#authGate .ag-body,#authGate .ag-foot{animation:none}
+}
+
 /* the account panel */
 .acct-who{display:flex;align-items:center;gap:11px;margin-bottom:12px;min-width:0}
 .acct-av{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--grad);color:#fff;
@@ -997,7 +1107,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v42 · 2026-08-19";
+const BUILD = "v43 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1434,11 +1544,20 @@ function vaultErr(status,txt){
 }
 
 /* ============================ CLOUD SYNC (Supabase) ============================ */
-const SYNC_KEY = "callback_sync_cfg_v1";
+/* The app was called Callback once. The storage keys are renamed to match, but the old ones are
+   still read as a fallback — a device that has been syncing for months must not wake up one
+   morning with an empty config and a "not connected" badge. Written under the new name on the
+   next save; the old key is left where it is, because it costs nothing and it's a way back. */
+const SYNC_KEY = "meanwhile_sync_cfg_v1", SYNC_KEY_OLD = "callback_sync_cfg_v1";
 let sync = loadSync();
 let syncState = "off";           // off | idle | saving | pulling | error
 let pushTimer = null, pulling = false;
-function loadSync(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){ return {}; } }
+function readLS(k,old){
+  try{ const v=localStorage.getItem(k); if(v) return JSON.parse(v)||{}; }catch(e){}
+  try{ const v=localStorage.getItem(old); if(v) return JSON.parse(v)||{}; }catch(e){}
+  return {};
+}
+function loadSync(){ return readLS(SYNC_KEY, SYNC_KEY_OLD); }
 function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }
 /* Two ways to sync, and the account is the good one. The old shared-code path stays because
    people already have data behind it — it just isn't offered to anyone new. */
@@ -5592,6 +5711,139 @@ create policy "delete own vault" on user_vaults for delete
 revoke all on user_vaults from anon;
 grant select, insert, update, delete on user_vaults to authenticated;`;
 
+/* ============================ THE LOGIN SCREEN ============================
+   Signing in is the first thing you see, so it gets to be a place rather than a form buried in
+   Settings. The backdrop is built once and left alone; only the panel body swaps between views,
+   because restarting the entrance animation on every keystroke-level state change looks cheap.
+   There is always a way past it — this app works offline and on one device, and always did. */
+let authView="signin", authFactor=null, authEnroll=null;
+function authGateUp(){ return !!document.getElementById("authGate"); }
+/* Who gets shown the door. A device that knows which project it belongs to has something to sign
+   into, so it opens here. A stranger who just found the app does NOT — walling them behind a
+   login form asking for a database URL is the worst possible first impression, and this app has
+   always worked on its own. They reach it deliberately from Settings, which passes `force`. */
+function authGateNeeded(force){
+  if(signedIn()) return false;
+  if(vaultLocked()) return false;          // the unlock screen owns the display until it's opened
+  if(devPrefs.localOnly && !force) return false;   // they chose this device only; don't ask again
+  if(!authReady() && !force) return false; // nothing configured to sign into yet
+  return true;
+}
+function authTagline(){
+  if(!authReady()) return "Track the search, then map the company you land at.";
+  return (state.opportunities||[]).length
+    ? "Sign in and this device's notes follow you everywhere."
+    : "Everything you write, on every device you sign in to.";
+}
+function renderAuthGate(force){
+  if(!authGateNeeded(force)){ closeAuthGate(); return; }
+  if(authGateUp()) return;
+  authView = authReady() ? "signin" : "setup";
+  const g=el(`<div id="authGate" role="dialog" aria-modal="true" aria-label="Sign in to Meanwhile">
+    <div class="ag-sky" aria-hidden="true">
+      <div class="ag-bloom b1"></div><div class="ag-bloom b2"></div>
+      <div class="ag-bloom b3"></div><div class="ag-bloom b4"></div>
+    </div>
+    <div class="ag-grain" aria-hidden="true"></div>
+    <div class="ag-vig" aria-hidden="true"></div>
+    <div class="ag-col">
+      <img src="icon.png" class="ag-mark" alt=""/>
+      <h1 class="ag-name">Meanwhile</h1>
+      <p class="ag-tag">${esc(authTagline())}</p>
+      <div class="ag-panel"><div class="ag-body" id="authBody"></div></div>
+      <div class="ag-foot"><button type="button" data-act="auth-skip">Continue without an account</button><br>
+        Everything stays on this device.</div>
+    </div></div>`);
+  document.body.appendChild(g);
+  // Enter submits, because every login screen in the world does and nobody reaches for the mouse.
+  g.addEventListener("keydown",e=>{
+    if(e.key!=="Enter") return;
+    const go=g.querySelector(".ag-go:not([disabled])");
+    if(go){ e.preventDefault(); go.click(); }
+  });
+  paintAuthPanel();
+}
+function closeAuthGate(){ const g=document.getElementById("authGate"); if(g) g.remove(); }
+function authSet(v){ authView=v; paintAuthPanel(); }
+function paintAuthPanel(){
+  const box=document.getElementById("authBody"); if(!box) return;
+  box.innerHTML=authPanelHTML();
+  box.style.animation="none"; void box.offsetWidth; box.style.animation="";   // replay the swap
+  const f=box.querySelector("input"); if(f) setTimeout(()=>f.focus(),40);
+}
+function authPanelHTML(){
+  const v=authView;
+  if(v==="setup") return `
+    <h3>Connect to your workspace</h3>
+    <p class="ag-sub">Meanwhile keeps your notes in a database you own. Paste the two details from your Supabase project — or from whoever set this up for your team.</p>
+    <div class="ag-field"><label for="syncUrl">Project URL</label><input id="syncUrl" value="${esc(sync.url||"")}" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false"/></div>
+    <div class="ag-field"><label for="syncKeyInput">Anon public key</label><input id="syncKeyInput" value="${esc(sync.key||"")}" placeholder="eyJhbGciOi…" autocomplete="off" spellcheck="false"/></div>
+    <button class="ag-go" data-act="auth-setup-save">Continue</button>
+    <div class="ag-err" id="acctErr"></div>`;
+
+  if(v==="signup") return `
+    <h3>Create your account</h3>
+    <p class="ag-sub">Pick a password you don't use anywhere else. It's the key to everything you write here.</p>
+    <div class="ag-field"><label for="acctEmail">Email</label><input id="acctEmail" type="email" value="${esc(session.email||"")}" placeholder="you@example.com" autocomplete="username"/></div>
+    <div class="ag-field"><label for="acctPass">Password</label><input id="acctPass" type="password" placeholder="At least 8 characters" autocomplete="new-password"/></div>
+    <button class="ag-go" data-act="acct-signup">Create account</button>
+    <div class="ag-err" id="acctErr"></div>
+    <div class="ag-alt"><button class="ag-link" data-act="auth-view-signin">← I already have one</button></div>
+    ${(state.opportunities||[]).length?`<div class="ag-note">The ${state.opportunities.length} ${state.opportunities.length===1?"role":"roles"} already on this device will be uploaded to your new account.</div>`:""}`;
+
+  if(v==="mfa") return `
+    <h3>Two-factor</h3>
+    <p class="ag-sub">Enter the 6-digit code from your authenticator app.</p>
+    <input id="mfaCode" class="ag-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"/>
+    <div class="ag-err" id="acctErr"></div>
+    <div style="margin-top:13px"><button class="ag-go" data-mfacode="${esc((authFactor||{}).id||"")}">Verify</button></div>
+    <div class="ag-alt"><button class="ag-link" data-act="auth-cancel-mfa">← Back</button></div>`;
+
+  if(v==="sent") return `
+    <div class="ag-big">📬</div>
+    <h3 style="text-align:center">Check your email</h3>
+    <p class="ag-sub" style="text-align:center">We sent a confirmation link to <b>${esc(session.email||"your inbox")}</b>. Tap it, then come back and sign in.</p>
+    <button class="ag-go" data-act="auth-view-signin">Back to sign in</button>`;
+
+  if(v==="reset") return `
+    <div class="ag-big">✉️</div>
+    <h3 style="text-align:center">Reset link sent</h3>
+    <p class="ag-sub" style="text-align:center">If there's an account for that email, a link is on its way. Open it, set a new password, then sign in here.</p>
+    <button class="ag-go" data-act="auth-view-signin">Back to sign in</button>`;
+
+  return `
+    <h3>Welcome back</h3>
+    <p class="ag-sub">Sign in to pick up wherever you left off.</p>
+    <div class="ag-field"><label for="acctEmail">Email</label><input id="acctEmail" type="email" value="${esc(session.email||"")}" placeholder="you@example.com" autocomplete="username"/></div>
+    <div class="ag-field"><label for="acctPass">Password</label><input id="acctPass" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button class="ag-go" data-act="acct-signin">Sign in</button>
+    <div class="ag-err" id="acctErr"></div>
+    <div class="ag-alt">
+      <button class="ag-link" data-act="auth-view-signup">Create an account</button>
+      <button class="ag-link" data-act="acct-forgot">Forgot password</button>
+    </div>
+    ${sync.code?`<div class="ag-note">You're still syncing with the old <b>sync code</b>. It keeps working — sign in when you're ready and this device's notes move to your account.</div>`:""}`;
+}
+/* An invite link carries the project details in the URL fragment, so a colleague opens one link
+   and lands on the sign-in screen instead of being asked to paste a key. Fragments are never sent
+   to a server, and the anon key is public by design — the row-level policies are what protect the
+   data. It's stripped from the address bar immediately either way. */
+function readInviteLink(){
+  const m=/[#&]s=([A-Za-z0-9+/=_-]+)/.exec(location.hash||"");
+  if(!m) return;
+  try{
+    const j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    if(j&&j.u&&j.k&&/^https?:\/\//.test(j.u)&&!sync.url){ sync.url=j.u; sync.key=j.k; saveSync(); }
+  }catch(e){}
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+}
+function inviteLink(){
+  if(!authReady()) return "";
+  const payload=btoa(unescape(encodeURIComponent(JSON.stringify({u:sync.url,k:sync.key}))))
+    .replace(/\+/g,"-").replace(/\//g,"_");
+  return location.origin+location.pathname+"#s="+payload;
+}
+
 /* The account panel. Signed out it is a login form and nothing else; signed in it is your email,
    two-factor, and the honest sentence about where the data actually lives. The Supabase project
    details are tucked behind a details block because most people set them once and never again. */
@@ -5622,10 +5874,21 @@ function accountBox(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
         <button class="btn ghost sm" data-act="sync-pull">↓ Sync now</button>
         <button class="btn ghost sm" data-act="acct-password">${I.lock} Change password</button>
+        <button class="btn ghost sm" data-act="copy-invite">${I.copy} Invite link</button>
         <button class="btn ghost sm danger" data-act="acct-signout">Sign out</button>
       </div>
+      <div class="sect-note" style="margin:11px 2px 0">The invite link sets up a colleague's device and drops them on the sign-in screen — they create their own account and never see your notes.</div>
       ${cfg}</div>`;
   }
+  // they chose "continue without an account"; the way back has to be obvious
+  if(devPrefs.localOnly) return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.user} Sign in <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">You're using Meanwhile on this device only. Everything works — it just doesn't follow you anywhere, and a cleared browser takes it with it.</div>
+    <button class="btn primary sm" data-act="auth-open">${I.check} Sign in or create an account</button>
+    ${legacy?`<div class="acct-legacy"><b>You're still on the old sync code.</b> It keeps working. To move across, create an account
+      <b>on the device that has your data</b> — that device's copy is uploaded.
+      <br><br><span data-act="sync-disconnect" style="color:var(--bad);cursor:pointer;font-weight:700">Stop using the sync code on this device</span></div>`:""}
+    ${cfg}</div>`;
   return `<div class="ai-box" style="margin-top:14px">
     <div class="ai-head">${I.user} Sign in <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">One account, all your devices. Sign in anywhere with internet and everything you've written is there.</div>
@@ -5638,7 +5901,8 @@ function accountBox(){
         <button class="btn ghost sm" data-act="acct-signup">Create an account</button>
         <button class="btn ghost sm" data-act="acct-forgot">Forgot password</button>
       </div>`
-    :`<div class="ent-empty">Add your Supabase project below first — that's the free database your account and notes live in.</div>`}
+    :`<div class="ent-empty" style="margin-bottom:10px">Meanwhile keeps your notes in a database you own — a free Supabase project. Add it below, or open the sign-in screen and paste the details there.</div>
+       <button class="btn primary sm" data-act="auth-open">${I.check} Sign in or create an account</button>`}
     ${legacy?`<div class="acct-legacy"><b>You're still on the old sync code.</b> It keeps working, but an account is better:
       a real password, two-factor, and nothing to copy between devices.
       <br><br>To move across, do it <b>on the device that has your data</b> — create an account here and this
@@ -5713,11 +5977,18 @@ function openSettings(){
   updateSyncUI();
   paintMFA();
 }
+/* Called before every auth request so a freshly-typed project is saved first. The login screen's
+   sign-in view has no project fields on it — there, "nothing to read" means "use what's stored",
+   not "the user left it blank". */
 function saveProjectCfg(){
   const u=document.querySelector('#syncUrl'), k=document.querySelector('#syncKeyInput');
+  if(!u&&!k){
+    if(authReady()) return true;
+    acctErr("Add your project URL and key first."); return false;
+  }
   const url=((u&&u.value)||"").trim(), key=((k&&k.value)||"").trim();
-  if(!url||!key){ toast("Both the project URL and the anon key are needed"); return false; }
-  if(!/^https?:\/\//.test(url)){ toast("That URL doesn't look right — it should start with https://"); return false; }
+  if(!url||!key){ acctErr("Both the project URL and the anon key are needed."); toast("Both the project URL and the anon key are needed"); return false; }
+  if(!/^https?:\/\//.test(url)){ acctErr("That URL should start with https://"); toast("That URL doesn't look right — it should start with https://"); return false; }
   sync.url=url; sync.key=key; saveSync();
   return true;
 }
@@ -5727,8 +5998,14 @@ function acctFields(){
            pass:((document.getElementById("acctPass")||{}).value||"") };
 }
 function acctBusy(on,label){
-  const b=editorEl&&editorEl.querySelector('[data-act="acct-signin"],[data-act="acct-signup"]');
+  const root=authGateUp()?document.getElementById("authGate"):editorEl;
+  const b=root&&root.querySelector('[data-act="acct-signin"],[data-act="acct-signup"]');
   if(b){ b.disabled=on; if(on) b.textContent=label||"Working…"; }
+}
+function acctReset(label){
+  const root=authGateUp()?document.getElementById("authGate"):editorEl;
+  const b=root&&root.querySelector('[data-act="acct-signin"],[data-act="acct-signup"]');
+  if(b){ b.disabled=false; b.textContent=label; }
 }
 async function doSignIn(){
   if(!saveProjectCfg()) return;
@@ -5739,7 +6016,7 @@ async function doSignIn(){
     const r=await authSignIn(email,pass);
     if(r.factor){ openMFAChallenge(r.factor); return; }   // two-factor still to satisfy
     await finishSignIn();
-  }catch(e){ acctErr(e.message); acctBusy(false); const b=editorEl&&editorEl.querySelector('[data-act="acct-signin"]'); if(b) b.innerHTML=`${I.check} Sign in`; }
+  }catch(e){ acctErr(e.message); acctReset(authGateUp()?"Sign in":"✓ Sign in"); }
 }
 async function doSignUp(){
   if(!saveProjectCfg()) return;
@@ -5748,9 +6025,11 @@ async function doSignUp(){
   if(pass.length<8){ acctErr("Use at least 8 characters — this is the key to everything you write here."); return; }
   acctErr(""); acctBusy(true,"Creating…");
   try{
+    session.email=email; saveSession();     // so the "check your email" screen can name it
     const r=await authSignUp(email,pass);
     if(!r.signedIn){
-      acctBusy(false);
+      acctReset("Create account");
+      if(authGateUp()){ authSet("sent"); return; }
       openEditor(`<div style="text-align:center;padding:10px 4px">
         <div style="font-size:34px">📬</div>
         <h2 style="margin:10px 0 6px;font-size:18px;font-weight:850">Check your email</h2>
@@ -5759,12 +6038,13 @@ async function doSignUp(){
       return;
     }
     await finishSignIn();
-  }catch(e){ acctErr(e.message); acctBusy(false); }
+  }catch(e){ acctErr(e.message); acctReset("Create account"); }
 }
 async function finishSignIn(){
   try{
     const r=await afterSignIn();
-    if(r==="locked") return;                 // the unlock screen is up; it takes it from here
+    if(r==="locked"){ closeAuthGate(); return; }   // the unlock screen is up; it takes it from here
+    if(authGateUp()){ closeAuthGate(); render(); toast("Signed in as "+(session.email||"you")); return; }
     render(); openSettings();
     toast("Signed in as "+(session.email||"you"));
   }catch(e){ acctErr(e.message); acctBusy(false); }
@@ -5772,6 +6052,8 @@ async function finishSignIn(){
 /* The two-factor prompt. Deliberately its own screen with nothing else on it — you have thirty
    seconds and a six digit code, and anything else on screen is in the way. */
 function openMFAChallenge(factor){
+  authFactor=factor;
+  if(authGateUp()){ authSet("mfa"); return; }
   openEditor(`<div style="text-align:center;padding:6px 2px">
     <div style="width:40px;height:40px;margin:0 auto 10px;border-radius:12px;background:var(--grad);display:grid;place-items:center">${I.lock}</div>
     <h2 style="margin:0 0 6px;font-size:18px;font-weight:850">Two-factor</h2>
@@ -5980,8 +6262,8 @@ function personForm(p){
 // Paste a calendar invite / recruiter email / job post / LinkedIn profile → a suggested entry.
 // Engine is pluggable: Supabase proxy (key server-side) → direct provider key (browser) →
 // copy-paste fallback (any chatbot, no key). Config is device-local, never synced, never in repo.
-const AI_KEY="callback_ai_cfg_v1";
-let aiCfg=(function(){ try{ return JSON.parse(localStorage.getItem(AI_KEY))||{}; }catch(e){ return {}; } })();
+const AI_KEY="meanwhile_ai_cfg_v1", AI_KEY_OLD="callback_ai_cfg_v1";   // old name still read; see SYNC_KEY
+let aiCfg=readLS(AI_KEY, AI_KEY_OLD);
 function saveAICfg(){ try{ localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }catch(e){} }
 function aiProxyUrl(){ if(aiCfg.proxyUrl) return aiCfg.proxyUrl.trim();
   if(sync.url) return sync.url.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"")+"/functions/v1/ai"; return ""; }
@@ -6753,7 +7035,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-copy-invite]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -6909,20 +7191,34 @@ document.addEventListener("click",e=>{
   if(act==="sync-pull"){ pullNow(); return; }
   if(act==="acct-signin"){ doSignIn(); return; }
   if(act==="acct-signup"){ doSignUp(); return; }
-  if(act==="acct-cancel-mfa"){ clearSession(); openSettings(); return; }
+  if(act==="acct-cancel-mfa"){ clearSession(); if(authGateUp()) authSet("signin"); else openSettings(); return; }
   if(act==="acct-forgot"){
     if(!saveProjectCfg()) return;
     const {email}=acctFields();
     if(!email){ acctErr("Type your email first, then tap this."); return; }
     acctErr("Sending…");
-    authResetEmail(email).then(()=>acctErr("")).then(()=>toast("Check your email for a reset link"))
+    authResetEmail(email)
+      .then(()=>{ if(authGateUp()){ session.email=email; saveSession(); authSet("reset"); } else { acctErr(""); toast("Check your email for a reset link"); } })
       .catch(e=>acctErr(e.message));
+    return;
+  }
+  // --- the login screen ---
+  if(act==="auth-view-signin"){ acctErr(""); authSet("signin"); return; }
+  if(act==="auth-view-signup"){ acctErr(""); authSet("signup"); return; }
+  if(act==="auth-setup-save"){ if(saveProjectCfg()) authSet("signin"); return; }
+  if(act==="auth-skip"){ devPrefs.localOnly=true; saveDev(); closeAuthGate(); render(); return; }
+  if(act==="auth-open"){ devPrefs.localOnly=false; saveDev(); closeEditor(); renderAuthGate(true); return; }
+  if(act==="copy-invite"){
+    const u=inviteLink();
+    if(!u){ toast("Add your project URL and key first"); return; }
+    copy(u,"Invite link copied — it sets up their device and opens the sign-in screen");
     return;
   }
   if(act==="acct-signout"){
     // On a shared computer "sign out" has to be able to take the local copy with it.
     const wipe=confirm("Sign out.\n\nOK — also remove this account's data from this device (use this on a shared computer)\nCancel — leave the local copy here");
-    authSignOut(wipe).then(()=>{ render(); openSettings(); toast("Signed out"); });
+    // signing out puts the login screen back; staying local is a choice you make there, not here
+    authSignOut(wipe).then(()=>{ devPrefs.localOnly=false; saveDev(); closeEditor(); render(); renderAuthGate(); toast("Signed out"); });
     return;
   }
   if(act==="acct-password"){ openChangePassword(); return; }
@@ -7752,8 +8048,10 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 
 adoptSyncedAI();   // a key already in the vault from another device works on this one from boot
+readInviteLink();  // an invite link configures the project before anything asks for it
 render();
 renderLockGate();  // if the vault is sealed, nothing is readable until it is opened
+renderAuthGate();  // signed out? this is the first thing you see
 initSync();
 initNative();
 // attachments: move any legacy inline blobs into the file vault, then bin unreferenced ones

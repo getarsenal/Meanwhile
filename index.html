@@ -878,6 +878,23 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ppl-gone-head{font-size:11px;font-weight:800;color:var(--warn);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 7px}
 .ppl-gone{opacity:.62}
 @media(max-width:560px){ .ppl-row{--ppl-step:15px} }
+/* the account panel */
+.acct-who{display:flex;align-items:center;gap:11px;margin-bottom:12px;min-width:0}
+.acct-av{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--grad);color:#fff;
+  display:grid;place-items:center;font-weight:850;font-size:16px}
+.acct-mail{font-weight:800;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct-err{color:var(--bad);font-size:12.5px;font-weight:700;margin:8px 0 2px;line-height:1.5;display:none}
+.acct-err:not(:empty){display:block}
+.acct-legacy{margin-top:14px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);
+  background:var(--panel);font-size:12px;color:var(--muted);line-height:1.6}
+.acct-legacy code{font-size:11.5px;color:var(--txt)}
+.mfa-box{border-top:1px solid var(--line);padding-top:12px;font-size:12.5px;color:var(--muted)}
+.mfa-on,.mfa-off{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mfa-on svg{width:18px;height:18px;flex:0 0 18px;color:var(--good)}
+.mfa-qr{display:block;margin:0 auto 12px;width:190px;height:190px;background:#fff;border-radius:12px;padding:8px}
+.mfa-qr svg{width:100%;height:100%}
+.mfa-secret{text-align:center;padding:10px;border-radius:11px;background:var(--panel);border:1px solid var(--line)}
+.mfa-secret code{display:block;margin-top:5px;font-size:13px;font-weight:800;letter-spacing:.06em;word-break:break-all}
 
 .w-switch{display:flex;gap:7px;overflow-x:auto;padding-bottom:12px;-webkit-overflow-scrolling:touch}
 .sect-note{font-size:12.5px;color:var(--faint);line-height:1.6;margin:-4px 2px 12px}
@@ -980,7 +997,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v41 · 2026-08-19";
+const BUILD = "v42 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1153,7 +1170,8 @@ function renderLockGate(){
     <form class="lock-card" autocomplete="off">
       <img src="icon.png" class="lock-mark" alt=""/>
       <h2>Meanwhile is locked</h2>
-      <p>Your notes are encrypted on this device. Enter your passphrase to open them.</p>
+      <p>These notes were encrypted with a passphrase. Enter it to open them — after that you can
+        retire the passphrase in Settings and use your account instead.</p>
       <input id="lockPass" type="password" placeholder="Passphrase" autocomplete="current-password" autofocus/>
       <div id="lockErr" class="lock-err"></div>
       <button class="btn primary" type="submit" style="width:100%">Unlock</button>
@@ -1188,68 +1206,16 @@ function renderLockGate(){
 }
 /* Turning it on. Two things are non-negotiable here: you are told plainly that nothing can
    recover a forgotten passphrase, and you cannot proceed without a backup file in hand. */
-function openLockSetup(){
-  if(!cryptoOK()){
-    openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
-      <div style="width:36px;height:36px;border-radius:11px;background:rgba(198,164,92,.18);color:var(--warn);display:grid;place-items:center">${I.bell}</div>
-      <div><h2 style="margin:0;font-size:18px;font-weight:850">Encryption needs a secure page</h2></div>
-      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.7">Browsers only hand out the crypto tools on <b>https</b> pages (or localhost). Open Meanwhile at its https address and this will be available.</p>
-      <button class="btn primary" style="width:100%" data-act="cancel-editor">OK</button>`);
-    return;
-  }
-  const backedUp = !!devPrefs.lastExport;
-  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
-    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.lock||I.system}</div>
-    <div><h2 style="margin:0;font-size:18px;font-weight:850">Encrypt this vault</h2>
-      <div style="font-size:12.5px;color:var(--faint)">A passphrase only you know</div></div>
-    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-  <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:4px 0 12px">Everything — your notes, the people, the whole map — gets encrypted on this device before it is saved or synced. Someone with your sync code, or looking straight at your database, sees nothing but noise.</p>
-  <div class="lock-warn">
-    <b>There is no recovery.</b> No reset link, no support address, nothing I can do. Forget the passphrase and the notes are gone for good. That is what makes it worth doing — but export a backup first, and keep it somewhere safe.
-  </div>
-  <div class="form-row" style="margin-top:12px"><label>Step 1 — take a backup${backedUp?` <span style="color:var(--good);font-weight:700">· last one ${esc(relDays(daysUntil(devPrefs.lastExport)))}</span>`:""}</label>
-    <button type="button" class="btn ${backedUp?"ghost":"primary"}" data-act="export" style="width:100%">${I.copy} Export a backup file now</button></div>
-  <div class="form-2" style="margin-top:6px">
-    <div class="form-row"><label>Step 2 — passphrase</label><input id="lockNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"/></div>
-    <div class="form-row"><label>Type it again</label><input id="lockNew2" type="password" autocomplete="new-password" placeholder="Confirm"/></div>
-  </div>
-  <div id="lockSetErr" class="lock-err"></div>
-  <label class="keysync" style="margin-top:8px"><input type="checkbox" id="lockAck"/>
-    <span>I understand that if I forget this passphrase, my notes cannot be recovered by anyone.</span></label>
-  <div style="display:flex;gap:10px;margin-top:14px">
-    <button class="btn primary" style="flex:1" data-act="lock-enable">${I.check} Encrypt my vault</button>
-    <button class="btn ghost" data-act="cancel-editor">Cancel</button>
-  </div>`);
-}
-async function enableLock(){
-  const a=document.getElementById("lockNew"), b=document.getElementById("lockNew2"),
-        ack=document.getElementById("lockAck"), err=document.getElementById("lockSetErr");
-  const p1=(a&&a.value)||"", p2=(b&&b.value)||"";
-  if(p1.length<8){ err.textContent="Use at least 8 characters — longer is better than complicated."; return; }
-  if(p1!==p2){ err.textContent="Those two don't match."; return; }
-  if(!ack||!ack.checked){ err.textContent="Please tick the box — it matters."; return; }
-  if(!devPrefs.lastExport && !confirm("You haven't exported a backup on this device. If you forget the passphrase the data is gone for good.\n\nEncrypt anyway?")) return;
-  err.textContent="Encrypting…";
-  try{
-    const { key, salt, iter } = await deriveLockKey(p1);
-    lockKey=key; lockMeta={salt,iter};
-    persist();                       // rewrites localStorage as ciphertext
-    if(syncOn()) await pushNow();    // and re-seals what is in the vault
-    closeEditor(); render();
-    toast("Encrypted ✓ — you'll be asked for this next time");
-  }catch(e){
-    lockKey=null; lockMeta=null;
-    err.textContent="Couldn't encrypt: "+e.message;
-  }
-}
+/* Turning it ON is gone — accounts replaced it (see lockBox). Everything that OPENS a sealed
+   vault stays: renderLockGate, deriveLockKey, openDoc, persistSealed. Deleting those would
+   strand anyone who encrypted their data before the change, with no way back in. */
 async function disableLock(){
   if(!lockKey) return;
-  if(!confirm("Turn encryption off?\n\nYour notes go back to being stored as plain text on this device and in your vault.")) return;
+  if(!confirm("Turn the passphrase off?\n\nNothing is deleted and nothing changes about your notes — you just stop being asked for it, and your account password guards them instead.")) return;
   lockKey=null; lockMeta=null;
   persist();
   if(syncOn()) await pushNow();
-  render(); toast("Encryption off");
+  render(); toast("Passphrase off — your account guards it now");
 }
 /* "I don't see the change" has twice been a cached copy of an older index.html. The service
    worker is network-first, but a phone that never regains focus can sit on the old one for a
@@ -1288,6 +1254,185 @@ function openStorageHelp(){
    newer than the document it was made from. */
 function save(){ state.rev = Math.max(Date.now(), (+state.rev||0)+1); persist(); schedulePush(); if(typeof scheduleRemindersSoon==="function") scheduleRemindersSoon(); }
 
+/* ============================ ACCOUNTS (Supabase Auth) ============================ */
+/* A real login, so a new device is "sign in" rather than "find the sync code you wrote down".
+   Supabase's auth service is plain HTTPS (GoTrue), so this needs no SDK and no build step — the
+   single-file rule survives. The account owns its vault row via row-level security, which is what
+   lets several people use the same deployment without ever seeing each other's notes.
+
+   The access token is short-lived and refreshed on demand; the refresh token is what actually
+   keeps you signed in, so it lives in localStorage next to the config and NEVER in `state` (it
+   would otherwise be pushed to the vault and handed to every other device). */
+const AUTH_KEY = "meanwhile_session_v1";
+let session = loadSession();
+function loadSession(){ try{ return JSON.parse(localStorage.getItem(AUTH_KEY))||{}; }catch(e){ return {}; } }
+function saveSession(){ try{ localStorage.setItem(AUTH_KEY, JSON.stringify(session)); }catch(e){} }
+function clearSession(){ session={}; try{ localStorage.removeItem(AUTH_KEY); }catch(e){} }
+function signedIn(){ return !!(session.access && session.uid); }
+function authReady(){ return !!(sync.url && sync.key); }        // a project to talk to
+function apiBase(){ return String(sync.url||"").trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,""); }
+
+// Say what went wrong in words, not in status codes — this screen is where people get stuck.
+function authMessage(status,j,txt){
+  const m=String((j&&(j.error_description||j.msg||j.message||j.error))||txt||"");
+  if(/invalid login credentials|invalid_grant/i.test(m)) return "That email and password don't match.";
+  if(/email not confirmed/i.test(m)) return "Check your email and tap the confirmation link first.";
+  if(/already registered|already been registered/i.test(m)) return "There's already an account with that email — sign in instead.";
+  if(/password should be at least|weak.?password/i.test(m)) return "Pick a longer password — at least 6 characters.";
+  if(/rate limit|too many requests|over_email_send_rate/i.test(m)) return "Too many tries. Wait a minute and go again.";
+  if(/invalid.*(totp|code)|challenge.*expired/i.test(m)) return "That code didn't work. Check your authenticator app — codes expire fast.";
+  if(/signup.*disabled/i.test(m)) return "New sign-ups are turned off for this project.";
+  if(status===401||status===403) return "Not authorised — check the project URL and anon key in Settings.";
+  return m.slice(0,180) || ("Something went wrong ("+status+")");
+}
+async function gotrue(path, opts){
+  opts=opts||{};
+  if(!authReady()) throw new Error("Add your Supabase URL and anon key first.");
+  let res;
+  try{
+    res = await fetch(apiBase()+"/auth/v1"+path,{
+      method: opts.method||"POST",
+      headers: Object.assign({"Content-Type":"application/json", apikey:sync.key},
+        opts.token?{Authorization:"Bearer "+opts.token}:{}),
+      body: opts.body!==undefined ? JSON.stringify(opts.body) : undefined
+    });
+  }catch(e){ throw new Error("No connection — Meanwhile still works offline, it just can't sync."); }
+  const txt=await res.text();
+  let j=null; try{ j=txt?JSON.parse(txt):null; }catch(e){}
+  if(!res.ok) throw new Error(authMessage(res.status,j,txt));
+  return j;
+}
+function jwtClaim(tok,k){
+  try{ const p=tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+    return JSON.parse(decodeURIComponent(escape(atob(p+"===".slice((p.length+3)%4)))))[k]; }catch(e){ return null; }
+}
+function setSession(j){
+  if(!j||!j.access_token) throw new Error("The server didn't return a session.");
+  session={ access:j.access_token, refresh:j.refresh_token||session.refresh||"",
+    expires: Date.now()+((+j.expires_in||3600)*1000),
+    email:(j.user&&j.user.email)||session.email||"",
+    uid:(j.user&&j.user.id)||jwtClaim(j.access_token,"sub")||session.uid||"",
+    aal: jwtClaim(j.access_token,"aal")||"aal1" };
+  saveSession();
+}
+/* Every call that touches the vault goes through this, so an hour-old tab refreshes instead of
+   failing. A refresh token that no longer works means the session is genuinely over — say so
+   once and drop it, rather than retrying forever against a dead credential. */
+let refreshing=null;
+async function authToken(){
+  if(!session.access) throw new Error("Sign in to sync.");
+  if(Date.now() < (session.expires||0)-60000) return session.access;
+  if(!refreshing) refreshing=(async()=>{
+    try{
+      const j=await gotrue("/token?grant_type=refresh_token",{body:{refresh_token:session.refresh}});
+      setSession(j); return session.access;
+    }catch(e){ clearSession(); updateSyncUI(); throw new Error("Your session expired — sign in again."); }
+    finally{ setTimeout(()=>{ refreshing=null; },0); }
+  })();
+  return refreshing;
+}
+async function authSignUp(email,password){
+  const j=await gotrue("/signup",{body:{email:String(email).trim(),password}});
+  if(j&&j.access_token){ setSession(j); return {signedIn:true}; }
+  return {signedIn:false};   // the project requires an emailed confirmation link
+}
+async function authSignIn(email,password){
+  const j=await gotrue("/token?grant_type=password",{body:{email:String(email).trim(),password}});
+  setSession(j);
+  return { factor: await mfaPending() };
+}
+async function authResetEmail(email){ return gotrue("/recover",{body:{email:String(email).trim()}}); }
+async function authChangePassword(password){
+  const j=await gotrue("/user",{method:"PUT",body:{password},token:await authToken()});
+  return j;
+}
+/* Signing out on a shared device has to be able to take the local copy with it — otherwise
+   "log out" leaves someone else's notes sitting in the browser. */
+async function authSignOut(wipeLocal){
+  try{ await gotrue("/logout",{body:{},token:session.access}); }catch(e){}
+  clearSession();
+  if(wipeLocal){
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    try{ (await idbKeys()||[]).forEach(k=>idbDel(k)); }catch(e){}
+    state={opportunities:[],meta:{created:Date.now()},rev:0};
+    persist();
+  }
+  updateSyncUI();
+}
+
+/* ---- Two-factor (TOTP) ----
+   A verified factor means a password alone gets you an aal1 session, which the vault policy can
+   be told to reject. The enroll call hands back the QR image itself, so no QR library is needed. */
+async function mfaFactors(token){
+  const u=await gotrue("/user",{method:"GET",token:token||session.access});
+  return (((u||{}).factors)||[]).filter(f=>f&&f.factor_type==="totp");
+}
+async function mfaPending(){                       // a verified factor not yet satisfied this session
+  if((session.aal||"aal1")==="aal2") return null;
+  try{ const v=(await mfaFactors()).filter(f=>f.status==="verified"); return v[0]||null; }
+  catch(e){ return null; }
+}
+async function mfaVerify(factorId,code){
+  const ch=await gotrue(`/factors/${factorId}/challenge`,{body:{},token:session.access});
+  const j=await gotrue(`/factors/${factorId}/verify`,{body:{challenge_id:ch.id,code:String(code).replace(/\s/g,"")},token:session.access});
+  setSession(j);
+}
+async function mfaEnroll(){
+  return gotrue("/factors",{body:{factor_type:"totp",friendly_name:"Meanwhile · "+new Date().toISOString().slice(0,10)},token:await authToken()});
+}
+async function mfaUnenroll(id){ return gotrue("/factors/"+id,{method:"DELETE",token:await authToken()}); }
+
+/* ---- The vault row, owned by the account ----
+   Straight PostgREST with the user's own token: row-level security does the scoping, so there is
+   no code to guess and no shared function that could hand back somebody else's row. */
+async function vaultGet(){
+  const tok=await authToken();
+  const res=await fetch(apiBase()+"/rest/v1/user_vaults?select=doc,rev&limit=1",{headers:{apikey:sync.key,Authorization:"Bearer "+tok}});
+  if(!res.ok) throw new Error(vaultErr(res.status,(await res.text()).slice(0,160)));
+  const rows=await res.json();
+  return (Array.isArray(rows)?rows[0]:rows)||null;
+}
+async function vaultPut(doc,rev){
+  const tok=await authToken();
+  const res=await fetch(apiBase()+"/rest/v1/user_vaults",{method:"POST",
+    headers:{apikey:sync.key,Authorization:"Bearer "+tok,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"},
+    body:JSON.stringify({user_id:session.uid,doc,rev:+rev||0,updated_at:new Date().toISOString()})});
+  if(!res.ok) throw new Error(vaultErr(res.status,(await res.text()).slice(0,160)));
+}
+/* Signing in on a device that already has notes is the one moment sync can destroy something.
+   Last-write-wins is right for the same person's two devices; it is NOT right the first time two
+   real datasets meet. So when both sides have something, ask — and name what each side is. */
+async function afterSignIn(){
+  let remote=null;
+  try{ remote=await vaultGet(); }catch(e){ setSyncState("error",e.message); throw e; }
+  const localN=(state.opportunities||[]).length;
+  const doc=remote&&remote.doc;
+  const remoteN=doc?((doc.opportunities||[]).length):0;
+  if(doc && isSealed(doc)){                     // a legacy encrypted vault: unlock it, then retire it
+    lockedBlob=doc; remoteLocked=true; renderLockGate(); return "locked";
+  }
+  if(doc && remoteN && localN){
+    const takeCloud = confirm(
+      `This device has ${localN} ${localN===1?"role":"roles"} on it, and your account has ${remoteN}.\n\n`+
+      `OK — use your account's data (this device's copy is replaced)\n`+
+      `Cancel — upload this device's data (your account's copy is replaced)\n\n`+
+      `Either way, export a backup first if you're unsure.`);
+    if(takeCloud){ state=migrate(doc); persist(); adoptSyncedAI(); }
+    else { await pushNow(); }
+  } else if(doc && remoteN){
+    state=migrate(doc); persist(); adoptSyncedAI();
+  } else {
+    await pushNow();                            // the account is empty — seed it from here
+  }
+  setSyncState("idle");
+  return "ok";
+}
+function vaultErr(status,txt){
+  if(/relation .*user_vaults.* does not exist|PGRST205/i.test(txt)) return "The user_vaults table isn't set up yet — run the SQL from Settings in your Supabase project.";
+  if(status===401||status===403||/row-level security|42501/i.test(txt)) return "Your account can't write to the vault — re-run the SQL from Settings (it sets the access policy).";
+  return "Vault "+status+" "+txt;
+}
+
 /* ============================ CLOUD SYNC (Supabase) ============================ */
 const SYNC_KEY = "callback_sync_cfg_v1";
 let sync = loadSync();
@@ -1295,7 +1440,10 @@ let syncState = "off";           // off | idle | saving | pulling | error
 let pushTimer = null, pulling = false;
 function loadSync(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){ return {}; } }
 function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }
-function syncOn(){ return !!(sync.url && sync.key && sync.code); }
+/* Two ways to sync, and the account is the good one. The old shared-code path stays because
+   people already have data behind it — it just isn't offered to anyone new. */
+function syncMode(){ return signedIn() ? "account" : (sync.url && sync.key && sync.code) ? "code" : "off"; }
+function syncOn(){ return syncMode()!=="off"; }
 
 function setSyncState(s,msg){ syncState=s; updateSyncUI(msg); }
 function updateSyncUI(msg){
@@ -1316,22 +1464,25 @@ async function rpc(fn, body){
 }
 function schedulePush(){ if(!syncOn()) return; clearTimeout(pushTimer); pushTimer=setTimeout(pushNow, 1500); }
 async function pushNow(){
-  if(!syncOn()) return;
+  const mode=syncMode(); if(mode==="off") return;
   if(vaultLocked()) return;                  // still sealed on this device — nothing to say yet
   try{ setSyncState("saving");
-    // the vault leaves this device already encrypted; rev stays outside so sync can compare
+    // a legacy encrypted vault leaves already sealed; rev stays outside so sync can compare
     const payload = lockKey ? await sealDoc(state) : state;
-    await rpc("set_vault",{ p_code:sync.code, p_data:payload, p_updated: state.rev||0 });
+    if(mode==="account") await vaultPut(payload, state.rev||0);
+    else await rpc("set_vault",{ p_code:sync.code, p_data:payload, p_updated: state.rev||0 });
     setSyncState("idle");
   }catch(e){ setSyncState("error", e.message); }
 }
 async function pullNow(opts){
   opts=opts||{};
-  if(!syncOn()||pulling) return;
+  const mode=syncMode();
+  if(mode==="off"||pulling) return;
   pulling=true; setSyncState("pulling");
   try{
-    const rows = await rpc("get_vault",{ p_code:sync.code });
-    const row = Array.isArray(rows)?rows[0]:rows;
+    let row;
+    if(mode==="account"){ const v=await vaultGet(); row = v?{data:v.doc,updated_at:v.rev}:null; }
+    else { const rows = await rpc("get_vault",{ p_code:sync.code }); row = Array.isArray(rows)?rows[0]:rows; }
     if(row && row.data){
       let remote=row.data; const rRev=+row.updated_at||remote.rev||0;
       if(isSealed(remote)){
@@ -1822,19 +1973,20 @@ function dataStatusBox(){
 }
 /* Encryption lives with the data section, because that is what it is about — not "security
    settings" in the abstract, but whether these particular notes are readable by anyone else. */
+/* The passphrase lock has been retired in favour of accounts: a login does the same job without
+   the failure mode where a forgotten passphrase means the data is gone forever. The machinery to
+   OPEN a sealed vault stays forever — deleting it would strand anyone who turned it on — but it
+   can no longer be switched on, and anyone still holding one is offered the way out. */
 function lockBox(){
-  const on = !!lockKey;
+  if(!lockKey) return "";
   return `<div class="lock-row" style="border-top:1px solid var(--line);padding-top:12px;margin-top:14px">
     <div style="flex:1 1 220px;min-width:0">
-      <div style="font-size:13px;font-weight:800">${on?"🔒 Encrypted with your passphrase":"Encryption"}</div>
-      <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:3px">${on
-        ? "Your notes are unreadable without the passphrase — on this device and in your vault. You'll be asked for it when you open Meanwhile."
-        : cryptoOK()
-          ? "Lock these notes behind a passphrase. They're encrypted before they're saved or synced, so a sync code alone won't open them."
-          : "Available on the https version of this page."}</div>
+      <div style="font-size:13px;font-weight:800">🔒 Encrypted with a passphrase</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:3px">This is the old protection, from before accounts.
+        Your account password now guards your notes, and unlike a passphrase it can be reset if you forget it.
+        Turning this off keeps everything exactly as it is — you just stop being asked for the passphrase.</div>
     </div>
-    ${on ? `<button class="btn ghost sm" data-act="lock-off">Turn off</button>`
-         : cryptoOK() ? `<button class="btn ghost sm" data-act="lock-setup">${I.check} Set a passphrase</button>` : ""}
+    <button class="btn ghost sm" data-act="lock-off">Turn it off</button>
   </div>`;
 }
 
@@ -5405,30 +5557,109 @@ function tryCloseEditor(){
 function closeEditor(){ if(typeof capStopVoice==="function") capStopVoice(); if(editorEl){ editorEl.remove(); editorEl=null; } }
 
 /* ---------------- SETTINGS / SYNC PANEL ---------------- */
+/* One table, owned per account. Row-level security is what makes this safe to share with
+   colleagues: the policies compare auth.uid() to the row's owner, so Postgres itself refuses to
+   hand anyone somebody else's notes — it is not a check the app could forget to make.
+   The old code-based table and its two functions are left alone so existing vaults keep working. */
 const SYNC_SQL = `-- Run this once in Supabase: Dashboard > SQL Editor > New query > paste > Run
-create table if not exists vaults (
-  code text primary key,
-  data jsonb not null,
-  updated_at bigint not null default 0
+
+-- Your notes, one row per account.
+create table if not exists user_vaults (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  doc        jsonb       not null,
+  rev        bigint      not null default 0,
+  updated_at timestamptz not null default now()
 );
-alter table vaults enable row level security;
 
-create or replace function get_vault(p_code text)
-returns setof vaults language sql security definer set search_path = public as $$
-  select * from vaults where code = p_code;
-$$;
+alter table user_vaults enable row level security;
 
-create or replace function set_vault(p_code text, p_data jsonb, p_updated bigint)
-returns void language plpgsql security definer set search_path = public as $$
-begin
-  insert into vaults(code, data, updated_at) values (p_code, p_data, p_updated)
-  on conflict (code) do update set data = excluded.data, updated_at = excluded.updated_at;
-end;
-$$;
+-- Postgres enforces this, not the app: you can only ever touch your own row.
+drop policy if exists "read own vault"   on user_vaults;
+drop policy if exists "insert own vault" on user_vaults;
+drop policy if exists "update own vault" on user_vaults;
+drop policy if exists "delete own vault" on user_vaults;
 
-grant execute on function get_vault(text)  to anon;
-grant execute on function set_vault(text, jsonb, bigint) to anon;`;
+create policy "read own vault"   on user_vaults for select
+  using (auth.uid() = user_id);
+create policy "insert own vault" on user_vaults for insert
+  with check (auth.uid() = user_id);
+create policy "update own vault" on user_vaults for update
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "delete own vault" on user_vaults for delete
+  using (auth.uid() = user_id);
 
+-- Nothing is readable without a signed-in user.
+revoke all on user_vaults from anon;
+grant select, insert, update, delete on user_vaults to authenticated;`;
+
+/* The account panel. Signed out it is a login form and nothing else; signed in it is your email,
+   two-factor, and the honest sentence about where the data actually lives. The Supabase project
+   details are tucked behind a details block because most people set them once and never again. */
+function accountBox(){
+  const legacy = !signedIn() && sync.code && sync.url && sync.key;
+  const cfg = `<details ${authReady()?"":"open"} style="margin:12px 0">
+      <summary style="cursor:pointer;font-weight:800;font-size:13px;color:var(--accent3)">${authReady()?"Project settings":"① One-time setup (≈5 min)"}</summary>
+      <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:10px 0">
+        <li>Make a free account at <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> → <b>New project</b>.</li>
+        <li><b>SQL Editor → New query</b>, paste this, <b>Run</b>.<br>
+          <button class="btn sm ghost" data-act="copy-sql" style="margin-top:6px">${I.copy} Copy setup SQL</button></li>
+        <li><b>Project Settings → API</b> — copy the Project URL and the <b>anon public</b> key below.</li>
+        <li><b>Authentication → Emails</b> — add your own SMTP (Resend works). The built-in sender only
+          allows a few messages an hour, which is not enough for confirmations and password resets.</li>
+      </ol>
+      <div class="form-row"><label>Supabase Project URL</label><input id="syncUrl" value="${esc(sync.url||"")}" placeholder="https://xxxx.supabase.co"/></div>
+      <div class="form-row"><label>anon public key</label><input id="syncKeyInput" value="${esc(sync.key||"")}" placeholder="eyJhbGciOi…"/></div>
+      <button class="btn ghost sm" data-act="sync-savecfg">${I.check} Save project settings</button>
+    </details>`;
+
+  if(signedIn()){
+    return `<div class="ai-box" style="margin-top:14px">
+      <div class="ai-head">${I.user} Your account <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
+      <div class="acct-who"><div class="acct-av">${esc((session.email||"?").slice(0,1).toUpperCase())}</div>
+        <div style="min-width:0"><div class="acct-mail">${esc(session.email||"Signed in")}</div>
+          <div style="font-size:11.5px;color:var(--faint)">Signed in — everything syncs to this account.</div></div></div>
+      <div id="mfaBox" class="mfa-box">Checking two-factor…</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn ghost sm" data-act="sync-pull">↓ Sync now</button>
+        <button class="btn ghost sm" data-act="acct-password">${I.lock} Change password</button>
+        <button class="btn ghost sm danger" data-act="acct-signout">Sign out</button>
+      </div>
+      ${cfg}</div>`;
+  }
+  return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.user} Sign in <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">One account, all your devices. Sign in anywhere with internet and everything you've written is there.</div>
+    ${authReady()?`
+      <div class="form-row"><label>Email</label><input id="acctEmail" type="email" value="${esc(session.email||"")}" placeholder="you@example.com" autocomplete="username"/></div>
+      <div class="form-row"><label>Password</label><input id="acctPass" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+      <div id="acctErr" class="acct-err"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <button class="btn primary sm" data-act="acct-signin">${I.check} Sign in</button>
+        <button class="btn ghost sm" data-act="acct-signup">Create an account</button>
+        <button class="btn ghost sm" data-act="acct-forgot">Forgot password</button>
+      </div>`
+    :`<div class="ent-empty">Add your Supabase project below first — that's the free database your account and notes live in.</div>`}
+    ${legacy?`<div class="acct-legacy"><b>You're still on the old sync code.</b> It keeps working, but an account is better:
+      a real password, two-factor, and nothing to copy between devices.
+      <br><br>To move across, do it <b>on the device that has your data</b> — create an account here and this
+      device's copy is uploaded to it. (Export a backup first, from Pipeline &amp; data below.) The old code and its
+      table are left untouched either way.
+      <br><br><span data-act="sync-disconnect" style="color:var(--bad);cursor:pointer;font-weight:700">Stop using the sync code on this device</span></div>`:""}
+    ${cfg}</div>`;
+}
+/* Two-factor state is a network call, so the panel paints a placeholder and fills itself in. */
+async function paintMFA(){
+  const box=document.getElementById("mfaBox"); if(!box||!signedIn()) return;
+  let factors=[];
+  try{ factors=await mfaFactors(await authToken()); }
+  catch(e){ box.innerHTML=`<div style="color:var(--faint)">Couldn't check two-factor: ${esc(e.message)}</div>`; return; }
+  const on=factors.filter(f=>f.status==="verified");
+  box.innerHTML = on.length
+    ? `<div class="mfa-on">${I.check}<div><b>Two-factor is on.</b><div style="font-size:11.5px;color:var(--faint)">A code from your authenticator app is needed on every new sign-in.</div></div>
+        <button class="btn ghost sm danger" data-mfaoff="${esc(on[0].id)}" style="margin-left:auto">Turn off</button></div>`
+    : `<div class="mfa-off"><div><b>Two-factor is off.</b><div style="font-size:11.5px;color:var(--faint)">Add a code from an authenticator app on top of your password.</div></div>
+        <button class="btn ghost sm" data-act="mfa-enroll" style="margin-left:auto">Turn on</button></div>`;
+}
 function openSettings(){
   const connected = syncOn();
   const setupOpen = !connected;
@@ -5449,32 +5680,7 @@ function openSettings(){
     <button class="btn primary sm" data-act="profile-save">${I.check} Save profile</button>
   </div>
 
-  <div class="ai-box" style="margin-top:14px">
-    <div class="ai-head">${I.link} Cloud sync <span id="syncStatusLbl" style="margin-left:auto;font-size:12px;font-weight:700"></span></div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Sync your phone &amp; computer through a free Supabase project. Every device that shares the same <b>sync code</b> stays up to date automatically.</div>
-
-    <details ${setupOpen?"open":""} style="margin-bottom:14px">
-      <summary style="cursor:pointer;font-weight:800;font-size:13px;color:var(--accent3)">① One-time Supabase setup (≈5 min)</summary>
-      <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:10px 0">
-        <li>Make a free account at <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> → <b>New project</b> (pick any name &amp; password).</li>
-        <li>Open <b>SQL Editor → New query</b>, paste the snippet below, hit <b>Run</b>.<br>
-          <button class="btn sm ghost" data-act="copy-sql" style="margin-top:6px">${I.copy} Copy setup SQL</button></li>
-        <li>Open <b>Project Settings → API</b>. Copy the <b>Project URL</b> and the <b>anon public</b> key into the boxes below.</li>
-      </ol>
-    </details>
-
-    <div class="form-row"><label>Supabase Project URL</label><input id="syncUrl" value="${esc(sync.url||"")}" placeholder="https://xxxx.supabase.co"/></div>
-    <div class="form-row"><label>anon public key</label><input id="syncKeyInput" value="${esc(sync.key||"")}" placeholder="eyJhbGciOi…"/></div>
-    <div class="form-row"><label>Your private sync code <span style="color:var(--faint);font-weight:500">— same on every device</span></label>
-      <div style="display:flex;gap:8px"><input id="syncCode" value="${esc(sync.code||randomCode())}" placeholder="amber-slate-pixel-4821"/>
-      <button class="btn ghost sm" data-act="sync-gencode" title="New random code">↻</button></div>
-      <div style="font-size:11.5px;color:var(--faint);margin-top:5px">Treat this like a password — anyone with it can read your data. On your <b>second</b> device, enter this <i>exact</i> code to pull everything in.</div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-      <button class="btn primary sm" data-act="sync-connect">${I.check} ${connected?"Save & sync now":"Connect & sync"}</button>
-      ${connected?`<button class="btn ghost sm" data-act="sync-pull">↓ Pull latest</button><button class="btn ghost sm" data-act="copy-code">${I.copy} Copy code</button><button class="btn ghost sm danger" data-act="sync-disconnect">Disconnect</button>`:""}
-    </div>
-  </div>
+  ${accountBox()}
 
   ${modeBox()}
   ${aiIntegrationBox()}
@@ -5505,17 +5711,132 @@ function openSettings(){
   </div>`;
   openEditor(body);
   updateSyncUI();
+  paintMFA();
 }
-function connectSync(){
-  const url=(document.querySelector('#syncUrl').value||"").trim();
-  const key=(document.querySelector('#syncKeyInput').value||"").trim();
-  const code=(document.querySelector('#syncCode').value||"").trim();
-  if(!url||!key||!code){ toast("Fill in URL, key and a sync code"); return; }
-  if(!/^https:\/\/.+\.supabase\.co/.test(url)){ toast("That URL doesn't look like a Supabase URL"); return; }
-  sync={url,key,code}; saveSync();
-  toast("Connecting…");
-  pullNow().then(()=>{ if(syncState!=="error"){ toast("☁ Cloud sync is on"); openSettings(); } });
+function saveProjectCfg(){
+  const u=document.querySelector('#syncUrl'), k=document.querySelector('#syncKeyInput');
+  const url=((u&&u.value)||"").trim(), key=((k&&k.value)||"").trim();
+  if(!url||!key){ toast("Both the project URL and the anon key are needed"); return false; }
+  if(!/^https?:\/\//.test(url)){ toast("That URL doesn't look right — it should start with https://"); return false; }
+  sync.url=url; sync.key=key; saveSync();
+  return true;
 }
+function acctErr(msg){ const e=document.getElementById("acctErr"); if(e){ e.textContent=msg||""; e.style.display=msg?"block":"none"; } }
+function acctFields(){
+  return { email:((document.getElementById("acctEmail")||{}).value||"").trim(),
+           pass:((document.getElementById("acctPass")||{}).value||"") };
+}
+function acctBusy(on,label){
+  const b=editorEl&&editorEl.querySelector('[data-act="acct-signin"],[data-act="acct-signup"]');
+  if(b){ b.disabled=on; if(on) b.textContent=label||"Working…"; }
+}
+async function doSignIn(){
+  if(!saveProjectCfg()) return;
+  const {email,pass}=acctFields();
+  if(!email||!pass){ acctErr("Email and password, please."); return; }
+  acctErr(""); acctBusy(true,"Signing in…");
+  try{
+    const r=await authSignIn(email,pass);
+    if(r.factor){ openMFAChallenge(r.factor); return; }   // two-factor still to satisfy
+    await finishSignIn();
+  }catch(e){ acctErr(e.message); acctBusy(false); const b=editorEl&&editorEl.querySelector('[data-act="acct-signin"]'); if(b) b.innerHTML=`${I.check} Sign in`; }
+}
+async function doSignUp(){
+  if(!saveProjectCfg()) return;
+  const {email,pass}=acctFields();
+  if(!email||!pass){ acctErr("Email and password, please."); return; }
+  if(pass.length<8){ acctErr("Use at least 8 characters — this is the key to everything you write here."); return; }
+  acctErr(""); acctBusy(true,"Creating…");
+  try{
+    const r=await authSignUp(email,pass);
+    if(!r.signedIn){
+      acctBusy(false);
+      openEditor(`<div style="text-align:center;padding:10px 4px">
+        <div style="font-size:34px">📬</div>
+        <h2 style="margin:10px 0 6px;font-size:18px;font-weight:850">Check your email</h2>
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;margin:0 0 16px">We sent a confirmation link to <b>${esc(email)}</b>. Tap it, then come back and sign in.</p>
+        <button class="btn primary" style="width:100%" data-act="settings">Back to sign in</button></div>`);
+      return;
+    }
+    await finishSignIn();
+  }catch(e){ acctErr(e.message); acctBusy(false); }
+}
+async function finishSignIn(){
+  try{
+    const r=await afterSignIn();
+    if(r==="locked") return;                 // the unlock screen is up; it takes it from here
+    render(); openSettings();
+    toast("Signed in as "+(session.email||"you"));
+  }catch(e){ acctErr(e.message); acctBusy(false); }
+}
+/* The two-factor prompt. Deliberately its own screen with nothing else on it — you have thirty
+   seconds and a six digit code, and anything else on screen is in the way. */
+function openMFAChallenge(factor){
+  openEditor(`<div style="text-align:center;padding:6px 2px">
+    <div style="width:40px;height:40px;margin:0 auto 10px;border-radius:12px;background:var(--grad);display:grid;place-items:center">${I.lock}</div>
+    <h2 style="margin:0 0 6px;font-size:18px;font-weight:850">Two-factor</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin:0 0 14px">Enter the 6-digit code from your authenticator app.</p>
+    <input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"
+      style="text-align:center;font-size:26px;letter-spacing:.34em;font-weight:800;padding:12px"/>
+    <div id="acctErr" class="acct-err"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn primary" style="flex:1" data-mfacode="${esc(factor.id)}">${I.check} Verify</button>
+      <button class="btn ghost" data-act="acct-cancel-mfa">Cancel</button>
+    </div></div>`);
+  setTimeout(()=>{ const i=document.getElementById("mfaCode"); if(i) i.focus(); },60);
+}
+async function submitMFA(factorId){
+  const code=((document.getElementById("mfaCode")||{}).value||"").trim();
+  if(code.length<6){ acctErr("Six digits."); return; }
+  acctErr("Checking…");
+  try{ await mfaVerify(factorId,code); await finishSignIn(); }
+  catch(e){ acctErr(e.message); const i=document.getElementById("mfaCode"); if(i){ i.value=""; i.focus(); } }
+}
+/* Turning two-factor on. Supabase returns the QR as an image itself, so there's no QR library
+   here; the secret is shown as text too, because typing it in is the fallback that always works. */
+async function openMFAEnroll(){
+  toast("Setting up…");
+  let f;
+  try{ f=await mfaEnroll(); }catch(e){ toast("⚠ "+e.message); return; }
+  const t=(f&&f.totp)||{};
+  const qr=String(t.qr_code||"");
+  const img = /^data:image\//.test(qr) ? `<img src="${safeImg(qr)}" alt="" class="mfa-qr"/>`
+    : /^\s*<svg/i.test(qr) ? `<div class="mfa-qr">${qr}</div>` : "";
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.lock}</div>
+      <div><h2 style="margin:0;font-size:18px;font-weight:850">Turn on two-factor</h2></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    <p style="font-size:12.5px;color:var(--muted);line-height:1.6;margin:0 0 12px">Scan this with an authenticator app — Google Authenticator, 1Password, Authy, whichever you use.</p>
+    ${img}
+    <div class="mfa-secret"><div style="font-size:11px;color:var(--faint);font-weight:800;text-transform:uppercase;letter-spacing:.05em">Or type this in</div>
+      <code>${esc(t.secret||"—")}</code></div>
+    <p style="font-size:12.5px;color:var(--muted);margin:14px 0 8px">Now enter the code it shows, to prove it worked:</p>
+    <input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"
+      style="text-align:center;font-size:24px;letter-spacing:.32em;font-weight:800;padding:11px"/>
+    <div id="acctErr" class="acct-err"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn primary" style="flex:1" data-mfaon="${esc(f.id)}">${I.check} Confirm</button>
+      <button class="btn ghost" data-act="settings">Cancel</button></div>
+    <div style="font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5">Keep a backup of your codes wherever your authenticator app lets you. If you lose the app <b>and</b> the codes you'll need to turn two-factor off from the Supabase dashboard.</div>`);
+  setTimeout(()=>{ const i=document.getElementById("mfaCode"); if(i) i.focus(); },60);
+}
+async function confirmMFA(factorId){
+  const code=((document.getElementById("mfaCode")||{}).value||"").trim();
+  if(code.length<6){ acctErr("Six digits."); return; }
+  acctErr("Checking…");
+  try{ await mfaVerify(factorId,code); openSettings(); toast("Two-factor is on"); }
+  catch(e){ acctErr(e.message); }
+}
+async function openChangePassword(){
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.lock}</div>
+      <div><h2 style="margin:0;font-size:18px;font-weight:850">Change password</h2></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    <div class="form-row"><label>New password</label><input id="newPass" type="password" autocomplete="new-password" placeholder="At least 8 characters"/></div>
+    <div id="acctErr" class="acct-err"></div>
+    <button class="btn primary" style="width:100%;margin-top:6px" data-act="acct-password-save">${I.check} Change it</button>`);
+}
+function connectSync(){ return saveProjectCfg(); }
 
 /* ---------------- STAGE EDITOR ---------------- */
 let stageDraft=null;
@@ -6432,7 +6753,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -6482,8 +6803,6 @@ document.addEventListener("click",e=>{
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
   if(act==="force-update"){ forceUpdate(); return; }
-  if(act==="lock-setup"){ openLockSetup(); return; }
-  if(act==="lock-enable"){ enableLock(); return; }
   if(act==="lock-off"){ disableLock(); return; }
   if(act==="lock-import"){ const f=$("#fileInput"); if(f) f.click(); return; }
   if(act==="groq-refresh"){
@@ -6584,10 +6903,37 @@ document.addEventListener("click",e=>{
   if(t.dataset.gcal){ const ev=eventFromKey(t.dataset.gcal); if(ev) window.open(googleCalEventUrl(ev),"_blank","noopener"); return; }
   if(t.dataset.calEdit){ calEditEvent(t.dataset.calEdit); return; }
   if(t.dataset.calDel){ calDeleteEvent(t.dataset.calDel); return; }
-  if(act==="sync-connect"){ connectSync(); return; }
-  if(act==="sync-disconnect"){ if(confirm("Disconnect cloud sync on this device? Your data stays here; it just stops syncing.")){ sync={}; saveSync(); setSyncState("off"); openSettings(); } return; }
+  if(act==="sync-connect"||act==="sync-savecfg"){ if(saveProjectCfg()){ toast("Saved"); openSettings(); } return; }
+  if(act==="sync-disconnect"){ if(confirm("Stop using the sync code on this device? Your data stays here; it just stops syncing through the code.")){ delete sync.code; saveSync(); setSyncState(signedIn()?"idle":"off"); openSettings(); } return; }
   if(act==="sync-gencode"){ const f=document.querySelector('#syncCode'); if(f) f.value=randomCode(); return; }
   if(act==="sync-pull"){ pullNow(); return; }
+  if(act==="acct-signin"){ doSignIn(); return; }
+  if(act==="acct-signup"){ doSignUp(); return; }
+  if(act==="acct-cancel-mfa"){ clearSession(); openSettings(); return; }
+  if(act==="acct-forgot"){
+    if(!saveProjectCfg()) return;
+    const {email}=acctFields();
+    if(!email){ acctErr("Type your email first, then tap this."); return; }
+    acctErr("Sending…");
+    authResetEmail(email).then(()=>acctErr("")).then(()=>toast("Check your email for a reset link"))
+      .catch(e=>acctErr(e.message));
+    return;
+  }
+  if(act==="acct-signout"){
+    // On a shared computer "sign out" has to be able to take the local copy with it.
+    const wipe=confirm("Sign out.\n\nOK — also remove this account's data from this device (use this on a shared computer)\nCancel — leave the local copy here");
+    authSignOut(wipe).then(()=>{ render(); openSettings(); toast("Signed out"); });
+    return;
+  }
+  if(act==="acct-password"){ openChangePassword(); return; }
+  if(act==="acct-password-save"){
+    const v=((document.getElementById("newPass")||{}).value||"");
+    if(v.length<8){ acctErr("At least 8 characters."); return; }
+    acctErr("Saving…");
+    authChangePassword(v).then(()=>{ openSettings(); toast("Password changed"); }).catch(e=>acctErr(e.message));
+    return;
+  }
+  if(act==="mfa-enroll"){ openMFAEnroll(); return; }
   if(act==="copy-sql"){ copy(SYNC_SQL,"SQL copied — paste into Supabase SQL editor"); return; }
   if(act==="copy-code"){ copy(sync.code||"", "Sync code copied"); return; }
 
@@ -6663,6 +7009,13 @@ document.addEventListener("click",e=>{
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
   if(t.dataset.capshotdel!==undefined){ capShots.splice(+t.dataset.capshotdel,1); capRedrawShots(); return; }
   if(t.dataset.spshotdel!==undefined){ spShots.splice(+t.dataset.spshotdel,1); spRedrawShots(); return; }
+  if(t.dataset.mfacode){ submitMFA(t.dataset.mfacode); return; }
+  if(t.dataset.mfaon){ confirmMFA(t.dataset.mfaon); return; }
+  if(t.dataset.mfaoff){
+    if(!confirm("Turn off two-factor? Your password alone will get into your account after this.")) return;
+    mfaUnenroll(t.dataset.mfaoff).then(()=>{ openSettings(); toast("Two-factor is off"); }).catch(e=>toast("⚠ "+e.message));
+    return;
+  }
   if(t.dataset.shotview){ openShot(t.dataset.shotview); return; }
   if(t.dataset.convert){ const [ty,id]=t.dataset.convert.split("|"); openConvertPicker(ty,id); return; }
   if(t.dataset.convto){ const [ty,id,to]=t.dataset.convto.split("|");

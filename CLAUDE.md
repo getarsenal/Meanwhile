@@ -38,25 +38,38 @@ you paste into a new AI chat to prep for interviews.
   `devPrefs` (localStorage `meanwhile_device_v1`, never synced) holds device facts: `lastExport`, `bytes`,
   `riskSnoozed`. `backupRisk()/riskBanner()` warn on Home and Work when there's no sync and no recent backup;
   `dataStatusBox()` is the Settings panel that says plainly where the data lives.
-- `LOCK` — **optional end-to-end encryption**, because a password checked in JS on a static page is
-  theatre. The whole document is AES-256-GCM encrypted with a key derived by PBKDF2-SHA256
-  (310k iterations) *before* it is written to localStorage or pushed to the vault, so a sync code
-  alone opens nothing. Envelope: `{__enc,v,kdf,iter,salt,iv,ct,rev}` — **`rev` sits outside the
-  ciphertext** so `pullNow` can compare versions without the key. GCM's auth tag is the password
-  check; nothing verifiable is stored. `lockKey`/`lockMeta`/`lockedBlob` are **declared above the
-  first `load()` call on purpose** — reaching a `let` from above its declaration throws, and
-  `load()`'s try/catch would swallow it, turning an encrypted vault into an empty app that the next
-  save overwrites. For the same reason `load()` no longer wraps the sealed-vault branch in a catch.
-  `persist()` delegates to `persistSealed()` (async, newest-wins queue) and **never falls back to
-  writing plaintext** if sealing fails. Encryption is async, so a save is not on disk the instant it
-  is made — `sealPending()` + a `beforeunload` guard hold the tab while a write is in flight, and
-  `visibilitychange` flushes early. `pullNow` refuses to touch a sealed remote it cannot open rather
-  than treating it as empty — and, because a second device has no sealed blob of its own, it
-  **adopts the remote blob and shows the unlock screen** (`remoteLocked`), which is the only way that
-  device can ever be handed the passphrase; salts are per-vault, so a device must unlock *from* the
-  vault rather than enabling encryption independently. Setup (`openLockSetup`) forces a backup, demands an explicit
-  acknowledgement that there is no recovery, and `renderLockGate()` is the unlock screen.
-- `CLOUD SYNC` — Supabase via `set_vault`/`get_vault` RPCs. Whole-document last-write-wins keyed by `state.rev`, scoped by a private `code`. Config in localStorage `callback_sync_cfg_v1` (NOT in `state`, never synced, never in the repo).
+- `ACCOUNTS` — **Supabase Auth (GoTrue) over plain fetch**, so a real login costs no dependency and
+  no build step. Email+password signup/sign-in, password reset, password change, and **TOTP 2FA**
+  (`mfaFactors/mfaPending/mfaVerify/mfaEnroll/mfaUnenroll`); the enroll response carries the QR image
+  itself, so there is no QR library. `session` lives in localStorage `meanwhile_session_v1` — **never
+  in `state`**, or the refresh token would be pushed to the vault and handed to every other device.
+  `authToken()` refreshes on demand (memoized so a burst of calls makes one refresh) and, on a dead
+  refresh token, ends the session once rather than looping. `authMessage()` turns GoTrue's errors into
+  sentences; this screen is where people get stuck. `afterSignIn()` is the one dangerous moment —
+  when **both** the device and the account have data it asks instead of letting last-write-wins pick,
+  naming the counts on each side. `authSignOut(wipeLocal)` can take the local copy with it, which is
+  what "sign out" has to mean on a shared computer.
+- `LOCK` — **retired, but never deleted.** The passphrase encryption predates accounts and solved the
+  same problem with a worse failure mode (forget it and the data is gone). It can no longer be turned
+  on — `openLockSetup`/`enableLock` are gone — but everything that **opens** a sealed vault stays
+  forever (`deriveLockKey`, `openDoc`, `sealDoc`, `persistSealed`, `renderLockGate`, `disableLock`,
+  `isSealed`), because deleting them would strand anyone who switched it on. AES-256-GCM, PBKDF2-SHA256
+  310k iterations, envelope `{__enc,v,kdf,iter,salt,iv,ct,rev}` with **`rev` outside the ciphertext** so
+  `pullNow` can compare versions without the key. `lockKey`/`lockMeta`/`lockedBlob` are **declared above
+  the first `load()` call on purpose** — reaching a `let` from above its declaration throws, and
+  `load()`'s try/catch would swallow it, turning an encrypted vault into an empty app that the next save
+  overwrites. `pullNow`/`afterSignIn` refuse to touch a sealed remote they cannot open rather than
+  treating it as empty, and adopt it + show the gate (`remoteLocked`). `lockBox()` only appears if you
+  still have one, and offers the way out.
+- `CLOUD SYNC` — whole-document last-write-wins keyed by `state.rev`. **`syncMode()` picks the path**:
+  `account` (the default now) writes `user_vaults` straight over PostgREST with the user's own token,
+  where **row-level security** compares `auth.uid()` to the row owner — Postgres enforces the scoping,
+  not the app, which is what makes one deployment safe for several colleagues. `code` is the legacy
+  shared-code path through the `set_vault`/`get_vault` RPCs; it still works and is never offered to
+  anyone new. The account table is deliberately named `user_vaults`, NOT `vaults` — reusing the name
+  would collide with the old code-keyed table on any project that already ran the old SQL. `SYNC_SQL`
+  in Settings creates it. Project URL + anon key live in localStorage `callback_sync_cfg_v1` (NOT in
+  `state`, never synced, never in the repo).
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
 - `emptyState()` is the first screen: four **tappable** rows (`.wf` buttons, each with a `data-act`)
   rather than tiles that only describe features — paste a link, add by hand, connect AI, add résumé.
@@ -488,10 +501,13 @@ source art with Pillow if it changes; bump `CACHE` in `sw.js` after asset change
 live within ~1 minute. Phones cache hard — hard-refresh to see changes.
 (Local note: `git push` may need the sandbox disabled — "Could not resolve host" otherwise.)
 
-## Cloud sync (already set up by the user)
-Backed by the user's own Supabase project. The app stores URL + anon key + sync code in
-localStorage per device. **No Supabase keys or sync codes belong in this repo.** The setup SQL
-lives in `index.html` as the `SYNC_SQL` constant (and in the in-app Settings panel).
+## Accounts & cloud sync (the user's own Supabase project)
+Sign-in is email + password with optional TOTP 2FA, and the vault row is owned by the account.
+The app stores project URL + anon key + the session in localStorage per device. **No Supabase keys,
+sync codes, passwords or tokens belong in this repo.** Setup SQL is the `SYNC_SQL` constant in
+`index.html` (also shown in Settings). Two things the owner must do in the dashboard and no code can
+do for them: run that SQL, and set **custom SMTP** under Authentication → Emails — the built-in
+sender allows only a few messages an hour, which is not enough for confirmations and resets.
 
 ## PWA / offline
 `sw.js` (registered at boot, http(s) only) caches the app shell — network-first for

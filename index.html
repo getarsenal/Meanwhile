@@ -988,6 +988,46 @@ tbody td{padding:12px 14px;vertical-align:middle}
   #authGate .ag-mark,#authGate .ag-name,#authGate .ag-tag,#authGate .ag-panel,#authGate .ag-body,#authGate .ag-foot{animation:none}
 }
 
+/* today's objectives — the first thing on the Work overview */
+.obj-box{border-color:rgba(94,106,210,.32);background:linear-gradient(160deg,rgba(94,106,210,.09),rgba(94,106,210,.03))}
+.obj-stale{margin-left:auto;font-size:11px;font-weight:700;color:var(--warn);text-transform:none;letter-spacing:0}
+.obj-empty,.obj-load{font-size:12.5px;color:var(--muted);line-height:1.65}
+/* a long button label must wrap rather than push the card open on a 320px phone */
+.obj-empty .btn,.obj-foot .btn{max-width:100%;white-space:normal;text-align:center;height:auto;line-height:1.35}
+.obj-foot>span{min-width:0;flex:1 1 auto}
+.obj-list{display:flex;flex-direction:column;gap:2px}
+.obj-row{display:flex;gap:11px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}
+.obj-row:last-child{border-bottom:0}
+.obj-cb{flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:6px;border:1.5px solid var(--line2);
+  background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;transition:.14s}
+.obj-cb svg{width:13px;height:13px}
+.obj-cb:hover{border-color:var(--accent)}
+.obj-cb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.obj-b{min-width:0;flex:1 1 auto}
+.obj-do{font-size:14px;font-weight:750;line-height:1.4;letter-spacing:-.01em}
+.obj-why{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:3px}
+.obj-jd{font-size:12px;color:var(--faint);line-height:1.5;margin-top:6px;padding-left:9px;border-left:2px solid rgba(191,138,79,.5);font-style:italic}
+.obj-jd span{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
+.obj-cites{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;align-items:center}
+/* these are references, not prose — without a pill they run together into one sentence */
+.obj-cites::before{content:"from";font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.obj-cites .cite{display:inline-block;max-width:100%;padding:3px 9px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:.14s}
+.obj-cites .cite:hover{border-color:var(--accent);color:var(--accent3)}
+.obj-row.done .obj-do{text-decoration:line-through;color:var(--faint)}
+.obj-row.done .obj-why,.obj-row.done .obj-jd{opacity:.55}
+.obj-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;
+  margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:11.5px;color:var(--faint)}
+/* earlier questions, under the Ask box */
+.ask-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;transition:background .12s}
+.ask-row:hover{background:var(--panel)}
+.ask-q{flex:1 1 auto;min-width:0;text-align:left;background:none;border:0;padding:0;cursor:pointer;
+  font-size:13.5px;font-weight:650;color:var(--txt);line-height:1.45;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ask-q:hover{color:var(--accent3)}
+.ask-when{flex:0 0 auto;font-size:11.5px;color:var(--faint)}
+
 /* the account panel */
 .acct-who{display:flex;align-items:center;gap:11px;margin-bottom:12px;min-width:0}
 .acct-av{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:var(--grad);color:#fff;
@@ -1107,8 +1147,8 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v43 · 2026-08-19";
-const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports"];
+const BUILD = "v44 · 2026-08-19";
+const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
@@ -2859,18 +2899,23 @@ const ENT = {
 const ENT_TYPES = Object.keys(ENT);
 function opById(id){ return state.opportunities.find(o=>o.id===id); }
 function entAll(type,opId){ if(type==="person"){ const o=opById(opId); return (o&&o.people)||[]; } return wOf(ENT[type].list,opId); }
+/* A type that isn't in ENT is not a crash. It arrives from a record written by an older build,
+   a half-finished conversion, or an AI citation that named something imaginary — none of which
+   should be able to blank the screen. Every lookup below tolerates one. */
 function entGet(type,id){
   if(type==="person"){ for(const o of state.opportunities){ const p=(o.people||[]).find(x=>x.id===id); if(p) return p; } return null; }
-  return wFind(ENT[type].list,id);
+  return ENT[type] ? wFind(ENT[type].list,id) : null;
 }
 function entOpId(type,id){
   if(type==="person"){ const o=state.opportunities.find(o=>(o.people||[]).some(p=>p.id===id)); return o?o.id:null; }
+  if(!ENT[type]) return null;
   const r=wFind(ENT[type].list,id); return r?r.opId:null;
 }
-function entName(type,rec){ return rec?((ENT[type].name(rec)||"").toString()||"Untitled"):""; }
+function entName(type,rec){ return (rec&&ENT[type])?((ENT[type].name(rec)||"").toString()||"Untitled"):""; }
 function entLabel(type,id){ const r=entGet(type,id); return r?entName(type,r):"(deleted)"; }
 function entIcoHTML(type,rec,big){
   const c=ENT[type], sz=big?"width:40px;height:40px;flex:0 0 40px;border-radius:12px;font-size:14px;":"";
+  if(!c) return `<div class="ent-ico" style="${sz}background:var(--panel);color:var(--faint)">?</div>`;
   if(type==="person"&&rec) return `<div class="ent-ico" style="${sz}background:${colorFor(rec.name||"?")}">${rec.photo?`<img src="${esc(safeImg(rec.photo))}" alt=""/>`:esc(initials(rec.name))}</div>`;
   return `<div class="ent-ico" style="${sz}background:${c.col}26;color:${c.col}">${c.icon}</div>`;
 }
@@ -3709,10 +3754,177 @@ function workCounts(o){
     notes:wOf("captures",o.id).length,
   };
 }
+/* ================= TODAY'S OBJECTIVES =================
+   The Overview used to open with "what you might be missing", which on a young map is a list of
+   systems nobody owns — true, computed, and completely useless as the first thing you read on a
+   Tuesday morning. This replaces it: at most five things worth doing today, each one tied back to
+   something real. The job description is the waypoint — it's the only statement of what you were
+   actually hired to do, and the value is in correlating it against what your notes are telling you.
+
+   The AI writes the wording. It does NOT get to invent the evidence: every objective must cite a
+   record that resolves or quote the job description verbatim, and buildObjectives() drops the ones
+   that don't. Same rule as everywhere else post-hire — the guards are in the code, not the prompt. */
+function jdText(o){ return String((o&&o.jd)||"").trim(); }
+function objRecord(o){ return wOf("objectives",o.id)[0]||null; }
+function objMaterial(o){
+  const L=[], id=(t,r)=>`[${t}:${r.id}]`;
+  const probs=wOf("problems",o.id).filter(p=>!/solved|closed/i.test(p.status||""));
+  if(probs.length) L.push("OPEN PROBLEMS:\n"+probs.slice(0,12).map(p=>`- ${id("problem",p)} ${p.title||p.name} — ${p.status||"?"}${p.description?": "+String(p.description).slice(0,160):""}`).join("\n"));
+  const qs=wOf("questions",o.id).filter(q=>q.status==="Open");
+  if(qs.length) L.push("OPEN QUESTIONS:\n"+qs.slice(0,12).map(q=>`- ${id("question",q)} ${q.q}${q.why?" (why it matters: "+String(q.why).slice(0,120)+")":""}`).join("\n"));
+  const projs=wOf("projects",o.id);
+  if(projs.length) L.push("PROJECTS:\n"+projs.slice(0,12).map(p=>`- ${id("project",p)} ${p.name} — ${p.status||"?"}${p.ownerId?", owner "+entLabel("person",p.ownerId):", no owner recorded"}`).join("\n"));
+  const ppl=(o.people||[]).filter(personHere);
+  if(ppl.length) L.push("PEOPLE:\n"+ppl.slice(0,25).map(p=>`- [person:${p.id}] ${p.name}${p.title?" — "+p.title:""}${p.deptId?" ("+entLabel("department",p.deptId)+")":""}`).join("\n"));
+  const sys=wOf("systems",o.id);
+  if(sys.length) L.push("SYSTEMS: "+sys.slice(0,15).map(s=>`${id("system",s)} ${s.name}`).join(", "));
+  const notes=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,15);
+  if(notes.length) L.push("RECENT NOTES (newest first):\n"+notes.map(c=>`- ${id("capture",c)} ${fmtDate(ymdOf(c.at))}: ${String(c.text||"").replace(/\s+/g," ").slice(0,300)}`).join("\n"));
+  if(o.nextActionLabel) L.push(`ALREADY ON MY LIST: ${o.nextActionLabel}${o.nextActionDate?" (due "+o.nextActionDate+")":""}`);
+  return L.join("\n\n");
+}
+function objectivesPrompt(o){
+  const jd=jdText(o), day=hireDay(o);
+  return `You help one person work out what to do today in a job they recently started. Today is ${todayYMD()}. They are ${o.hired&&o.hired.title?`a ${o.hired.title} `:""}at ${o.company}${day!=null?`, ${day} days in`:""}.
+
+${jd?`--- THE JOB DESCRIPTION THEY WERE HIRED AGAINST ---\n${jd.slice(0,3500)}\n--- END ---`:"(No job description on file — work from the notes alone and leave every \"jd\" field empty.)"}
+
+--- WHAT THEIR NOTES CONTAIN ---
+${objMaterial(o)||"(almost nothing yet)"}
+--- END ---
+
+Give them AT MOST 5 objectives for today. Fewer is fine — three real ones beat five padded ones.
+
+What makes a good objective here:
+- It is a thing a person can actually start today: talk to someone, find something out, unblock something, write something down. Not "continue to monitor".
+- It is open-ended and about the JOB, not about tidying this app. Never suggest recording, filing, tagging or documenting something just to fill in the map.
+- It is urgent or high-leverage *right now*, given how far into the job they are.
+- The best ones connect the job description to what the notes actually show — something they were hired to do, that their notes suggest is at risk, unowned, blocked or unknown.
+
+Rules that matter more than being helpful:
+- Use ONLY what is above. Never invent a person, system, project, deadline, meeting or fact.
+- "cites" must be ids copied EXACTLY from the material above, in the form type:id — e.g. problem:k3f9a2. Every objective needs at least one cite, OR a "jd" quote, ideally both.
+- "jd" must be a SHORT VERBATIM quote from the job description — copied character for character, at most 120 characters. If nothing in the JD applies, use "".
+- "why" is one sentence in plain words: what in their notes makes this urgent, and how it ties to what they were hired for.
+- Do not repeat something already on their list unless it is now overdue and worth restating.
+
+Return ONLY this JSON:
+{"objectives":[{"do":"","why":"","jd":"","cites":["type:id"]}]}`;
+}
+/* Keep only the objectives whose evidence is real: ids that resolve, and a JD quote that actually
+   appears in the job description. A hallucinated citation is worse than no citation, because it
+   reads as proof. */
+function buildObjectives(o,d){
+  const jdNorm=norm(jdText(o));
+  const out=[];
+  ((d&&d.objectives)||[]).forEach(x=>{
+    if(!x||!x.do||!String(x.do).trim()) return;
+    const cites=[];
+    (x.cites||[]).forEach(c=>{
+      const m=/^\s*([a-z]+)\s*:\s*(.+?)\s*$/i.exec(String(c)||"");
+      if(!m) return;
+      const t=m[1].toLowerCase(), id=m[2];
+      if(!ENT[t]) return;
+      if(!entGet(t,id)) return;                       // points at nothing — drop it
+      if(!cites.some(y=>y.t===t&&y.id===id)) cites.push({t,id});
+    });
+    let jd=String(x.jd||"").trim().slice(0,160);
+    if(jd && (!jdNorm || !jdNorm.includes(norm(jd)))) jd="";   // not actually in the JD — drop the quote
+    if(!cites.length && !jd) return;                  // no real evidence at all — drop the objective
+    out.push({id:uid(), do:String(x.do).trim().slice(0,220), why:String(x.why||"").trim().slice(0,300), jd, cites, done:false});
+  });
+  return out.slice(0,5);
+}
+/* With no AI configured this still has to say something useful, so the same shape is computed
+   from the records. Plainer wording, but every line is a fact about your own notes. */
+function objectivesFallback(o){
+  const out=[];
+  const push=(text,why,cites)=>{ if(out.length<5) out.push({id:uid(),do:text,why,jd:"",cites:cites||[],done:false}); };
+  if(o.nextActionLabel) push(o.nextActionLabel, o.nextActionDate?`You set this yourself, due ${fmtDate(o.nextActionDate)}.`:"You set this yourself.", []);
+  wOf("problems",o.id).filter(p=>/investigating|discovered/i.test(p.status||"")).sort((a,b)=>a.at-b.at).slice(0,2)
+    .forEach(p=>push(`Move "${p.title||p.name}" forward`,`Still ${String(p.status||"open").toLowerCase()} since ${fmtDate(ymdOf(p.at))}.`,[{t:"problem",id:p.id}]));
+  wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>a.at-b.at).slice(0,2)
+    .forEach(q=>push(`Get an answer: ${q.q}`, q.why?String(q.why).slice(0,140):"You wrote this down and it's still open.",[{t:"question",id:q.id}]));
+  wOf("projects",o.id).filter(p=>!p.ownerId&&/active/i.test(p.status||"")).slice(0,1)
+    .forEach(p=>push(`Find out who owns ${p.name}`,"It's active in your notes but nobody is recorded as owning it.",[{t:"project",id:p.id}]));
+  return out.slice(0,5);
+}
+async function runObjectives(){
+  const o=workOp(); if(!o) return;
+  const box=document.getElementById("objBox");
+  if(aiEngine()==="paste"||aiEngine()==="off"){
+    const items=objectivesFallback(o);
+    saveObjectives(o,items,"computed");
+    render(); toast(items.length?"Built from your notes — connect an AI for sharper ones":"Not enough in your notes yet");
+    return;
+  }
+  if(box) box.innerHTML=`<div class="obj-load">Reading the job description against your notes…</div>`;
+  try{
+    const out=await aiCall(objectivesPrompt(o),null,{maxTokens:1800});
+    const items=buildObjectives(o,aiParse(out));
+    if(!items.length){ const fb=objectivesFallback(o); saveObjectives(o,fb,"computed"); render();
+      toast(fb.length?"Nothing new stood out — here's what's open":"Capture a few notes first"); return; }
+    saveObjectives(o,items,"ai");
+    render();
+  }catch(e){ if(box) box.innerHTML=`<div class="obj-load" style="color:var(--bad)">⚠ ${esc(e.message)}</div>`; }
+}
+function saveObjectives(o,items,how){
+  const w=W();
+  w.objectives=w.objectives.filter(x=>x.opId!==o.id);
+  w.objectives.push({id:uid(),opId:o.id,at:Date.now(),day:todayYMD(),how:how||"ai",items:items||[]});
+  save();
+}
+function objToggle(itemId){
+  const o=workOp(); if(!o) return;
+  const rec=objRecord(o); if(!rec) return;
+  const it=(rec.items||[]).find(x=>x.id===itemId); if(!it) return;
+  it.done=!it.done; save();
+  const el=document.querySelector(`[data-objdone="${itemId}"]`);
+  if(el){ const row=el.closest(".obj-row"); if(row) row.classList.toggle("done",it.done); el.classList.toggle("on",it.done); }
+}
+function objectivesCard(o){
+  const rec=objRecord(o);
+  const stale=rec && rec.day!==todayYMD();
+  const jd=jdText(o);
+  let body;
+  if(!rec){
+    body=`<div class="obj-empty">Five things worth doing today, worked out from what you were hired to do and what your notes are telling you.
+      ${jd?"":`<br><br><b>No job description on file for this role yet.</b> Add it in the role's Overview and these get a lot sharper — it's the only record of what you were actually hired for.`}
+      <div style="margin-top:12px"><button class="btn primary sm" data-act="obj-run">${I.spark} Work out today's objectives</button></div></div>`;
+  } else if(!(rec.items||[]).length){
+    body=`<div class="obj-empty">Nothing stood out. Capture a few more notes and try again.
+      <div style="margin-top:12px"><button class="btn ghost sm" data-act="obj-run">${I.ai} Try again</button></div></div>`;
+  } else {
+    body=`<div class="obj-list">${rec.items.map(it=>`
+      <div class="obj-row${it.done?" done":""}">
+        <button class="obj-cb${it.done?" on":""}" data-objdone="${it.id}" aria-label="Mark done">${I.check}</button>
+        <div class="obj-b">
+          <div class="obj-do">${esc(it.do)}</div>
+          ${it.why?`<div class="obj-why">${esc(it.why)}</div>`:""}
+          ${it.jd?`<div class="obj-jd"><span>Job description</span>“${esc(it.jd)}”</div>`:""}
+          ${(()=>{ // a citation whose record has since been deleted is dropped rather than shown as "(deleted)"
+            const live=(it.cites||[]).filter(c=>c&&ENT[c.t]&&entGet(c.t,c.id));
+            return live.length?`<div class="obj-cites">${live.map(c=>`<span class="cite" data-ent="${esc(c.t)}|${esc(c.id)}">${esc(entLabel(c.t,c.id))}</span>`).join("")}</div>`:"";
+          })()}
+        </div>
+      </div>`).join("")}</div>
+      <div class="obj-foot">
+        <span>${rec.how==="computed"?"From your open items":"From your job description and notes"} · ${stale?esc(fmtDate(rec.day)):"today"}</span>
+        <button class="btn ghost sm" data-act="obj-run">${I.ai} ${stale?"Refresh for today":"Redo"}</button>
+      </div>`;
+  }
+  return `<div class="ai-box obj-box">
+    <div class="ai-head">${I.check} Today's objectives${stale?`<span class="obj-stale">from ${esc(fmtDate(rec.day))}</span>`:""}</div>
+    <div id="objBox">${body}</div>
+  </div>`;
+}
+
 function workOverview(o){
   const c=workCounts(o);
   const tile=(n,l,d,tab,col)=>`<div class="w-tile" data-wtab="${tab}"><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></div>`;
-  let h=`<div class="w-tiles">
+  // what to do today comes first; the counts orient you after
+  let h=objectivesCard(o);
+  h+=`<div class="w-tiles">
     ${tile(c.people,"People","you've met","people")}
     ${tile(c.departments,"Departments","","knowledge","var(--warn)")}
     ${tile(c.projects,"Projects","","projects")}
@@ -3733,14 +3945,6 @@ function workOverview(o){
     </div>`;
   }
 
-  // What am I missing — computed from the graph, so it never makes anything up
-  const gaps=knowledgeGaps(o);
-  if(gaps.length){
-    h+=`<div class="section-head"><h3>What you might be missing</h3><div class="line"></div><span class="tag">${gaps.length}</span></div>
-      <div class="card panel">${gaps.slice(0,3).map(gapHTML).join("")}
-      ${gaps.length>3?`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">See all ${gaps.length}</button>`:""}</div>`;
-  }
-
   h+=changedCard(o);
 
   const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>b.at-a.at);
@@ -3754,6 +3958,14 @@ function workOverview(o){
   h+= recent.length
     ? `<div class="card panel" style="padding:5px">${recent.map(cp=>entRow("capture",cp,{meta:(cp.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(cp.at)),tail:relDays(daysUntil(ymdOf(cp.at)))})).join("")}</div>`
     : `<div class="card panel"><div class="ent-empty">Nothing captured yet.<br><br><button class="btn primary sm" data-act="capture">${I.plus} Capture what just happened</button></div></div>`;
+
+  // Gaps are housekeeping, not a morning briefing — useful, but well below what to do today
+  const gaps=knowledgeGaps(o);
+  if(gaps.length){
+    h+=`<div class="section-head"><h3>Gaps in your map</h3><div class="line"></div><span class="tag">${gaps.length}</span></div>
+      <div class="card panel">${gaps.slice(0,3).map(gapHTML).join("")}
+      ${gaps.length>3?`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">See all ${gaps.length}</button>`:""}</div>`;
+  }
 
   h+=`<div class="section-head"><h3>Timeline</h3><div class="line"></div></div><div class="card panel">${timelineHTML(o,5)}</div>`;
   return h;
@@ -5050,6 +5262,47 @@ function citeHTML(text){
     return `<span class="cite" data-cite="${r.t}|${r.id}">${esc(label)}</span>`;
   });
 }
+/* ---- Ask history ----
+   A question you asked last week is often the one you want again, and re-asking costs a call and
+   loses the wording. The last ASK_KEEP land on state.work.asks so they sync like everything else.
+   Answers are trimmed: this is one localStorage key that gets pushed to the vault on every save. */
+const ASK_KEEP=10, ASK_MAX=4000;
+function askLog(o,q,a){
+  if(!o||!q||!a) return;
+  const w=W();
+  // asking the same thing again replaces the old entry rather than stacking a near-duplicate
+  w.asks=w.asks.filter(x=>!(x.opId===o.id && canonThing(x.q)===canonThing(q)));
+  // Date.now() ties inside one millisecond, and a tie makes "keep the newest ten" arbitrary —
+  // the same reason save() forces rev strictly upward.
+  const last=w.asks.reduce((m,x)=>Math.max(m,+x.at||0),0);
+  w.asks.push({id:uid(),opId:o.id,at:Math.max(Date.now(),last+1),q:String(q).slice(0,300),a:String(a).slice(0,ASK_MAX)});
+  const mine=w.asks.filter(x=>x.opId===o.id).sort((x,y)=>y.at-x.at);
+  const keep=new Set(mine.slice(0,ASK_KEEP).map(x=>x.id));
+  w.asks=w.asks.filter(x=>x.opId!==o.id||keep.has(x.id));
+  save();
+}
+function askHistory(o){ return wOf("asks",o.id).sort((a,b)=>b.at-a.at); }
+function askHistoryHTML(o){
+  const list=askHistory(o);
+  if(!list.length) return "";
+  return `<div class="section-head"><h3>Earlier questions</h3><div class="line"></div><span class="tag">${list.length}</span>
+      <button class="btn ghost sm" data-act="ask-clear">Clear</button></div>
+    <div class="card panel" style="padding:5px">${list.map(x=>`
+      <div class="ask-row">
+        <button class="ask-q" data-askload="${x.id}">${esc(x.q)}</button>
+        <span class="ask-when">${esc(relDays(daysUntil(ymdOf(x.at))))}</span>
+        <button class="x-btn sm" data-askdel="${x.id}" title="Remove">${I.x}</button>
+      </div>`).join("")}</div>`;
+}
+function askLoad(id){
+  const x=wFind("asks",id); if(!x) return;
+  const inp=$("#wAskInput"); if(inp) inp.value=x.q;
+  askRefs=(workRefs(workOp()||{id:x.opId},x.q)||{}).refs||askRefs;
+  aiGenText=x.a;
+  const ans=$("#wAskAnswer"), acts=$("#wAskActions");
+  if(ans){ ans.style.display="block"; ans.innerHTML=citeHTML(x.a); ans.scrollIntoView({block:"nearest",behavior:"smooth"}); }
+  if(acts) acts.style.display="block";
+}
 function workAsk(o){
   const live=aiEngine()!=="paste"&&aiEngine()!=="off";
   const sugg=["Who should I talk to about forecasting?","What do I know about our systems?","Why do we do it this way?","What did I learn this week?","What problems keep coming up?"];
@@ -5064,6 +5317,7 @@ function workAsk(o){
     <div id="wAskAnswer" class="ai-answer" style="display:none;margin-top:12px"></div>
     <div id="wAskActions" style="display:none;margin-top:8px"><button class="btn ghost sm" data-act="aigen-copy">${I.copy} Copy</button></div>
   </div>
+  <div id="askHist">${askHistoryHTML(o)}</div>
   <div class="section-head"><h3>Shortcuts</h3><div class="line"></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn ghost sm" data-act="who-ask">${I.people} Who do I ask?</button>
@@ -5087,6 +5341,7 @@ async function runWorkAsk(q){
     aiGenText=(out||"").trim();
     if(ans) ans.innerHTML=citeHTML(aiGenText||"(no response)");
     if(acts) acts.style.display="block";
+    if(aiGenText){ askLog(o,q,aiGenText); const hist=document.getElementById("askHist"); if(hist) hist.outerHTML=`<div id="askHist">${askHistoryHTML(o)}</div>`; }
   }catch(e){ if(ans) ans.textContent="⚠ "+e.message; }
 }
 
@@ -7035,7 +7290,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-copy-invite]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-copy-invite],[data-objdone],[data-askload],[data-askdel]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -7189,6 +7444,12 @@ document.addEventListener("click",e=>{
   if(act==="sync-disconnect"){ if(confirm("Stop using the sync code on this device? Your data stays here; it just stops syncing through the code.")){ delete sync.code; saveSync(); setSyncState(signedIn()?"idle":"off"); openSettings(); } return; }
   if(act==="sync-gencode"){ const f=document.querySelector('#syncCode'); if(f) f.value=randomCode(); return; }
   if(act==="sync-pull"){ pullNow(); return; }
+  if(act==="obj-run"){ runObjectives(); return; }
+  if(act==="ask-clear"){
+    const o=workOp(); if(!o) return;
+    if(!confirm("Clear your earlier questions? The answers go with them; your notes are untouched.")) return;
+    W().asks=W().asks.filter(x=>x.opId!==o.id); save(); render(); return;
+  }
   if(act==="acct-signin"){ doSignIn(); return; }
   if(act==="acct-signup"){ doSignUp(); return; }
   if(act==="acct-cancel-mfa"){ clearSession(); if(authGateUp()) authSet("signin"); else openSettings(); return; }
@@ -7305,6 +7566,9 @@ document.addEventListener("click",e=>{
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
   if(t.dataset.capshotdel!==undefined){ capShots.splice(+t.dataset.capshotdel,1); capRedrawShots(); return; }
   if(t.dataset.spshotdel!==undefined){ spShots.splice(+t.dataset.spshotdel,1); spRedrawShots(); return; }
+  if(t.dataset.objdone){ objToggle(t.dataset.objdone); return; }
+  if(t.dataset.askload){ askLoad(t.dataset.askload); return; }
+  if(t.dataset.askdel){ const w=W(); w.asks=w.asks.filter(x=>x.id!==t.dataset.askdel); save(); render(); return; }
   if(t.dataset.mfacode){ submitMFA(t.dataset.mfacode); return; }
   if(t.dataset.mfaon){ confirmMFA(t.dataset.mfaon); return; }
   if(t.dataset.mfaoff){

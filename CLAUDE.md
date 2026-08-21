@@ -299,8 +299,25 @@ about the people you're about to see — computed from the graph, no calendar in
 **What changed** (`changesSince`/`changedCard`) diffs the map over 7/30/90 days from timestamps already on the
 records; `saveEntForm` stamps `prevStatus`/`statusAt` so transitions are real rather than inferred.
 
+**Today's objectives** (`objectivesCard`/`objectivesPrompt`/`buildObjectives`) is what the Work
+overview opens with. It used to open with "what you might be missing", which on a young map is a
+list of systems nobody owns — true, computed, and useless as the first thing you read on a Tuesday.
+At most five things worth doing today, each tied to real evidence. **The job description (`o.jd`) is
+the waypoint** — the only record of what you were actually hired to do — and the value is
+correlating it against what the notes show. The AI writes the wording; it does not get to invent the
+evidence: `buildObjectives()` drops any objective whose cited ids don't resolve and any `jd` quote
+that isn't verbatim in the JD, and an objective left with neither is dropped entirely. Cached on
+`state.work.objectives` (one record per employer, stamped with the day) so it costs one call, not
+one per render; `objectivesFallback()` computes the same shape from open problems/questions/projects
+when there's no AI. Items are tickable and the tick persists. Gaps moved down the page.
+
 **Ask Meanwhile** (`workRefs`/`askWorkPrompt`/`runWorkAsk`) dumps the structured records with bracket
 ids, requires inline citations, and renders `[p2]` back as clickable chips (`citeHTML`/`citeLabel`).
+The last `ASK_KEEP` (10) questions and answers per employer are kept on `state.work.asks`
+(`askLog`/`askHistory`/`askLoad`) so an earlier answer reopens without another call; re-asking the
+same question replaces its entry rather than stacking a duplicate, text is trimmed before storage
+(this is one localStorage key that gets pushed to the vault on every save), and `at` is forced
+strictly upward because `Date.now()` ties inside a millisecond make "keep the newest ten" arbitrary.
 **Who do I ask?** (`whoToAsk`) is ranked *in JS from the graph* so the evidence is always real — the
 AI only phrases the recommendation over candidates it can't add to. **What am I missing?**
 (`knowledgeGaps`) is likewise computed, so every gap is a fact about your notes. Same principle in
@@ -418,7 +435,8 @@ service worker and clears caches). "I don't see the change" has twice been a sta
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
 - `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], orgs[], departments[], systems[],
-  processes[], decisions[], questions[], links[], milestones[], reports[] }` — every record carries
+  processes[], decisions[], questions[], links[], milestones[], reports[], asks[], objectives[] }` —
+  every record carries
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.
   `capture.shots[]`: `{name,type,size,ref,w,h}` — photos on a note; bytes in IndexedDB, never on `state`.

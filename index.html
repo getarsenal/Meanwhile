@@ -1180,7 +1180,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v50 · 2026-08-19";
+const BUILD = "v51 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1639,6 +1639,28 @@ function vaultErr(status,txt){
    still read as a fallback — a device that has been syncing for months must not wake up one
    morning with an empty config and a "not connected" badge. Written under the new name on the
    next save; the old key is left where it is, because it costs nothing and it's a way back. */
+/* ---- The project this build ships with ----
+   Fill these in and a brand new device needs nothing but an email and a password. There is no
+   server here to ask, so without this every device has to be told which project it belongs to,
+   which is the whole friction.
+
+   The anon key is DESIGNED to ship in client code — it sits in the JavaScript of every Supabase
+   app on the web — and on its own it grants nothing: `revoke all on user_vaults from anon` in the
+   setup SQL means the anonymous role cannot read a single vault row. What it does allow is
+   signing up, signing in and asking for a password reset. So the exposure is sign-up spam, not
+   data, and Authentication → Sign In / Providers → Email → Enable sign ups closes that door.
+
+   Leave them empty and nothing changes: the app keeps asking each device, as before.
+   A project configured ON the device always wins over this, so anyone can point their own copy
+   somewhere else without touching the code. */
+const DEFAULT_PROJECT = { url: "", key: "" };
+function haveDefaultProject(){ return !!(DEFAULT_PROJECT.url && DEFAULT_PROJECT.key); }
+function loadSync(){
+  const s=readLS(SYNC_KEY, SYNC_KEY_OLD);
+  if(!s.url && !s.key && haveDefaultProject()){ s.url=DEFAULT_PROJECT.url; s.key=DEFAULT_PROJECT.key; s.builtIn=true; }
+  return s;
+}
+function usingDefaultProject(){ return !!sync.builtIn; }
 const SYNC_KEY = "meanwhile_sync_cfg_v1", SYNC_KEY_OLD = "callback_sync_cfg_v1";
 let sync = loadSync();
 let syncState = "off";           // off | idle | saving | pulling | error
@@ -1648,8 +1670,14 @@ function readLS(k,old){
   try{ const v=localStorage.getItem(old); if(v) return JSON.parse(v)||{}; }catch(e){}
   return {};
 }
-function loadSync(){ return readLS(SYNC_KEY, SYNC_KEY_OLD); }
-function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }
+
+function saveSync(){
+  // the built-in project is re-derived at boot, never frozen into localStorage — otherwise
+  // changing it in a later build would never reach a device that had already run once
+  const out=Object.assign({},sync);
+  if(out.builtIn){ delete out.builtIn; delete out.url; delete out.key; }
+  localStorage.setItem(SYNC_KEY, JSON.stringify(out));
+}
 /* Two ways to sync, and the account is the good one. The old shared-code path stays because
    people already have data behind it — it just isn't offered to anyone new. */
 function syncMode(){ return signedIn() ? "account" : (sync.url && sync.key && sync.code) ? "code" : "off"; }
@@ -6092,7 +6120,8 @@ function authPanelHTML(){
     <button class="ag-go" data-act="auth-setup-save">Save &amp; continue</button>
     <div class="ag-alt"><button class="ag-link" data-act="auth-test">Test connection</button>
       ${authReady()?`<button class="ag-link" data-act="auth-view-signin">← Back to sign in</button>`:""}</div>
-    <div class="ag-err" id="acctErr"></div>`;
+    <div class="ag-err" id="acctErr"></div>
+    ${haveDefaultProject()&&!usingDefaultProject()?`<div class="ag-proj"><button class="ag-link" data-act="auth-use-default">Use the workspace this app ships with</button></div>`:""}`;
 
   if(v==="signup") return `
     <h3>Create your account</h3>
@@ -6142,6 +6171,7 @@ function authPanelHTML(){
 // which project this device is pointed at — visible on every view, and changeable from here
 function authProjLine(){
   if(!authReady()) return "";
+  if(usingDefaultProject()) return "";   // nothing was configured here; there is nothing to explain
   return `<div class="ag-proj">Workspace <b>${esc(String(sync.url||"").replace(/^https?:\/\//,"").replace(/\.supabase\.co$/,""))}</b>
     <button class="ag-link" data-act="auth-view-setup">change</button></div>`;
 }
@@ -6317,7 +6347,8 @@ function saveProjectCfg(){
   const bad=projectUrlProblem(url) || keyProblem(url,key);
   if(bad){ acctErr(bad); return false; }
   url=url.replace(/\/+$/,"").replace(/\/rest\/v1$/,"");   // paste-friendly
-  sync.url=url; sync.key=key; saveSync();
+  sync.url=url; sync.key=key; delete sync.builtIn;   // an explicit choice beats the built-in one
+  saveSync();
   return true;
 }
 /* The old sync setup checked this and the rewrite dropped it, which let a dashboard URL through
@@ -7652,6 +7683,13 @@ document.addEventListener("click",e=>{
   if(act==="auth-view-signup"){ acctErr(""); authSet("signup"); return; }
   if(act==="auth-setup-save"){ if(saveProjectCfg()){ acctErr(""); authSet("signin"); toast("Workspace saved"); } return; }
   if(act==="auth-view-setup"){ acctErr(""); authSet("setup"); return; }
+  if(act==="auth-use-default"){
+    delete sync.url; delete sync.key; delete sync.builtIn;
+    saveSync(); sync=loadSync(); acctErr("");
+    toast("Back to the built-in workspace");
+    if(authGateUp()) authSet("signin"); else openSettings();
+    return;
+  }
   if(act==="auth-fix-url"){
     const r=suggestedRef(); if(!r) return;
     const url="https://"+r+".supabase.co";

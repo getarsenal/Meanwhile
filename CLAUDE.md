@@ -83,7 +83,14 @@ you paste into a new AI chat to prep for interviews.
   shared-code path through the `set_vault`/`get_vault` RPCs; it still works and is never offered to
   anyone new. The account table is deliberately named `user_vaults`, NOT `vaults` — reusing the name
   would collide with the old code-keyed table on any project that already ran the old SQL. `SYNC_SQL`
-  in Settings creates it. Project URL + anon key live in localStorage `meanwhile_sync_cfg_v1` (NOT in
+  in Settings creates it. **`DEFAULT_PROJECT`** (top of CLOUD SYNC) is the project the *build* ships
+  with: fill in url+key and a brand-new device needs only an email and a password, because there is
+  no server here to ask which project it belongs to. It is the one deliberate exception to
+  "no keys in the repo" — the anon key is designed to ship in client code and the `revoke all …
+  from anon` in `SYNC_SQL` means it can't read a vault row; the exposure is sign-up spam, closed by
+  turning sign-ups off. It must be **declared above `let sync = loadSync()`** (TDZ, same trap as the
+  lock keys) and `saveSync()` strips `builtIn` so a later build can move the project.
+  A device-configured project always wins. Project URL + anon key live in localStorage `meanwhile_sync_cfg_v1` (NOT in
   `state`, never synced, never in the repo). The app was called **Callback** once: `readLS(new,old)`
   still reads `callback_sync_cfg_v1` / `callback_ai_cfg_v1` as a fallback and leaves them in place,
   so a device that has been syncing for months doesn't wake up unconfigured. The iOS `appId`,

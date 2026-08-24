@@ -1158,7 +1158,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v46 · 2026-08-19";
+const BUILD = "v47 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1443,7 +1443,13 @@ function authMessage(status,j,txt){
   if(/rate limit|too many requests|over_email_send_rate/i.test(m)) return "Too many tries. Wait a minute and go again.";
   if(/invalid.*(totp|code)|challenge.*expired/i.test(m)) return "That code didn't work. Check your authenticator app — codes expire fast.";
   if(/signup.*disabled/i.test(m)) return "New sign-ups are turned off for this project.";
-  if(/invalid api key|no api key|apikey/i.test(m)) return "That anon key isn't right for this project. Copy it again from Project Settings → API — it's the long one labelled anon public.";
+  if(/invalid api key|no api key|apikey/i.test(m)){
+    const local=keyProblem(sync.url,sync.key);
+    if(local) return local;
+    const c=jwtBody(sync.key)||{};
+    return "The project rejected that anon key."+(c.ref?` The key says it belongs to project “${c.ref}”.`:"")
+      +" Copy it again from Project Settings → API — the long one labelled anon public — and check it's from this same project.";
+  }
   // Never swallow what the server actually said: a generic "not authorised" is what leaves
   // someone stuck with a correct password and no idea which of five things is wrong.
   if(status===401||status===403) return "The project rejected the request (401). Usually the anon key doesn't match this project URL. Tap “Test connection” under Project settings — it says exactly what's wrong."+(m?" · Server said: "+m.slice(0,120):"");
@@ -6275,7 +6281,7 @@ function saveProjectCfg(){
   }
   let url=((u&&u.value)||"").trim(), key=((k&&k.value)||"").trim();
   if(!url||!key){ acctErr("Both the project URL and the anon key are needed."); return false; }
-  const bad=projectUrlProblem(url);
+  const bad=projectUrlProblem(url) || keyProblem(url,key);
   if(bad){ acctErr(bad); return false; }
   url=url.replace(/\/+$/,"").replace(/\/rest\/v1$/,"");   // paste-friendly
   sync.url=url; sync.key=key; saveSync();
@@ -6290,6 +6296,33 @@ function projectUrlProblem(url){
   if(/\s/.test(url)) return "There's a space in that URL — re-copy it.";
   return "";
 }
+/* The anon key is a JWT that names its own project, its role and its expiry — so most of the ways
+   it can be wrong are answerable here, offline, before a single request goes out. That beats
+   round-tripping to Supabase for a 401 that only says "invalid". */
+function jwtBody(tok){
+  try{
+    const p=String(tok).split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+    return JSON.parse(decodeURIComponent(escape(atob(p+"===".slice((p.length+3)%4)))));
+  }catch(e){ return null; }
+}
+function projectRef(url){ return (String(url||"").match(/^https?:\/\/([a-z0-9-]+)\.supabase\./i)||[])[1]||""; }
+function keyProblem(url,key){
+  key=String(key||"").trim();
+  if(!key) return "Paste the anon key as well.";
+  if(/\s/.test(key)) return "That key has a space or a line break in it — select it again and re-copy, without the surrounding text.";
+  if(/^sb_secret_/i.test(key)) return "That's the SECRET key. It must never go in an app — anyone could read everyone's notes with it. Use the publishable one instead, and roll that secret in the dashboard.";
+  if(/^sb_publishable_/i.test(key)) return "";      // new-style key; nothing to introspect, let the network decide
+  const c=jwtBody(key);
+  // An unrecognised format is NOT a blocking error. Supabase has already changed key formats once,
+  // and this check must never be the reason a perfectly good setup is refused — let the server say.
+  if(!c) return "";
+  if(c.role==="service_role") return "That's the service_role key — it bypasses every access rule and must never go in an app. Take the one labelled anon public, and roll the service key in your dashboard.";
+  if(c.role && c.role!=="anon") return `That key's role is “${c.role}”. You want the one labelled anon public.`;
+  const want=projectRef(url), got=c.ref||"";
+  if(want && got && want!==got) return `That key belongs to project “${got}”, but the URL points at “${want}”. They have to be the same project — most likely one of the two was copied from a different project.`;
+  if(c.exp && c.exp*1000 < Date.now()) return "That key has expired. Generate a fresh anon key in Project Settings → API.";
+  return "";
+}
 /* A one-tap answer to "why won't it let me in". Checks the two things that can be wrong,
    separately, and names which one it is. */
 async function testConnection(){
@@ -6297,7 +6330,8 @@ async function testConnection(){
   const url=((u&&u.value)||sync.url||"").trim().replace(/\/+$/,"");
   const key=((k&&k.value)||sync.key||"").trim();
   if(!url||!key){ acctErr("Fill in both boxes first, then tap this."); return; }
-  const bad=projectUrlProblem(url); if(bad){ acctErr(bad); return; }
+  const bad=projectUrlProblem(url) || keyProblem(url,key);
+  if(bad){ acctErr(bad); toast("⚠ "+bad.slice(0,90)); return; }
   acctErr("Checking…");
   let res;
   try{

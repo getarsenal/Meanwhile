@@ -1158,7 +1158,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v47 · 2026-08-19";
+const BUILD = "v48 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1461,12 +1461,14 @@ async function gotrue(path, opts){
   if(!authReady()) throw new Error("Add your Supabase URL and anon key first.");
   let res;
   try{
-    // BOTH headers, always. Supabase's gateway wants an Authorization bearer as well as the
-    // apikey; with only apikey it answers 401 on a perfectly good email and password. Before a
-    // session exists the anon key is the bearer — that is exactly what the official client does.
+    // The gateway wants an Authorization bearer as well as the apikey; with only apikey it
+    // answers 401 on a perfectly good email and password. Before a session exists the anon key
+    // stands in — but only if it IS a JWT. A new-style sb_publishable_ key is not one, and
+    // presenting it as a bearer is its own way to get rejected, so that goes in apikey alone.
     res = await fetch(apiBase()+"/auth/v1"+path,{
       method: opts.method||"POST",
-      headers: {"Content-Type":"application/json", apikey:sync.key, Authorization:"Bearer "+(opts.token||sync.key)},
+      headers: Object.assign({"Content-Type":"application/json", apikey:sync.key},
+        bearerFor(opts.token) ? {Authorization:"Bearer "+bearerFor(opts.token)} : {}),
       body: opts.body!==undefined ? JSON.stringify(opts.body) : undefined
     });
   }catch(e){ throw new Error("No connection — Meanwhile still works offline, it just can't sync."); }
@@ -1474,6 +1476,10 @@ async function gotrue(path, opts){
   let j=null; try{ j=txt?JSON.parse(txt):null; }catch(e){}
   if(!res.ok) throw new Error(authMessage(res.status,j,txt));
   return j;
+}
+function bearerFor(token){
+  if(token) return token;                     // a real session token always goes in the bearer
+  return jwtBody(sync.key) ? sync.key : "";   // the anon key only if it is actually a JWT
 }
 function jwtClaim(tok,k){
   try{ const p=tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
@@ -6337,7 +6343,16 @@ async function testConnection(){
   try{
     res=await fetch(url+"/auth/v1/settings",{headers:{apikey:key,Authorization:"Bearer "+key}});
   }catch(e){ acctErr("Couldn't reach "+url.replace(/^https?:\/\//,"")+" at all. Check the URL, and that you're online."); return; }
-  const txt=(await res.text()).slice(0,200);
+  const raw=await res.text();
+  const txt=raw.slice(0,200);
+  // A paused project still resolves, but the platform answers with an HTML page rather than the
+  // API. Free projects pause themselves after a stretch of no traffic — which is exactly what
+  // "it worked on Friday" looks like from here.
+  if(!res.ok && (/^\s*</.test(raw) || [502,503,504,540].includes(res.status))){
+    acctErr("The project isn't answering — it looks paused or asleep. Open your Supabase dashboard: a paused project shows a Restore button, and free projects pause themselves after a week or so without traffic. Restore it and try again.");
+    toast("⚠ The project looks paused");
+    return;
+  }
   if(res.ok){
     let j=null; try{ j=JSON.parse(txt); }catch(e){}
     sync.url=url; sync.key=key; saveSync();
@@ -6348,7 +6363,18 @@ async function testConnection(){
     return;
   }
   const say=m=>{ acctErr(m); toast("⚠ "+m.slice(0,90)); };
-  if(res.status===401||res.status===403) say("The URL is reachable but that anon key isn't valid for it. Project Settings → API → the key labelled anon public. Server said: "+txt);
+  if(res.status===401||res.status===403){
+    /* A well-formed anon key, for this very project, that the project now refuses. Nothing about
+       the key is wrong — so something changed at the other end. These are the two that do it, and
+       both look like "it worked on Friday". */
+    const c=jwtBody(key);
+    if(c && c.role==="anon" && (!c.ref || !projectRef(url) || c.ref===projectRef(url))){
+      say("This key is well formed and does belong to project “"+(c.ref||projectRef(url))+"”, but the project is refusing it. Nothing is wrong with what you pasted — something changed on Supabase's side. Two things do this: legacy API keys were turned off (Project Settings → API — use the newer publishable key instead), or the JWT secret was rotated (which invalidates every old key). Server said: "+txt);
+      return;
+    }
+    say("The URL is reachable but that anon key isn't valid for it. Project Settings → API → the key labelled anon public. Server said: "+txt);
+    return;
+  }
   else if(res.status===404) say("Reached that address but there's no Supabase API there. It should look like https://abcdefgh.supabase.co");
   else say("The project answered "+res.status+": "+txt);
 }

@@ -1158,7 +1158,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v48 · 2026-08-19";
+const BUILD = "v49 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -6286,6 +6286,7 @@ function saveProjectCfg(){
     acctErr("Add your project URL and key first."); return false;
   }
   let url=((u&&u.value)||"").trim(), key=((k&&k.value)||"").trim();
+  if(!url && refFromKey(key)) url="https://"+refFromKey(key)+".supabase.co";   // the key knows
   if(!url||!key){ acctErr("Both the project URL and the anon key are needed."); return false; }
   const bad=projectUrlProblem(url) || keyProblem(url,key);
   if(bad){ acctErr(bad); return false; }
@@ -6310,6 +6311,17 @@ function jwtBody(tok){
     const p=String(tok).split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
     return JSON.parse(decodeURIComponent(escape(atob(p+"===".slice((p.length+3)%4)))));
   }catch(e){ return null; }
+}
+/* The anon key carries its own project ref, so a mistyped URL is not just detectable — it is
+   correctable without asking. One doubled character in a 20-character ref is invisible to read
+   back and sends every request to a project that isn't yours. */
+function refFromKey(key){ const c=jwtBody(String(key||"").trim()); return (c&&c.ref)||""; }
+function suggestedRef(){
+  const kEl=document.getElementById("syncKeyInput"), uEl=document.getElementById("syncUrl");
+  const k=((kEl&&kEl.value)||sync.key||"").trim();
+  const u=((uEl&&uEl.value)||sync.url||"").trim();
+  const r=refFromKey(k);
+  return (r && r!==projectRef(u)) ? r : "";
 }
 function projectRef(url){ return (String(url||"").match(/^https?:\/\/([a-z0-9-]+)\.supabase\./i)||[])[1]||""; }
 function keyProblem(url,key){
@@ -6387,8 +6399,10 @@ function acctErr(msg){
   /* Never tell someone to go to Settings from a screen with no way to reach Settings. If the
      failure is about the project or the key, the fix travels with the message. */
   const cfgish=/\b401\b|\b404\b|anon key|api key|project url|workspace|supabase|not authoris/i.test(msg);
-  e.innerHTML=esc(msg)+(cfgish&&authGateUp()
-    ? `<button class="ag-fix" data-act="auth-view-setup">Check workspace settings</button>` : "");
+  const ref=suggestedRef();
+  e.innerHTML=esc(msg)
+    +(ref?`<button class="ag-fix" data-act="auth-fix-url">Use ${esc(ref)} — the project this key belongs to</button>`:"")
+    +((cfgish&&authGateUp()&&!ref)?`<button class="ag-fix" data-act="auth-view-setup">Check workspace settings</button>`:"");
   e.style.display="block";
 }
 function acctFields(){
@@ -7611,6 +7625,14 @@ document.addEventListener("click",e=>{
   if(act==="auth-view-signup"){ acctErr(""); authSet("signup"); return; }
   if(act==="auth-setup-save"){ if(saveProjectCfg()){ acctErr(""); authSet("signin"); toast("Workspace saved"); } return; }
   if(act==="auth-view-setup"){ acctErr(""); authSet("setup"); return; }
+  if(act==="auth-fix-url"){
+    const r=suggestedRef(); if(!r) return;
+    const url="https://"+r+".supabase.co";
+    const u=document.getElementById("syncUrl"); if(u) u.value=url;
+    sync.url=url; saveSync(); acctErr(""); toast("Workspace set to "+r);
+    if(authGateUp()) authSet("signin"); else openSettings();
+    return;
+  }
   if(act==="auth-test"){ testConnection(); return; }
   if(act==="auth-skip"){ devPrefs.localOnly=true; saveDev(); closeAuthGate(); render(); return; }
   if(act==="auth-open"){ devPrefs.localOnly=false; saveDev(); closeEditor(); renderAuthGate(true); return; }

@@ -691,6 +691,28 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .shot-x svg{width:12px;height:12px}
 .shot-x:hover{color:var(--bad);border-color:var(--bad)}
 #editorOverlay .card.drop-on{outline:2px dashed var(--accent);outline-offset:-6px}
+.shot-crop{position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;
+  background:var(--bg);border:1px solid var(--line2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.shot-crop svg{width:12px;height:12px}
+.shot-crop:hover{color:var(--accent3);border-color:var(--accent)}
+/* the cropper: a rectangle over the picture, dimming everything outside it */
+#cropper{position:fixed;inset:0;z-index:420;background:#0a0a12;display:flex;flex-direction:column;
+  padding:max(14px,env(safe-area-inset-top)) 14px max(14px,env(safe-area-inset-bottom))}
+.cr-head{color:rgba(255,255,255,.6);font-size:12.5px;text-align:center;padding:6px 0 12px;line-height:1.5}
+.cr-stage{flex:1 1 auto;position:relative;display:grid;place-items:center;min-height:0;touch-action:none}
+#crImg{max-width:100%;max-height:100%;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}
+.cr-box{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(6,6,14,.68);cursor:move}
+.cr-box i{position:absolute;width:30px;height:30px;display:block}
+.cr-box i::after{content:"";position:absolute;width:16px;height:16px;border:3px solid #fff;border-radius:2px}
+.cr-box i[data-crh="nw"]{left:-15px;top:-15px;cursor:nwse-resize}
+.cr-box i[data-crh="nw"]::after{right:0;bottom:0;border-right:0;border-bottom:0}
+.cr-box i[data-crh="ne"]{right:-15px;top:-15px;cursor:nesw-resize}
+.cr-box i[data-crh="ne"]::after{left:0;bottom:0;border-left:0;border-bottom:0}
+.cr-box i[data-crh="sw"]{left:-15px;bottom:-15px;cursor:nesw-resize}
+.cr-box i[data-crh="sw"]::after{right:0;top:0;border-right:0;border-top:0}
+.cr-box i[data-crh="se"]{right:-15px;bottom:-15px;cursor:nwse-resize}
+.cr-box i[data-crh="se"]::after{left:0;top:0;border-left:0;border-top:0}
+.cr-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding-top:14px;flex:0 0 auto}
 .shot-view{position:fixed;inset:0;z-index:400;background:rgba(6,8,20,.92);display:grid;place-items:center;padding:20px;cursor:zoom-out;padding-top:calc(20px + env(safe-area-inset-top));padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 .shot-view img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
 .rev-sub{font-size:11.5px;color:var(--faint);margin:9px 0 6px;line-height:1.5}
@@ -1158,7 +1180,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v49 · 2026-08-19";
+const BUILD = "v50 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1796,6 +1818,7 @@ const I = {
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3h9L20 8.5v11A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>',
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',
   camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.2-2.1a1 1 0 0 1 .87-.5h6.46a1 1 0 0 1 .87.5L17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5Z"/><circle cx="12" cy="13" r="3.4"/></svg>',
+  crop:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 2v13.5A1.5 1.5 0 0 0 8 17h13.5M2 6.5h13.5A1.5 1.5 0 0 1 17 8v13.5"/></svg>',
   image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4.5" width="18" height="15" rx="2.2"/><circle cx="8.6" cy="10" r="1.6"/><path d="m3.6 17.4 4.7-4.4a1.6 1.6 0 0 1 2.2 0l3.1 3 1.9-1.7a1.6 1.6 0 0 1 2.2 0l2.7 2.5"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4.5A1.5 1.5 0 0 1 20 5.5v12a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 17.5Z"/><path d="M12 6v14"/></svg>',
   crown:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8.5 6.5 12 12 5l5.5 7L21 8.5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>',
@@ -3092,17 +3115,20 @@ function openCapture(opId, editId){
 function capShotStrip(){
   if(!capShots.length) return "";
   return `<div class="shot-strip" id="capShots">${capShots.map((s,i)=>`<div class="shot-cell">
-      ${shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)}
+      ${shotThumb(s,`data-capcrop="${i}"`)}
+      <button class="shot-crop" data-capcrop="${i}" title="Crop">${I.crop}</button>
       <button class="shot-x" data-capshotdel="${i}" title="Remove">${I.x}</button>
     </div>`).join("")}</div>`;
 }
 function capShotBar(){
   if(!engineReadsImages()) return "";
   const touch = matchMedia("(pointer:coarse)").matches;
+  const n=capShots.length, room=SHOT_LIMIT-n;
+  if(!room) return `<div class="cap-tools"><span class="cap-tool-hint">${SHOT_LIMIT} pictures on this note — the most it can read at once. Tap one to crop it.</span></div>`;
   return `<div class="cap-tools">
-    ${touch?`<button class="cap-tool" data-act="cap-camera">${I.camera}<span>Photo</span></button>`:""}
-    <button class="cap-tool" data-act="cap-image">${I.image}<span>${touch?"Library":"Add a picture"}</span></button>
-    ${!touch?`<span class="cap-tool-hint">or paste a screenshot / drop one in</span>`:""}
+    ${touch?`<button class="cap-tool" data-act="cap-camera">${I.camera}<span>${n?"Another photo":"Photo"}</span></button>`:""}
+    <button class="cap-tool" data-act="cap-image">${I.image}<span>${touch?"Library":n?"Add another":"Add a picture"}</span></button>
+    <span class="cap-tool-hint">${n?`${n} on this note · ${room} more · tap one to crop`:(touch?"":"or paste a screenshot / drop one in")}</span>
   </div>`;
 }
 // one picker for both buttons; `cam` asks the phone for the camera rather than the library
@@ -3130,9 +3156,10 @@ function pickImages(cam, done){
   inp.click();
 }
 // redraw just the strip so a half-typed note isn't lost to a re-render
+// redraw just the strip and its bar, so a half-typed note isn't lost to a full re-render
 function capRedrawShots(){
   const host=document.getElementById("capShotHost"); if(!host) return;
-  host.innerHTML=capShotStrip();
+  host.innerHTML=capShotStrip()+capShotBar();
   hydrateShots(host);
 }
 // ⌘V of a screenshot, and drag-and-drop onto the modal — both land in the same place
@@ -3169,8 +3196,7 @@ function captureBody(){
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
   <textarea id="capText" class="cap-ta" placeholder="Met Mike today. He's the Salesforce guy. Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting…">${esc(capPrefill)}</textarea>
-  <div id="capShotHost">${capShotStrip()}</div>
-  ${capShotBar()}
+  <div id="capShotHost">${capShotStrip()}${capShotBar()}</div>
   ${voice?`<button class="cap-mic" id="capMic" data-act="cap-mic" style="margin-top:10px">${I.mic}<span>${editing?"Add to it by voice":"Dictate it instead"}</span></button>`:""}
   <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn primary" style="flex:1" data-act="cap-go">${I.ai} ${editing?"Save &amp; re-read it":"Save &amp; organize"}</button>
@@ -6914,7 +6940,8 @@ function openSmartPaste(keepText){ spData=null; spSourceUrl=""; spMatchId=""; sp
 function spShotStrip(){
   if(!spShots.length) return "";
   return `<div class="shot-strip">${spShots.map((s,i)=>`<div class="shot-cell">
-    ${shotThumb(s,`data-shotview="${esc(s.ref||"")}"`)}
+    ${shotThumb(s,`data-spcrop="${i}"`)}
+    <button class="shot-crop" data-spcrop="${i}" title="Crop">${I.crop}</button>
     <button class="shot-x" data-spshotdel="${i}" title="Remove">${I.x}</button></div>`).join("")}</div>`;
 }
 function spRedrawShots(){ const h=document.getElementById("spShotHost"); if(!h) return; h.innerHTML=spShotStrip(); hydrateShots(h); }
@@ -7447,7 +7474,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -7704,6 +7731,10 @@ document.addEventListener("click",e=>{
     return; }
   if(act==="cap-back"){ const txt=capPlan?capPlan.text:""; if(capPlan) capShots=(capPlan.shots||[]).slice();
     spSetBody(captureBody()); const ta=document.getElementById("capText"); if(ta) ta.value=txt; hydrateShots(editorEl); capArmDrop(); return; }
+  if(act==="cr-cancel"){ closeCropper(); return; }
+  if(act==="cr-rot"){ cropApply(true); return; }
+  if(act==="cr-reset"){ cropReset(); return; }
+  if(act==="cr-done"){ cropApply(false); return; }
   if(act==="cap-camera"){ capPickImages(true); return; }
   if(act==="cap-image"){ capPickImages(false); return; }
   if(t.dataset.rev!=null&&capPlan){ const it=planItem(+t.dataset.rev);
@@ -7731,6 +7762,8 @@ document.addEventListener("click",e=>{
   if(act==="work-gaps"){ openGaps(); return; }
   if(t.dataset.capedit){ openCapture(null,t.dataset.capedit); return; }
   if(t.dataset.capreex){ openCapture(null,t.dataset.capreex); setTimeout(capExtract,60); return; }
+  if(t.dataset.capcrop!==undefined){ openCropper(capShots,+t.dataset.capcrop,capRedrawShots); return; }
+  if(t.dataset.spcrop!==undefined){ openCropper(spShots,+t.dataset.spcrop,spRedrawShots); return; }
   if(t.dataset.capshotdel!==undefined){ capShots.splice(+t.dataset.capshotdel,1); capRedrawShots(); return; }
   if(t.dataset.spshotdel!==undefined){ spShots.splice(+t.dataset.spshotdel,1); spRedrawShots(); return; }
   if(t.dataset.objdone){ objToggle(t.dataset.objdone); return; }
@@ -8202,6 +8235,129 @@ async function hydrateShots(root){
 }
 function shotThumb(s,extra){
   return `<img data-shot="${esc(s.ref||"")}" alt="${esc(s.name||"photo")}" ${s.data?`src="${safeImg(s.data)}"`:""} class="shot-thumb" ${extra||""}/>`;
+}
+/* ---------------- CROPPING A SHOT ----------------
+   Photographing a whiteboard gets you the whiteboard plus half the room, and the room is noise the
+   model has to read past. Cropping to the part that matters measurably sharpens what comes back.
+   Hand-rolled: a crop rectangle over the image, pointer events so touch and mouse share one path,
+   and canvas to re-encode. Rotation re-encodes immediately rather than being carried as state —
+   one orientation to reason about is worth a re-encode nobody can see. */
+let crop=null;   // {shots, idx, img, box:{x,y,w,h}, mode, start, after}
+const CROP_MIN=44;
+function cropRect(){ return crop.img.getBoundingClientRect(); }
+function cropClamp(){
+  const r=cropRect(), b=crop.box;
+  b.w=Math.max(CROP_MIN,Math.min(b.w,r.width));
+  b.h=Math.max(CROP_MIN,Math.min(b.h,r.height));
+  b.x=Math.max(0,Math.min(b.x,r.width-b.w));
+  b.y=Math.max(0,Math.min(b.y,r.height-b.h));
+}
+function cropPaint(){
+  const b=crop.box, el=document.getElementById("crBox");
+  if(!el) return;
+  el.style.left=b.x+"px"; el.style.top=b.y+"px"; el.style.width=b.w+"px"; el.style.height=b.h+"px";
+}
+function cropReset(){
+  const r=cropRect();
+  crop.box={x:0,y:0,w:r.width,h:r.height};
+  cropPaint();
+}
+async function openCropper(shots, idx, after){
+  const s=shots[idx]; if(!s) return;
+  const url=await fileBytes(s);
+  if(!url){ toast("That photo was added on another device"); return; }
+  const w=el(`<div id="cropper">
+    <div class="cr-head">Drag the corners to keep just the part that matters</div>
+    <div class="cr-stage"><img id="crImg" alt=""/><div id="crBox" class="cr-box">
+      <i data-crh="nw"></i><i data-crh="ne"></i><i data-crh="sw"></i><i data-crh="se"></i></div></div>
+    <div class="cr-bar">
+      <button class="btn ghost sm" data-act="cr-cancel">Cancel</button>
+      <button class="btn ghost sm" data-act="cr-rot">↻ Rotate</button>
+      <button class="btn ghost sm" data-act="cr-reset">Reset</button>
+      <button class="btn primary sm" data-act="cr-done">${I.check} Done</button>
+    </div></div>`);
+  document.body.appendChild(w);
+  const img=document.getElementById("crImg");
+  crop={shots,idx,img,box:{x:0,y:0,w:0,h:0},mode:"",start:null,after};
+  img.onload=()=>{ cropReset(); armCropper(); };
+  img.src=url;
+}
+function closeCropper(){ const w=document.getElementById("cropper"); if(w) w.remove(); crop=null; }
+function armCropper(){
+  const stage=document.querySelector("#cropper .cr-stage");
+  if(!stage||stage.dataset.bound) return;
+  stage.dataset.bound="1";
+  const pt=e=>{ const r=cropRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  stage.addEventListener("pointerdown",e=>{
+    if(!crop) return;
+    const h=e.target.closest("[data-crh]");
+    const p=pt(e), b=crop.box;
+    if(h) crop.mode=h.dataset.crh;
+    else if(p.x>=b.x&&p.x<=b.x+b.w&&p.y>=b.y&&p.y<=b.y+b.h) crop.mode="move";
+    else return;                                  // a tap outside the box does nothing
+    crop.start={p,box:Object.assign({},b)};
+    stage.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  stage.addEventListener("pointermove",e=>{
+    if(!crop||!crop.mode) return;
+    const p=pt(e), s=crop.start, dx=p.x-s.p.x, dy=p.y-s.p.y, b=crop.box, o=s.box;
+    if(crop.mode==="move"){ b.x=o.x+dx; b.y=o.y+dy; }
+    else{
+      // each corner moves two edges; the opposite corner stays put
+      if(crop.mode.includes("w")){ b.x=o.x+dx; b.w=o.w-dx; }
+      if(crop.mode.includes("e")){ b.w=o.w+dx; }
+      if(crop.mode.includes("n")){ b.y=o.y+dy; b.h=o.h-dy; }
+      if(crop.mode.includes("s")){ b.h=o.h+dy; }
+      // dragging a corner past its opposite would invert the box; stop it at the minimum
+      if(b.w<CROP_MIN){ if(crop.mode.includes("w")) b.x=o.x+o.w-CROP_MIN; b.w=CROP_MIN; }
+      if(b.h<CROP_MIN){ if(crop.mode.includes("n")) b.y=o.y+o.h-CROP_MIN; b.h=CROP_MIN; }
+    }
+    cropClamp(); cropPaint(); e.preventDefault();
+  });
+  const end=()=>{ if(crop) crop.mode=""; };
+  stage.addEventListener("pointerup",end);
+  stage.addEventListener("pointercancel",end);
+  window.addEventListener("resize",()=>{ if(crop) { cropClamp(); cropPaint(); } });
+}
+// draw the chosen region (or the whole thing, rotated) back out as a fresh JPEG
+async function cropExport(rotate){
+  if(!crop) return null;
+  const img=crop.img, r=cropRect();
+  const scale=img.naturalWidth/r.width;
+  let sx=0, sy=0, sw=img.naturalWidth, sh=img.naturalHeight;
+  if(!rotate){
+    sx=Math.round(crop.box.x*scale); sy=Math.round(crop.box.y*scale);
+    sw=Math.round(crop.box.w*scale); sh=Math.round(crop.box.h*scale);
+  }
+  const turned=!!rotate;
+  const outW=turned?sh:sw, outH=turned?sw:sh;
+  const k=Math.min(1,SHOT_MAX/Math.max(outW,outH));
+  const c=document.createElement("canvas");
+  c.width=Math.max(1,Math.round(outW*k)); c.height=Math.max(1,Math.round(outH*k));
+  const x=c.getContext("2d");
+  x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);      // JPEG has no alpha
+  if(turned){ x.translate(c.width,0); x.rotate(Math.PI/2); x.drawImage(img,0,0,sw,sh,0,0,c.height,c.width); }
+  else x.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);
+  return {data:c.toDataURL("image/jpeg",rotate?0.92:0.85), w:c.width, h:c.height};
+}
+async function cropApply(rotate){
+  const out=await cropExport(rotate);
+  if(!out) return;
+  const s=crop.shots[crop.idx];
+  if(rotate){
+    // rotation stays in the editor: re-point the image and start the crop over in the new shape
+    crop.img.onload=()=>{ cropReset(); };
+    crop.img.src=out.data;
+    return;
+  }
+  const ref=s.ref||("f_"+uid());
+  try{ await idbPut(ref,out.data); Object.assign(s,{ref,w:out.w,h:out.h,size:Math.round(out.data.length*0.75)}); delete s.data; }
+  catch(e){ Object.assign(s,{data:out.data,w:out.w,h:out.h}); }
+  const fn=crop.after;
+  closeCropper();
+  if(fn) fn();
+  toast("Cropped");
 }
 async function openShot(ref){
   let url=""; try{ url=(await idbGet(ref))||""; }catch(e){}

@@ -258,6 +258,14 @@ library; `capArmDrop()` adds paste + drag-drop on the modal `.card`. `imgToShot(
 otherwise go black) and puts the bytes in **IndexedDB**, `SHOT_LIMIT` 4 per note. `shotDocs()`
 turns them into aiCall attachments; `hydrateShots()` fills `<img data-shot>` from IDB after render,
 because bytes never go on `state`.
+`openCropper(shots,idx,after)` is a hand-rolled cropper — a rectangle over the picture with four
+corner handles, pointer events so touch and mouse share one path, canvas to re-encode. Cropping a
+whiteboard down to the board measurably sharpens extraction, because the rest of the room is noise
+the model reads past. **Rotate re-encodes immediately** rather than carrying orientation as state:
+one orientation to reason about is worth a re-encode nobody can see. `cropClamp()` keeps the box on
+the picture and above `CROP_MIN`, so it can neither escape nor collapse. Cancel touches nothing.
+**`capShotBar()` reports the count, so it must be redrawn with the strip** — it lived outside
+`#capShotHost` and silently never updated, which is why "add another" was invisible.
 `shotRules(n)` is appended to `capturePrompt` and the schema grows a **`transcript`** field: the
 model writes out everything legible verbatim, and only then extracts records. It's told to read
 *every* box of an org chart (lines → `REPORTS_TO`, bands → departments, inner boxes → teams), to

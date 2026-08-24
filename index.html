@@ -962,6 +962,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
 #authGate .ag-proj{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.11);
   font-size:11.5px;color:rgba(255,255,255,.42);display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 #authGate .ag-proj b{color:rgba(255,255,255,.72);font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#authGate .ag-fix{display:block;margin-top:9px;padding:7px 12px;border-radius:9px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+  color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+#authGate .ag-fix:hover{background:rgba(255,255,255,.2)}
+#authGate .ag-build{margin-top:10px;font-size:11px;color:rgba(255,255,255,.3)}
+#authGate .ag-build button{background:none;border:0;padding:0;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,.5);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#authGate .ag-build button:hover{color:rgba(255,255,255,.8)}
 #authGate .ag-note{margin-top:14px;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.55;
   background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.66)}
 #authGate .ag-secret{text-align:center;padding:11px;border-radius:12px;margin:0 0 14px;
@@ -1150,7 +1158,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v45 · 2026-08-19";
+const BUILD = "v46 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -6016,7 +6024,8 @@ function renderAuthGate(force){
       <p class="ag-tag">${esc(authTagline())}</p>
       <div class="ag-panel"><div class="ag-body" id="authBody"></div></div>
       <div class="ag-foot"><button type="button" data-act="auth-skip">Continue without an account</button><br>
-        Everything stays on this device.</div>
+        Everything stays on this device.
+        <div class="ag-build">${esc(BUILD)} · <button type="button" data-act="force-update">check for update</button></div></div>
     </div></div>`);
   document.body.appendChild(g);
   // Enter submits, because every login screen in the world does and nobody reaches for the mouse.
@@ -6055,6 +6064,7 @@ function authPanelHTML(){
     <button class="ag-go" data-act="acct-signup">Create account</button>
     <div class="ag-err" id="acctErr"></div>
     <div class="ag-alt"><button class="ag-link" data-act="auth-view-signin">← I already have one</button></div>
+    ${authProjLine()}
     ${(state.opportunities||[]).length?`<div class="ag-note">The ${state.opportunities.length} ${state.opportunities.length===1?"role":"roles"} already on this device will be uploaded to your new account.</div>`:""}`;
 
   if(v==="mfa") return `
@@ -6089,8 +6099,13 @@ function authPanelHTML(){
       <button class="ag-link" data-act="acct-forgot">Forgot password</button>
     </div>
     ${sync.code?`<div class="ag-note">You're still syncing with the old <b>sync code</b>. It keeps working — sign in when you're ready and this device's notes move to your account.</div>`:""}
-    <div class="ag-proj">Workspace <b>${esc(String(sync.url||"").replace(/^https?:\/\//,"").replace(/\.supabase\.co$/,""))}</b>
-      <button class="ag-link" data-act="auth-view-setup">change</button></div>`;
+    ${authProjLine()}`;
+}
+// which project this device is pointed at — visible on every view, and changeable from here
+function authProjLine(){
+  if(!authReady()) return "";
+  return `<div class="ag-proj">Workspace <b>${esc(String(sync.url||"").replace(/^https?:\/\//,"").replace(/\.supabase\.co$/,""))}</b>
+    <button class="ag-link" data-act="auth-view-setup">change</button></div>`;
 }
 /* An invite link carries the project details in the URL fragment, so a colleague opens one link
    and lands on the sign-in screen instead of being asked to paste a key. Fragments are never sent
@@ -6307,7 +6322,14 @@ async function testConnection(){
    block carries its own so "Test connection" always has somewhere to report — signed in included. */
 function acctErr(msg){
   const e=document.getElementById("acctErr")||document.getElementById("cfgErr");
-  if(e){ e.textContent=msg||""; e.style.display=msg?"block":"none"; }
+  if(!e) return;
+  if(!msg){ e.innerHTML=""; e.style.display="none"; return; }
+  /* Never tell someone to go to Settings from a screen with no way to reach Settings. If the
+     failure is about the project or the key, the fix travels with the message. */
+  const cfgish=/\b401\b|\b404\b|anon key|api key|project url|workspace|supabase|not authoris/i.test(msg);
+  e.innerHTML=esc(msg)+(cfgish&&authGateUp()
+    ? `<button class="ag-fix" data-act="auth-view-setup">Check workspace settings</button>` : "");
+  e.style.display="block";
 }
 function acctFields(){
   return { email:((document.getElementById("acctEmail")||{}).value||"").trim(),

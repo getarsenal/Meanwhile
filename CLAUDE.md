@@ -597,6 +597,14 @@ present. Bump `CACHE` in `sw.js` to force-invalidate.
   Slack and/or email (Resend); reads the vault via `get_vault` with `DIGEST_CODE`. Scheduled
   via Supabase cron. Runbook in `supabase/README.md`.
 
+## Deliberately NOT doing
+- **MCP / connecting Meanwhile to an outside AI host.** Considered and rejected by the owner:
+  everything lives in Meanwhile. MCP runs the other way — it would make the app a data source for
+  ChatGPT or Claude and move the asking into someone else's chat window, which hollows out the
+  point of `Ask Meanwhile` and sends the whole company map to a third party rather than the
+  minimum a specific prompt needs. The AI stays *inside* the app, called per-feature with a
+  scoped prompt. Don't propose this again.
+
 ## Backlog / ideas not yet built
 - Real PNG app icons + screenshots for App Store (icons currently inline SVG).
 - "Questions they asked me" reusable library (questions-to-ask is now generated on demand).

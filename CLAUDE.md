@@ -349,6 +349,37 @@ that isn't verbatim in the JD, and an objective left with neither is dropped ent
 `state.work.objectives` (one record per employer, stamped with the day) so it costs one call, not
 one per render; `objectivesFallback()` computes the same shape from open problems/questions/projects
 when there's no AI. Items are tickable and the tick persists. Gaps moved down the page.
+**They run themselves** (`maybeAutoObjectives`): a page that opens with a *button* asking you to
+make a briefing is not a briefing. Once a day, per employer, only when there's something to read —
+so it's one AI call a day, not one per render. The guard key is set **before** the call, or a
+failure retry-loops on every render; `runObjectives(auto)` falls back to the computed list on an
+auto failure rather than leaving a red error where the briefing goes, and stays silent (no toast).
+
+**The Work overview is a home page** (`workOverview`), in this order: `briefingCard` → objectives →
+`growthCard` → count tiles → `worthKnowingCard` → `reconnectCard` → `changedCard` → `coverageCard` →
+open questions → recent notes → gaps → timeline. Something to *read* before something to press.
+- `briefLine()`/`briefingCard()` — one true line about today, assembled from the numbers (day N,
+  notes this week, people talked to, open problems, unanswered questions), never generic
+  encouragement, plus `quoteOfDay()`. The quote index comes from the **date**, not `random()`, so
+  it's stable all day and identical on every device. Every entry in `QUOTES` is something a real
+  person said or a stated proverb — **never invent a quotation and put a real name under it**;
+  that is the same lie the post-hire prompts are built to avoid.
+- `mapGrowth()`/`growthCard()` — cumulative weekly buckets of every timestamped record, drawn as a
+  hand-rolled SVG area (no chart library, same as `funnelChart`/`donut`). `preserveAspectRatio="none"`
+  stretches it to the card, so the stroke needs `vector-effect:non-scaling-stroke` and **shapes that
+  must stay round can't be used** — the endpoint is a vertical tick, not a circle, which would
+  stretch into an ellipse. `var()` goes in a `style=""` attribute, never a presentation attribute.
+  Hidden below 3 records: a two-point line is decoration, not information.
+- `reconnectPeople()`/`reconnectCard()` — people you're drifting from, ranked by gap × log(1+contacts)
+  so five conversations that stopped outrank a name mentioned once. Skips you and anyone `personHere`
+  says has left. Needs ≥2 or it doesn't render.
+- `deptCoverage()`/`coverageCard()` — how much you actually know per department (people×2 + notes +
+  records), bars in `deptColor()`. A department that's nearly blank is flagged, which is the thing a
+  count can't tell you.
+- `worthKnowing()`/`worthKnowingCard()` — one bite/decision/info rotated back up, also by date.
+  Everything you write down sinks; this is the only way the pile pays you back.
+The decorative blobs are `.wov-bloom` — the containment suite exempts things named as decoration,
+so a new blur/glow layer needs a name that says so, not `.bl1`.
 
 **Ask Meanwhile** (`workRefs`/`askWorkPrompt`/`runWorkAsk`) dumps the structured records with bracket
 ids, requires inline citations, and renders `[p2]` back as clickable chips (`citeHTML`/`citeLabel`).
@@ -535,8 +566,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **539 browser
-assertions** across twelve Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,160 browser
+assertions** across thirty-four Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

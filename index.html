@@ -624,6 +624,65 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .w-tile .l{font-size:11px;font-weight:700;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .w-tile .d{font-size:10.5px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* ---- OVERVIEW AS A HOME PAGE ----
+   The Work overview used to open with a button. It opens with something to read now: a line about
+   where you are today, a quote, and a picture of your own map growing. Everything here is computed
+   from the records — no decoration that claims something the notes don't say. */
+.wov-brief{position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--line);
+  background:linear-gradient(150deg,#171a2b 0%,#141621 45%,var(--panel) 100%);padding:20px 20px 18px;margin-bottom:14px}
+.wov-bloom{position:absolute;border-radius:50%;filter:blur(46px);pointer-events:none}
+.wov-bloom.b1{width:230px;height:230px;top:-110px;right:-60px;background:rgba(94,106,210,.34)}
+.wov-bloom.b2{width:190px;height:190px;bottom:-120px;left:-50px;background:rgba(139,147,222,.2)}
+.wov-brief .bin{position:relative;z-index:1}
+.wov-kicker{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--accent3);opacity:.9}
+.wov-head{font-size:21px;font-weight:850;letter-spacing:-.025em;line-height:1.25;margin:7px 0 0;color:var(--txt)}
+.wov-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-top:6px}
+.wov-quote{margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:12px;align-items:flex-start}
+.wov-qmark{font-size:34px;line-height:.8;color:var(--accent3);opacity:.45;font-weight:800;flex:0 0 auto;margin-top:2px}
+.wov-qt{min-width:0}
+.wov-qt q{quotes:none;display:block;font-size:14.5px;line-height:1.6;color:#dfe1ea;font-style:italic}
+.wov-qby{font-size:11.5px;font-weight:700;color:var(--faint);margin-top:6px;letter-spacing:.02em}
+
+.wov-grow{margin-bottom:14px}
+.wov-gtop{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:2px}
+.wov-gn{font-size:30px;font-weight:850;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.wov-gl{font-size:12px;color:var(--muted);padding-bottom:3px;min-width:0}
+.wov-gd{margin-left:auto;font-size:11.5px;font-weight:750;padding-bottom:3px;white-space:nowrap}
+.wov-spark{width:100%;height:88px;display:block;margin-top:10px;overflow:visible}
+.wov-gaxis{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:5px}
+.wov-glegend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--faint);margin-top:9px}
+.wov-glegend b{color:var(--muted);font-weight:750}
+
+.wov-faces{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.wov-faces::-webkit-scrollbar{display:none}
+.wov-face{flex:0 0 78px;width:78px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;
+  padding:11px 7px 9px;text-align:center;cursor:pointer;transition:.14s}
+.wov-face:hover{border-color:var(--line2);transform:translateY(-2px)}
+.wov-face .ent-ico{width:36px;height:36px;flex:0 0 36px;border-radius:12px;font-size:13px;margin:0 auto}
+.wov-face .fn{font-size:11px;font-weight:750;color:var(--txt);margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wov-face .fd{font-size:10px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.wov-cov{display:flex;flex-direction:column;gap:9px}
+.wov-crow{display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:10px;padding:4px 6px;transition:.12s;min-width:0}
+.wov-crow:hover{background:var(--panel2)}
+.wov-cname{flex:0 0 33%;max-width:33%;font-size:12.5px;font-weight:700;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wov-cbar{flex:1 1 0;min-width:0;height:9px;border-radius:6px;background:var(--line);overflow:hidden}
+.wov-cfill{height:100%;border-radius:6px;transition:width .3s}
+.wov-cn{flex:0 0 auto;font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wov-thin{color:var(--warn)}
+
+.wov-know{border-radius:16px;border:1px solid rgba(198,164,92,.3);background:linear-gradient(150deg,rgba(198,164,92,.1),rgba(198,164,92,.03));padding:15px 16px;margin-bottom:14px;cursor:pointer;transition:.14s}
+.wov-know:hover{border-color:rgba(198,164,92,.5)}
+.wov-know .kh{font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);display:flex;align-items:center;gap:7px}
+.wov-know .kh svg{width:14px;height:14px;flex:0 0 14px}
+.wov-know .kf{font-size:14.5px;line-height:1.55;color:var(--txt);margin-top:9px;font-weight:600}
+.wov-know .km{font-size:11.5px;color:var(--faint);margin-top:7px}
+@media(max-width:520px){
+  .wov-head{font-size:18.5px}
+  .wov-brief{padding:17px 16px 15px}
+  .wov-cname{flex-basis:42%;max-width:42%}
+}
+
 .ent-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;cursor:pointer;transition:.12s;min-width:0}
 .ent-row:hover{background:var(--panel2)}
 .ent-row+.ent-row{border-top:1px solid var(--line)}
@@ -1206,7 +1265,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v53 · 2026-08-19";
+const BUILD = "v54 · 2026-08-25";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -3960,13 +4019,15 @@ function objectivesFallback(o){
     .forEach(p=>push(`Find out who owns ${p.name}`,"It's active in your notes but nobody is recorded as owning it.",[{t:"project",id:p.id}]));
   return out.slice(0,5);
 }
-async function runObjectives(){
+async function runObjectives(auto){
   const o=workOp(); if(!o) return;
   const box=document.getElementById("objBox");
+  const say=m=>{ if(!auto) toast(m); };
   if(aiEngine()==="paste"||aiEngine()==="off"){
     const items=objectivesFallback(o);
+    if(auto&&!items.length) return;          // nothing to say yet — leave the invitation in place
     saveObjectives(o,items,"computed");
-    render(); toast(items.length?"Built from your notes — connect an AI for sharper ones":"Not enough in your notes yet");
+    render(); say(items.length?"Built from your notes — connect an AI for sharper ones":"Not enough in your notes yet");
     return;
   }
   if(box) box.innerHTML=`<div class="obj-load">Reading the job description against your notes…</div>`;
@@ -3974,10 +4035,30 @@ async function runObjectives(){
     const out=await aiCall(objectivesPrompt(o),null,{maxTokens:1800});
     const items=buildObjectives(o,aiParse(out));
     if(!items.length){ const fb=objectivesFallback(o); saveObjectives(o,fb,"computed"); render();
-      toast(fb.length?"Nothing new stood out — here's what's open":"Capture a few notes first"); return; }
+      say(fb.length?"Nothing new stood out — here's what's open":"Capture a few notes first"); return; }
     saveObjectives(o,items,"ai");
     render();
-  }catch(e){ if(box) box.innerHTML=`<div class="obj-load" style="color:var(--bad)">⚠ ${esc(e.message)}</div>`; }
+  }catch(e){
+    // A daily auto-run must never leave a red error where the briefing should be: fall back to the
+    // computed list, which is always available, and only say so if the user asked for this.
+    if(auto){ const fb=objectivesFallback(o); if(fb.length){ saveObjectives(o,fb,"computed"); render(); } else if(box) box.innerHTML="";
+      return; }
+    if(box) box.innerHTML=`<div class="obj-load" style="color:var(--bad)">⚠ ${esc(e.message)}</div>`;
+  }
+}
+/* The page should already be a briefing when you open it, not a button asking you to make one.
+   Once a day, per employer, and only when there is something to work from — so it costs one AI
+   call a day, not one per render. The key is set BEFORE the call so a failure doesn't retry-loop. */
+let objAutoTried="";
+function maybeAutoObjectives(o){
+  if(!o||!o.hired) return;
+  const key=o.id+"|"+todayYMD();
+  if(objAutoTried===key) return;
+  const rec=objRecord(o);
+  if(rec&&rec.day===todayYMD()) return;                       // already have today's
+  if(!wOf("captures",o.id).length&&!(o.people||[]).length) return;   // empty map — nothing to read
+  objAutoTried=key;
+  setTimeout(()=>{ try{ const p=runObjectives(true); if(p&&p.catch) p.catch(()=>{}); }catch(e){} },60);
 }
 function saveObjectives(o,items,how){
   const w=W();
@@ -4030,19 +4111,235 @@ function objectivesCard(o){
   </div>`;
 }
 
+/* ======================= THE OVERVIEW AS A HOME PAGE =======================
+   Six pieces, all computed from the records so nothing on this page claims something your notes
+   don't say: a briefing line, a quote, your map drawn as it grew, people you're drifting from,
+   which parts of the company you actually know, and one true thing pulled back up. */
+
+/* Quote of the day. Same on every device because the index comes from the date, not from random().
+   Every line here is one someone actually said or a stated proverb — a made-up quotation with a
+   real name under it is a small lie, and this app's whole rule is that it doesn't invent things. */
+const QUOTES=[
+  ["The impediment to action advances action. What stands in the way becomes the way.","Marcus Aurelius"],
+  ["Plans are worthless, but planning is everything.","Dwight D. Eisenhower"],
+  ["The most dangerous phrase in the language is: we've always done it this way.","Grace Hopper"],
+  ["You can observe a lot by just watching.","Yogi Berra"],
+  ["In the beginner's mind there are many possibilities; in the expert's mind there are few.","Shunryu Suzuki"],
+  ["It is a capital mistake to theorize before one has data.","Arthur Conan Doyle"],
+  ["A bad system will beat a good person every time.","W. Edwards Deming"],
+  ["If you can't describe what you are doing as a process, you don't know what you're doing.","W. Edwards Deming"],
+  ["Every system is perfectly designed to get the results it gets.","Paul Batalden"],
+  ["Most people do not listen with the intent to understand; they listen with the intent to reply.","Stephen R. Covey"],
+  ["Seek first to understand, then to be understood.","Stephen R. Covey"],
+  ["The map is not the territory.","Alfred Korzybski"],
+  ["It's not what you look at that matters, it's what you see.","Henry David Thoreau"],
+  ["Organizations design systems that are copies of their own communication structures.","Melvin Conway"],
+  ["Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.","Antoine de Saint-Exupéry"],
+  ["Chance favours the prepared mind.","Louis Pasteur"],
+  ["A ship in harbour is safe, but that is not what ships are built for.","John A. Shedd"],
+  ["Doubt is not a pleasant condition, but certainty is absurd.","Voltaire"],
+  ["The way to get started is to quit talking and begin doing.","Walt Disney"],
+  ["If you want to go fast, go alone. If you want to go far, go together.","Proverb"],
+  ["Fall seven times, stand up eight.","Japanese proverb"],
+  ["The best time to plant a tree was twenty years ago. The second best time is now.","Proverb"],
+  ["Never interrupt someone doing something you said couldn't be done.","Amelia Earhart"],
+  ["Culture is simply a shared way of doing something with a passion.","Brian Chesky"]
+];
+function quoteOfDay(){
+  const d=new Date(), day=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);
+  return QUOTES[((day%QUOTES.length)+QUOTES.length)%QUOTES.length];
+}
+/* The one line at the top. It has to be true of today, so it's picked from the numbers: what
+   happened this week, how far in you are, what's waiting. Never generic encouragement. */
+function briefLine(o){
+  const day=hireDay(o), c=workCounts(o), wk=changesSince(o,7);
+  const first=String((getProfile().name||"").trim().split(/\s+/)[0]||"");
+  const hr=new Date().getHours();
+  const greet=(hr<5?"Late night":hr<12?"Good morning":hr<18?"Good afternoon":"Good evening")+(first?", "+first:"");
+  let head, sub;
+  if(day==null){ head=`${greet}.`; sub=`Add your start date on the role and this page starts counting with you.`; }
+  else if(day<=0){ head=`${greet} — you start ${fmtDate(o.hired.startDate)}.`; sub=`Everything you learned while interviewing is already here, waiting for day one.`; }
+  else {
+    head=`${greet}. Day ${day} at ${o.company}.`;
+    const bits=[];
+    if(wk.notes.length) bits.push(`${wk.notes.length} ${wk.notes.length===1?"note":"notes"} this week`);
+    if(wk.talked.length) bits.push(`${wk.talked.length} ${wk.talked.length===1?"person":"people"} you talked to`);
+    if(c.openProblems) bits.push(`${c.openProblems} open ${c.openProblems===1?"problem":"problems"}`);
+    if(c.questions) bits.push(`${c.questions} unanswered ${c.questions===1?"question":"questions"}`);
+    sub = bits.length ? bits.join(" · ")
+      : (c.people||c.notes) ? `Quiet week so far — nothing new has gone into the map.`
+      : `Nothing in the map yet. Capture the first thing that happens today and it starts building itself.`;
+  }
+  return {head,sub};
+}
+function briefingCard(o){
+  const {head,sub}=briefLine(o), [q,by]=quoteOfDay();
+  return `<div class="wov-brief"><div class="wov-bloom b1"></div><div class="wov-bloom b2"></div><div class="bin">
+    <div class="wov-kicker">Today</div>
+    <h2 class="wov-head">${esc(head)}</h2>
+    <div class="wov-sub">${esc(sub)}</div>
+    <div class="wov-quote"><div class="wov-qmark" aria-hidden="true">&ldquo;</div>
+      <div class="wov-qt"><q>${esc(q)}</q><div class="wov-qby">— ${esc(by)}</div></div></div>
+  </div></div>`;
+}
+
+/* Your map, drawn as it grew. Weekly buckets of everything that has a timestamp, cumulative, so
+   the line only ever climbs — the point is "look how much you know now", not a stock chart. */
+function mapGrowth(o,weeks){
+  weeks=weeks||10;
+  const stamps=[];
+  (o.people||[]).forEach(p=>{ if(p.at) stamps.push(p.at); });
+  ["projects","problems","systems","processes","decisions","questions","departments","teams","orgs","infos","bites","captures"]
+    .forEach(k=>{ (W()[k]||[]).forEach(r=>{ if(r&&r.opId===o.id&&r.at) stamps.push(r.at); }); });
+  const now=new Date(); now.setHours(23,59,59,999);
+  const end=now.getTime(), WK=7*86400000;
+  const buckets=[];
+  for(let i=weeks-1;i>=0;i--){
+    const cut=end-i*WK;
+    buckets.push({cut, n:stamps.filter(t=>t<=cut).length});
+  }
+  const before=stamps.filter(t=>t<=end-weeks*WK).length;
+  const total=stamps.length;
+  const added=total-(buckets.length>1?buckets[buckets.length-2].n:before);
+  return {buckets, total, added, before, weeks};
+}
+/* Hand-rolled SVG, same as every other chart in here. preserveAspectRatio:none stretches the box
+   to the card width; non-scaling-stroke keeps the line an even thickness while it does. */
+function growthCard(o){
+  const g=mapGrowth(o,10);
+  if(g.total<3) return "";                        // a two-point line is a decoration, not information
+  const W_=300,H=88,pad=4;
+  const max=Math.max(1,g.buckets[g.buckets.length-1].n);
+  const x=i=>pad+(W_-pad*2)*(g.buckets.length<2?1:i/(g.buckets.length-1));
+  const y=n=>H-pad-(H-pad*2)*(n/max);
+  const pts=g.buckets.map((b,i)=>[x(i),y(b.n)]);
+  const line=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+  const area=line+` L${x(g.buckets.length-1).toFixed(1)} ${H-pad} L${x(0).toFixed(1)} ${H-pad} Z`;
+  const last=pts[pts.length-1];
+  const c=workCounts(o);
+  const legend=[[c.people,"people"],[c.notes,"notes"],[c.projects,"projects"],[c.systems,"systems"],
+    [W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS").length,"connections"]]
+    .filter(p=>p[0]).map(p=>`<span><b>${p[0]}</b> ${esc(p[1])}</span>`).join("");
+  return `<div class="ai-box wov-grow">
+    <div class="wov-gtop">
+      <div class="wov-gn">${g.total}</div>
+      <div class="wov-gl">things you know<br>about this place</div>
+      ${g.added?`<div class="wov-gd" style="color:var(--good)">+${g.added} this week</div>`:`<div class="wov-gd" style="color:var(--faint)">steady this week</div>`}
+    </div>
+    <svg class="wov-spark" viewBox="0 0 ${W_} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id="wovGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style="stop-color:var(--accent);stop-opacity:.45"/>
+        <stop offset="100%" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs>
+      <path d="${area}" style="fill:url(#wovGrad)"/>
+      <path d="${line}" style="fill:none;stroke:var(--accent2);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke"/>
+      <line x1="${last[0].toFixed(1)}" y1="${last[1].toFixed(1)}" x2="${last[0].toFixed(1)}" y2="${H-pad}" style="stroke:var(--accent3);stroke-width:1.5;stroke-dasharray:3 3;vector-effect:non-scaling-stroke"/>
+    </svg>
+    <div class="wov-gaxis"><span>${esc(fmtDate(ymdOf(g.buckets[0].cut)))}</span><span>today</span></div>
+    ${legend?`<div class="wov-glegend">${legend}</div>`:""}
+  </div>`;
+}
+
+/* People you're drifting from. Ranked, not just sorted by date: someone you've spoken to five
+   times and haven't in a month matters more than a name that came up once. */
+function reconnectPeople(o,limit){
+  const now=Date.now(), MIN=14*86400000;
+  return (o.people||[]).filter(p=>personHere(p)&&!isMe(o,p)).map(p=>{
+    const i=personInteractions(p).filter(x=>x.at);
+    const last=i.length?i[0].at:(p.at||0);
+    return {p, last, n:i.length, gap:now-last};
+  }).filter(x=>x.last&&x.gap>=MIN&&x.n)
+    .map(x=>Object.assign(x,{score:(x.gap/86400000)*Math.log(1+x.n)}))
+    .sort((a,b)=>b.score-a.score).slice(0,limit||8);
+}
+function reconnectCard(o){
+  const list=reconnectPeople(o,8);
+  if(list.length<2) return "";
+  return `<div class="section-head"><h3>Worth a catch-up</h3><div class="line"></div><span class="tag">${list.length}</span></div>
+    <div class="card panel">
+      <div class="sect-note" style="margin:0 2px 11px">People who helped you early on and haven't come up in your notes lately.</div>
+      <div class="wov-faces">${list.map(x=>`<div class="wov-face" data-ent="person|${esc(x.p.id)}">
+        ${entIcoHTML("person",x.p)}
+        <div class="fn">${esc((x.p.name||"?").split(/\s+/)[0])}</div>
+        <div class="fd">${Math.round(x.gap/86400000)}d ago</div></div>`).join("")}</div>
+    </div>`;
+}
+
+/* Where your knowledge actually is. A department you've written nothing about is not a department
+   you understand, and that is the useful thing this can tell you that a count can't. */
+function deptCoverage(o){
+  const depts=wOf("departments",o.id);
+  if(!depts.length) return [];
+  const ppl=(o.people||[]).filter(personHere);
+  return depts.map(d=>{
+    const members=ppl.filter(p=>p.deptId===d.id);
+    const ids=new Set(members.map(p=>p.id));
+    const notes=wOf("captures",o.id).filter(c=>(c.entities||[]).some(e=>(e.t==="department"&&e.id===d.id)||(e.t==="person"&&ids.has(e.id)))).length;
+    const work=["project","problem","system","process"].reduce((n,t)=>n+entAll(t,o.id).filter(r=>r.deptId===d.id).length,0);
+    return {d, people:members.length, notes, work, score:members.length*2+notes+work};
+  }).sort((a,b)=>b.score-a.score);
+}
+function coverageCard(o){
+  const rows=deptCoverage(o);
+  if(rows.length<2) return "";
+  const max=Math.max(1,rows[0].score);
+  const noDept=(o.people||[]).filter(p=>personHere(p)&&!p.deptId).length;
+  const thin=rows.filter(r=>r.score<=Math.max(1,max*0.2)).length;
+  return `<div class="section-head"><h3>What you know, by department</h3><div class="line"></div></div>
+    <div class="card panel">
+      <div class="wov-cov">${rows.slice(0,8).map(r=>{
+        const col=deptColor(r.d.id), pct=Math.max(4,Math.round(r.score/max*100));
+        const bits=[r.people?`${r.people} ${r.people===1?"person":"people"}`:"nobody yet", r.notes?`${r.notes} ${r.notes===1?"note":"notes"}`:""].filter(Boolean).join(" · ");
+        return `<div class="wov-crow" data-ent="department|${esc(r.d.id)}">
+          <div class="wov-cname" style="color:${cssCol(col)}">${esc(r.d.name||"Department")}</div>
+          <div class="wov-cbar"><div class="wov-cfill" style="width:${pct}%;background:${cssCol(col)}"></div></div>
+          <div class="wov-cn${r.score<=Math.max(1,max*0.2)?" wov-thin":""}">${esc(bits)}</div>
+        </div>`;
+      }).join("")}</div>
+      ${(thin||noDept)?`<div class="sect-note" style="margin:12px 2px 0">${
+        [thin?`${thin} ${thin===1?"department is":"departments are"} nearly blank in your notes`:"",
+         noDept?`${noDept} ${noDept===1?"person isn't":"people aren't"} in a department yet`:""].filter(Boolean).join(" · ")
+      }</div>`:""}
+    </div>`;
+}
+
+/* One true thing, pulled back up. Everything you write down sinks; this rotates one small fact a
+   day back to the surface, which is the only way a knowledge pile ever pays you back. */
+function worthKnowing(o){
+  const pool=[];
+  entAll("bite",o.id).forEach(b=>{ if(b.fact) pool.push({t:"bite",r:b,text:b.fact,meta:[b.kind,b.source?"via "+b.source:"",(b.tags||[]).map(x=>"#"+x).join(" ")].filter(Boolean).join(" · ")}); });
+  entAll("decision",o.id).forEach(d=>{ if(d.title) pool.push({t:"decision",r:d,text:d.title,meta:[d.madeBy?"decided by "+d.madeBy:"",d.date?fmtDate(d.date):"",d.reason?String(d.reason).slice(0,120):""].filter(Boolean).join(" · ")}); });
+  entAll("info",o.id).forEach(x=>{ if(x.title&&x.summary) pool.push({t:"info",r:x,text:x.summary,meta:[x.title,x.kind].filter(Boolean).join(" · ")}); });
+  if(!pool.length) return null;
+  const d=new Date(), day=Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);
+  return pool[((day%pool.length)+pool.length)%pool.length];
+}
+function worthKnowingCard(o){
+  const w=worthKnowing(o);
+  if(!w) return "";
+  return `<div class="wov-know" data-ent="${esc(w.t)}|${esc(w.r.id)}">
+    <div class="kh">${I.spark} Worth remembering</div>
+    <div class="kf">${esc(String(w.text).slice(0,280))}</div>
+    ${w.meta?`<div class="km">${esc(w.meta)}</div>`:""}
+  </div>`;
+}
+
 function workOverview(o){
+  maybeAutoObjectives(o);                       // the page should already be a briefing when it opens
   const c=workCounts(o);
   const tile=(n,l,d,tab,col)=>`<div class="w-tile" data-wtab="${tab}"><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></div>`;
-  // what to do today comes first; the counts orient you after
-  let h=objectivesCard(o);
+  // a line about today, then what to do about it; the counts orient you after
+  let h=briefingCard(o);
+  h+=objectivesCard(o);
+  h+=growthCard(o);
   h+=`<div class="w-tiles">
     ${tile(c.people,"People","you've met","people")}
-    ${tile(c.departments,"Departments","","knowledge","var(--warn)")}
+    ${tile(c.departments,"Departments","","org","var(--warn)")}
     ${tile(c.projects,"Projects","","projects")}
     ${tile(c.problems,"Problems",c.openProblems+" open","problems",c.openProblems?"var(--hot)":"")}
     ${tile(c.systems,"Systems","","knowledge")}
     ${tile(c.questions,"Questions",c.questions?"still open":"","knowledge",c.questions?"var(--warn)":"")}
   </div>`;
+  h+=worthKnowingCard(o);
 
   // a 30/60/90 report becomes available as you pass each mark
   const day=hireDay(o);
@@ -4056,7 +4353,9 @@ function workOverview(o){
     </div>`;
   }
 
+  h+=reconnectCard(o);
   h+=changedCard(o);
+  h+=coverageCard(o);
 
   const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>b.at-a.at);
   if(openQs.length){

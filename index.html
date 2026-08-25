@@ -519,6 +519,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .keysync.note{cursor:default;border-color:rgba(198,164,92,.3);background:rgba(198,164,92,.07)}
 .keysync.note > span:first-child{flex:0 0 15px;color:var(--warn)}
 .keysync.note svg{width:15px;height:15px}
+.ai-kept{font-size:11.5px;color:var(--good);font-weight:700;line-height:1.5;margin:2px 0 8px}
+.ai-kept:empty{display:none}
 .ai-keylinks{font-size:12px;color:var(--muted);margin:-2px 2px 12px;line-height:1.7;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:8px 11px}
 .ai-keylinks a{color:var(--accent3);font-weight:700;white-space:nowrap}
 .ai-subhead{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 9px;padding-top:14px;border-top:1px solid var(--line)}
@@ -1180,7 +1182,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v51 · 2026-08-19";
+const BUILD = "v52 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -6733,6 +6735,10 @@ function personForm(p){
 // copy-paste fallback (any chatbot, no key). Config is device-local, never synced, never in repo.
 const AI_KEY="meanwhile_ai_cfg_v1", AI_KEY_OLD="callback_ai_cfg_v1";   // old name still read; see SYNC_KEY
 let aiCfg=readLS(AI_KEY, AI_KEY_OLD);
+// an existing single key belongs to whichever engine was selected when it was typed
+if(aiCfg.key && aiCfg.engine && !(aiCfg.keys&&aiCfg.keys[aiCfg.engine])){
+  aiCfg.keys=Object.assign({},aiCfg.keys||{}); aiCfg.keys[aiCfg.engine]=aiCfg.key;
+}
 function saveAICfg(){ try{ localStorage.setItem(AI_KEY, JSON.stringify(aiCfg)); }catch(e){} }
 function aiProxyUrl(){ if(aiCfg.proxyUrl) return aiCfg.proxyUrl.trim();
   if(sync.url) return sync.url.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"")+"/functions/v1/ai"; return ""; }
@@ -6741,8 +6747,8 @@ function aiEngine(){
   const e=aiCfg.engine||"google";   // Gemini is the default — free tier, broad reach
   if(e==="off") return "off";
   if(e==="proxy") return aiProxyUrl()?"proxy":"paste";
-  if(e==="anthropic") return aiCfg.key?"anthropic":"paste";
-  if(e==="openai") return aiCfg.key?"openai":"paste";
+  if(e==="anthropic") return keyFor("anthropic")?"anthropic":"paste";
+  if(e==="openai") return keyFor("openai")?"openai":"paste";
   if(e==="groq") return aiKey()?"groq":"paste";
   if(e==="google") return aiKey()?"google":"paste";
   return "paste";
@@ -6788,7 +6794,30 @@ async function groqDiscover(force){
 }
 function engineIsFree(e){ return FREE_ENGINES.includes(e||aiCfg.engine||"google"); }
 // the key in play: this device's, or the synced one if this device hasn't got its own
+/* One key per provider. Switching from Groq to ChatGPT and pasting a new key used to overwrite
+   the only key field there was — and, because a paid engine also cleared the synced copy, it took
+   the Groq key off every other device too. Keys now live in aiCfg.keys[engine]; aiCfg.key stays as
+   the active one so older code and older builds keep working. */
+/* Say out loud which other providers already have a key here, because the whole worry is that
+   switching throws the old one away. */
+const ENG_LABEL={google:"Gemini",groq:"Groq",openai:"ChatGPT",anthropic:"Claude"};
+function keptKeysNote(current){
+  const others=Object.keys(aiKeys()).filter(e=>e!==current&&aiKeys()[e]&&ENG_LABEL[e]).map(e=>ENG_LABEL[e]);
+  if(!others.length) return "";
+  return `Your ${others.map(esc).join(" and ")} key${others.length>1?"s are":" is"} still saved — switch back any time and it'll be there.`;
+}
+function aiKeys(){ if(!aiCfg.keys||typeof aiCfg.keys!=="object") aiCfg.keys={}; return aiCfg.keys; }
+function keyFor(eng){ const k=aiKeys()[eng]; if(k) return k; return (aiCfg.engine===eng&&aiCfg.key)?aiCfg.key:""; }
+function setKeyFor(eng,val){
+  const m=aiKeys();
+  if(val) m[eng]=val; else delete m[eng];
+  if(aiCfg.engine===eng) aiCfg.key=val;
+}
 function aiKey(){
+  // the engine you SELECTED, not aiEngine() — that one calls back into here to decide whether a
+  // key exists, and asking each other the same question is an infinite loop
+  const own=keyFor(aiCfg.engine||"google");
+  if(own) return own;
   if(aiCfg.key) return aiCfg.key;
   const sh=state.ai;
   if(sh&&sh.key&&sh.engine===(aiCfg.engine||"google")&&engineIsFree(sh.engine)) return sh.key;
@@ -6805,6 +6834,9 @@ function adoptSyncedAI(){
   if(aiCfg.key) return false;                       // this device already has its own
   if(aiCfg.engine===sh.engine && aiCfg.key===sh.key) return false;
   aiCfg.engine=sh.engine; aiCfg.key=sh.key; aiCfg.model=sh.model||"";
+  // take every free key that travelled, not only the one that happened to be selected
+  aiCfg.keys=Object.assign({},aiCfg.keys||{},sh.keys||{});
+  if(sh.key) aiCfg.keys[sh.engine]=sh.key;
   saveAICfg();
   return true;
 }
@@ -7264,7 +7296,7 @@ function aiEngineFields(){
     ${opt("off","Off")}
   </select></div>
   <div id="aiKeyRow" style="display:${needsKey?"block":"none"}">
-    <div class="form-row"><label>API key</label><input id="aiKey" type="password" value="${esc(aiCfg.key||"")}" placeholder="${kph}"/></div>
+    <div class="form-row"><label>API key</label><input id="aiKey" type="password" value="${esc(keyFor(eng))}" placeholder="${kph}"/></div>
     ${engineIsFree(eng)
       ? `<label class="keysync"><input type="checkbox" id="aiSyncKey" ${aiSyncOn()?"checked":""}/>
           <span><b>Set it up once</b> — keep this key with your synced data so your phone and laptop both have it.
@@ -7272,8 +7304,9 @@ function aiEngineFields(){
       : `<div class="keysync note"><span>${I.bell}</span><span><b>This one stays on this device.</b>
           ChatGPT and Claude keys bill a card, so Meanwhile keeps them where you typed them rather than
           copying them between devices. Gemini and Groq are free-tier — those it will carry across for you.</span></div>`}
+    <div id="aiKeptNote" class="ai-kept">${keptKeysNote(eng)}</div>
     <div class="ai-keylinks">🔑 Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a> · <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (free) ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
-    <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc(aiCfg.model||"")}" placeholder="${mph}"/></div>
+    <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc((aiCfg.models&&aiCfg.models[eng])||(aiCfg.engine===eng?aiCfg.model:"")||"")}" placeholder="${mph}"/></div>
     ${eng==="groq"?`<div id="groqModels" class="ai-models">${groqModelChips()}</div>`:""}
   </div>
   <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
@@ -7316,23 +7349,34 @@ function openAISettings(){
 }
 function saveAISettings(){
   aiCfg.engine=$("#aiEngine")?$("#aiEngine").value:"google";
-  if($("#aiKey")) aiCfg.key=$("#aiKey").value.trim();
-  if($("#aiModel")) aiCfg.model=$("#aiModel").value.trim();
+  if($("#aiKey")) setKeyFor(aiCfg.engine,$("#aiKey").value.trim());
+  if($("#aiModel")){
+    aiCfg.model=$("#aiModel").value.trim();
+    aiCfg.models=Object.assign({},aiCfg.models||{});
+    if(aiCfg.model) aiCfg.models[aiCfg.engine]=aiCfg.model; else delete aiCfg.models[aiCfg.engine];
+  }
   if($("#aiProxy")) aiCfg.proxyUrl=$("#aiProxy").value.trim();
   const box=$("#aiSyncKey"); if(box) aiCfg.syncKey=box.checked;
   saveAICfg();
   syncAIKey();
 }
+/* Free-tier keys ride along with the vault so a second device just works. Paid keys never do.
+   The bug this replaces: selecting a paid engine ran the `else` branch and DELETED the synced
+   free key, so switching to ChatGPT on one device silently removed your Groq key from every
+   other one. Turning sharing off is the only thing that should clear it. */
 function syncAIKey(){
-  const free=engineIsFree(aiCfg.engine);
-  if(free&&aiSyncOn()&&aiCfg.key){
-    const cur=state.ai||{};
-    if(cur.key!==aiCfg.key||cur.engine!==aiCfg.engine||cur.model!==(aiCfg.model||"")){
-      state.ai={engine:aiCfg.engine,key:aiCfg.key,model:aiCfg.model||"",at:Date.now()};
-      save();
-    }
-  } else if(state.ai){                     // paid engine, or you turned sharing off
-    delete state.ai; save();
+  if(!aiSyncOn()){ if(state.ai){ delete state.ai; save(); } return; }
+  // a key set outside the settings form still counts — otherwise sharing silently stops
+  if(aiCfg.key && aiCfg.engine && engineIsFree(aiCfg.engine) && !aiKeys()[aiCfg.engine]) aiKeys()[aiCfg.engine]=aiCfg.key;
+  const keep={};
+  Object.keys(aiKeys()).forEach(e=>{ if(engineIsFree(e)&&aiKeys()[e]) keep[e]=aiKeys()[e]; });
+  if(!Object.keys(keep).length){ if(state.ai){ delete state.ai; save(); } return; }
+  // the top-level fields stay for older builds; `keys` is what a current one reads
+  const active=engineIsFree(aiCfg.engine)?aiCfg.engine:Object.keys(keep)[0];
+  const next={engine:active,key:keep[active]||"",model:(aiCfg.models&&aiCfg.models[active])||"",keys:keep,at:Date.now()};
+  const cur=state.ai||{};
+  if(JSON.stringify({e:cur.engine,k:cur.key,m:cur.model,ks:cur.keys})!==JSON.stringify({e:next.engine,k:next.key,m:next.model,ks:next.keys})){
+    state.ai=next; save();
   }
 }
 
@@ -7889,7 +7933,12 @@ document.addEventListener("change",e=>{
   if(e.target.id==="fileInput"){ importFile(e.target.files[0]); e.target.value=""; }
   if(e.target.id==="aiEngine"){ const v=e.target.value; const k=$("#aiKeyRow"),p=$("#aiProxyRow");
     if(k) k.style.display=(v==="anthropic"||v==="openai"||v==="groq"||v==="google")?"block":"none";
-    if(p) p.style.display=(v==="proxy")?"block":"none"; }
+    if(p) p.style.display=(v==="proxy")?"block":"none";
+    // show the key already saved for the engine now selected, not the one left over from the last
+    const kf=$("#aiKey"); if(kf) kf.value=keyFor(v);
+    const mf=$("#aiModel"); if(mf) mf.value=(aiCfg.models&&aiCfg.models[v])||(aiCfg.engine===v?(aiCfg.model||""):"");
+    const note=$("#aiKeptNote"); if(note) note.innerHTML=keptKeysNote(v);
+  }
 });
 
 // scorecard criteria name/weight — update live without rebuilding inputs (keeps text focus)

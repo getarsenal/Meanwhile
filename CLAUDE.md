@@ -198,9 +198,16 @@ you paste into a new AI chat to prep for interviews.
 - **Modals never eat your typing**: `openEditor()` takes a `snapshotEditor()` of every field (and
   again on `spSetBody`); a backdrop tap or Escape goes through `tryCloseEditor()`, which only closes
   silently when `editorDirty()` is false and otherwise asks. The ✕/Cancel buttons still close outright.
-- **AI keys**: free-tier engines (`FREE_ENGINES` — Gemini, Groq) mirror the key into `state.ai` so it
-  syncs with the vault and a second device just works (`aiKey()` prefers the local key, falls back to
-  the synced one). Paid keys are never written to `state`. `aiCfg.syncKey:false` opts out.
+- **AI keys**: **one key per provider**, in `aiCfg.keys[engine]` (`keyFor`/`setKeyFor`); `aiCfg.key`
+  is kept as the active one for older code. Switching engines used to overwrite the single key
+  field, and selecting a *paid* engine also deleted `state.ai`, which took the free key off every
+  other device — both fixed. `aiKey()` reads the key for the **configured** engine (`aiCfg.engine`),
+  never `aiEngine()`: that one calls back into `aiKey()` to decide whether a key exists, and asking
+  each other the same question is an infinite loop. Free-tier keys (`FREE_ENGINES` — Gemini, Groq)
+  mirror into `state.ai.keys` so they sync and a second device just works (`adoptSyncedAI` takes the
+  whole map, not only the active one). Paid keys are never written to `state`; only `syncKey:false`
+  clears the shared copy. `keptKeysNote()` names the other providers that still hold a key, because
+  the fear this addresses is that switching threw the old one away.
 - `EDITORS` — `openEditor()` modal; `opForm / roundForm / personForm`; `openSettings / openResume / openStageEditor`.
 - `FILES` — attachment **bytes live in IndexedDB** (`meanwhile_files`), not in the synced document.
   A file record on `state` is `{name,type,size,ref}`; `fileBytes(f)` resolves `ref` → bytes (and still reads a

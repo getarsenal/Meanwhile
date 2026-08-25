@@ -314,9 +314,26 @@ department) aren't duplicated.
 
 **Notes are editable** — `openCapture(opId, editId)` reopens a capture; `buildPlan` carries `captureId` so
 re-reading merges into the same note instead of filing a second one, and `capApply` dedups `cap.entities`.
-**Merging people** (`mergePeople`) is the repair tool for duplicates that resolution didn't catch: it unions
-the fields, repoints every link/capture-reference/`ownerId`/`managerId`, then `dedupeLinks()` collapses the
-duplicates and drops self-links. **Meeting prep** (`openMeetingPrep`/`meetingBrief`) assembles what you know
+**You are in your own map.** The post-hire half is about understanding a company *from where you
+sit*, which only works if you are actually in it — so "me" is an ordinary person record on
+`o.people`, flagged by **`o.hired.meId`** (`meOf`/`isMe`/`ensureMe`/`setMe`). Created at hire from
+`profile.name`, with your title and your manager already wired as a `REPORTS_TO` link. `myPlace(o)`
+computes your position from the same graph everyone else uses — manager, chain above you, reports,
+department, team, the projects you own — and `myPlaceText`/`mePrompt` turn it into the one sentence
+every post-hire prompt opens with, so advice is given to someone with a position rather than to an
+observer. `myCard()` leads the People tab (and offers to put you on the map when you aren't yet);
+your row is badged **You**, your org-chart card is ringed and labelled. `whoToAsk` skips you —
+never send someone to ask themselves.
+
+**Merging people** (`openMergeReview`/`applyMergeReview`/`mergePeople`) is the repair tool for
+duplicates resolution didn't catch. It used to keep whatever was on the surviving record and quietly
+discard the other value — which is exactly where the useful correction lives ("Analyst" from a
+January interview vs "Head of Finance" from June). Now **nothing is discarded**: `mergeConflicts()`
+finds every field the two disagree about, the AI is given both records, their notes and the captures
+mentioning them and must choose *between the two values* (never a third, "both" allowed) with a
+one-sentence reason, and whatever you don't pick is written into the notes. `mergePeople` still
+repoints every link/capture-reference/`ownerId`/`managerId`/`meId`, then `dedupeLinks()` collapses the
+duplicates and drops self-links. With no AI you get the same review, unrecommended. **Meeting prep** (`openMeetingPrep`/`meetingBrief`) assembles what you know
 about the people you're about to see — computed from the graph, no calendar integration anywhere near it.
 **What changed** (`changesSince`/`changedCard`) diffs the map over 7/30/90 days from timestamps already on the
 records; `saveEntForm` stamps `prevStatus`/`statusAt` so transitions are real rather than inferred.
@@ -462,7 +479,8 @@ service worker and clears caches). "I don't see the change" has twice been a sta
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.
   `capture.shots[]`: `{name,type,size,ref,w,h}` — photos on a note; bytes in IndexedDB, never on `state`.
-- `o.hired`: `{startDate, title, manager, managerId, acceptedAt}` — present once `status==="hired"`.
+- `o.hired`: `{startDate, title, manager, managerId, meId, acceptedAt}` — present once `status==="hired"`.
+  `meId` points at the person record on `o.people` that is **you**.
 - `o.people[]` gains post-hire fields: `deptId`, `teamId`, `managerId`, `standing`, `expertise[]`, `at`, `fromCapture`.
 - `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name
   drives the Home greeting (`render()`: "Good afternoon, {first}"), the welcome state, and AI briefs

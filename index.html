@@ -828,6 +828,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .og-wrap text{font-family:inherit;pointer-events:none;user-select:none}
 .og-node{cursor:pointer}
 .og-card{fill:var(--panel);stroke:var(--line);stroke-width:1}
+.og-card.og-me{stroke:var(--accent);stroke-width:2.2;fill:var(--accent-soft,rgba(94,106,210,.14))}
 .og-node:hover .og-card{stroke:var(--accent);fill:var(--panel2)}
 .og-node.loose .og-card{stroke-dasharray:4 4;opacity:.9}
 .og-node.dragging{opacity:.85}
@@ -1023,6 +1024,29 @@ tbody td{padding:12px 14px;vertical-align:middle}
   #authGate .ag-mark,#authGate .ag-name,#authGate .ag-tag,#authGate .ag-panel,#authGate .ag-body,#authGate .ag-foot{animation:none}
 }
 
+.mg-row{padding:11px 2px;border-bottom:1px solid var(--line)}
+.mg-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:7px}
+.mg-opts{display:flex;gap:7px;flex-wrap:wrap}
+.mg-opt{flex:1 1 140px;min-width:0;text-align:left;padding:9px 11px;border-radius:11px;border:1.5px solid var(--line);
+  background:var(--panel);color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.14s;
+  overflow:hidden;text-overflow:ellipsis}
+.mg-opt i{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:var(--faint);margin-top:2px}
+.mg-opt:hover{border-color:var(--line2)}
+.mg-opt.on{border-color:var(--accent);background:rgba(94,106,210,.13)}
+.mg-why{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;padding-left:10px;border-left:2px solid var(--accent)}
+.mg-keep{margin-top:12px;padding:10px 12px;border-radius:11px;background:var(--panel);border:1px solid var(--line);
+  font-size:12px;color:var(--muted);line-height:1.55}
+.me-box{border-color:rgba(94,106,210,.3);background:linear-gradient(160deg,rgba(94,106,210,.08),rgba(94,106,210,.02))}
+.me-name{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted);text-transform:none;letter-spacing:0;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-grid{display:flex;flex-direction:column;gap:7px}
+.me-bit{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;font-size:13px}
+.me-bit>span:first-child{flex:0 0 92px;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint)}
+.ppl-row.is-me>.ent-row{background:rgba(94,106,210,.12);border-radius:12px}
+.you-tag{background:var(--accent);color:#fff;border-radius:999px;padding:2px 8px;font-size:10.5px;
+  font-weight:800;letter-spacing:.04em;flex:0 0 auto}
+@media(max-width:480px){ .me-bit>span:first-child{flex:0 0 100%} }
 /* today's objectives — the first thing on the Work overview */
 .obj-box{border-color:rgba(94,106,210,.32);background:linear-gradient(160deg,rgba(94,106,210,.09),rgba(94,106,210,.03))}
 .obj-stale{margin-left:auto;font-size:11px;font-weight:700;color:var(--warn);text-transform:none;letter-spacing:0}
@@ -1182,7 +1206,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v52 · 2026-08-19";
+const BUILD = "v53 · 2026-08-19";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -3087,6 +3111,7 @@ function saveHire(form){
     if(!m){ m={id:uid(),name:d.manager,title:"My manager",linkedin:"",email:"",notes:""}; o.people.push(m); }
     o.hired.managerId=m.id;
   }
+  ensureMe(o);   // you are a person in this company's map, like everyone else
   if(first){
     wAdd("milestones",{opId:o.id,at:Date.now(),kind:"accepted",label:"Accepted the offer"});
     wAdd("milestones",{opId:o.id,at:new Date(d.startDate+"T09:00").getTime()||Date.now(),kind:"started",label:`Started as ${o.hired.title||"employee"}`,date:d.startDate});
@@ -3336,7 +3361,7 @@ function capturePrompt(o,text,answered,nShots){
     ? CAPTURE_SCHEMA.replace('{\n "summary"','{\n "transcript": "",         // everything legible in the picture(s), written out verbatim\n "summary"')
     : CAPTURE_SCHEMA;
   return `You are the organizational memory of one person and you are about to file a note for them. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
-${knownEntitiesText(o.id)}${openQuestionsText(o.id)}${prior}
+${mePrompt(o)}${knownEntitiesText(o.id)}${openQuestionsText(o.id)}${prior}
 Your job: read the note, work out what it means for what they already know, and propose what to record. They review everything before it is saved, so propose confidently — but never invent.
 
 Rules:
@@ -3874,6 +3899,7 @@ function objectivesPrompt(o){
 
 ${jd?`--- THE JOB DESCRIPTION THEY WERE HIRED AGAINST ---\n${jd.slice(0,3500)}\n--- END ---`:"(No job description on file — work from the notes alone and leave every \"jd\" field empty.)"}
 
+${mePrompt(o)}
 --- WHAT THEIR NOTES CONTAIN ---
 ${objMaterial(o)||"(almost nothing yet)"}
 --- END ---
@@ -4128,6 +4154,8 @@ function peopleTree(o){
   return {rows,gone:gone.sort(rank),linked:here.some(p=>{ const m=personManager(p); return m&&byId[m]; })};
 }
 function pplRow(p,depth,anc,reports){
+  const o=workOp();
+  const me=isMe(o,p);
   const last=(personInteractions(p)[0]||{}).at;
   const tail=[
     reports?`<span class="rep-n" title="${reports} direct ${reports===1?"report":"reports"}">${I.people}${reports}</span>`:"",
@@ -4138,14 +4166,15 @@ function pplRow(p,depth,anc,reports){
     if(j===anc.length-1) return `<span class="ppl-rail" style="--x:${j}"></span>${more?`<span class="ppl-vert" style="--x:${j}"></span>`:""}`;
     return more?`<span class="ppl-tall" style="--x:${j}"></span>`:"";
   }).join("");
-  return `<div class="ppl-row" style="--d:${Math.min(depth,12)}">${guides}${entRow("person",p,{tail})}</div>`;
+  return `<div class="ppl-row${me?" is-me":""}" style="--d:${Math.min(depth,12)}">${guides}${entRow("person",p,{tail:(me?`<span class="you-tag">You</span>`:"")+tail})}</div>`;
 }
 function workPeople(o){
   const ppl=(o.people||[]).slice();
   if(!ppl.length) return `<div class="card panel"><div class="ent-empty">Nobody yet. Capture a note about someone you met and they'll appear here — along with anyone you met while interviewing.</div></div>`;
   const depts=wOf("departments",o.id);
   const {rows,gone,linked}=peopleTree(o);
-  let h=`<div class="sect-note">Everyone you've met here — the same records you built while interviewing, now with what they know and who they work with.</div>`;
+  let h=myCard(o);
+  h+=`<div class="sect-note">Everyone you've met here — the same records you built while interviewing, now with what they know and who they work with.</div>`;
   h+=`<div class="dept-strip">${depts.map(d=>{
       const n=ppl.filter(x=>x.deptId===d.id).length;
       return `<span class="dept-pill" data-ent="department|${d.id}">${esc(d.name)}${n?`<span class="n">${n}</span>`:""}</span>`;
@@ -4478,7 +4507,8 @@ function workGraph(o){
     const isHead=wOf("departments",o.id).some(x=>x.headId===id)||wOf("teams",o.id).some(x=>x.headId===id);
     const away=!personHere(p), tag=standingShort(p);
     return `<g class="og-node${L.pos[id].unplaced?" loose":""}${dim?" dim":""}${away?" away":""}" data-node="${id}" transform="translate(${X(id)},${Y(id)})">
-      <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card"/>
+      <rect width="${L.NW}" height="${L.NH}" rx="12" class="og-card${isMe(o,p)?" og-me":""}"/>
+      ${isMe(o,p)?`<text x="${L.NW-7}" y="13" text-anchor="end" fill="var(--accent3)" font-size="8" font-weight="800" letter-spacing=".08em">YOU</text>`:""}
       <rect width="3.5" height="${L.NH}" rx="2" fill="${col}"/>
       <circle cx="28" cy="${L.NH/2}" r="13" fill="${colorFor(p.name||"?")}"${isHead?' stroke="#e8c47a" stroke-width="2"':""}/>
       ${isHead?`<path d="M20 ${L.NH/2-14} l3 3 5-5 5 5 3-3 v3 h-16 z" fill="#e8c47a" opacity=".95"/>`:""}
@@ -4795,6 +4825,11 @@ function entDetailBody(type,rec){
       :`<button class="btn ghost sm" data-capedit="${rec.id}">${I.edit} Edit note</button><button class="btn ghost sm" data-capreex="${rec.id}">${I.ai} Re-read it</button>`}
     ${type==="question"&&rec.status==="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Answered">✓ Answered</button><button class="btn ghost sm" data-qstat="${rec.id}|Dismissed">Dismiss</button>`:""}
     ${type==="question"&&rec.status!=="Open"?`<button class="btn ghost sm" data-qstat="${rec.id}|Open">↺ Reopen</button>`:""}
+    ${type==="person"&&opId&&(opById(opId)||{}).hired
+      ? (isMe(opById(opId),rec)
+          ? `<button class="btn ghost sm" data-notme="${rec.id}">Not me</button>`
+          : `<button class="btn ghost sm" data-setme="${rec.id}">${I.user} This is me</button>`)
+      : ""}
     ${type==="person"?`<button class="btn ghost sm" data-whoabout="${rec.id}">${I.ai} What do I know?</button>
       <button class="btn ghost sm" data-mpprep="${rec.id}">${I.cal} Prep to meet</button>
       <button class="btn ghost sm" data-workswithpick="${rec.id}">${I.link} Works with…</button>
@@ -4927,6 +4962,204 @@ function dedupeLinks(){
   });
   w.links=out;
 }
+/* ================= YOU, IN YOUR OWN MAP =================
+   The point of the post-hire half is understanding a company from where YOU sit, and that only
+   works if you are actually in it. So "me" is a real person record on o.people like everybody
+   else — same links, same department, same reporting line — flagged by o.hired.meId. Everything
+   that reasons about the place can then reason about your position in it, rather than treating
+   you as an outside observer of your own org chart. */
+function meOf(o){ const id=o&&o.hired&&o.hired.meId; return id?((o.people||[]).find(p=>p.id===id)||null):null; }
+function isMe(o,p){ return !!(p&&o&&o.hired&&o.hired.meId===p.id); }
+function ensureMe(o){
+  if(!o||!o.hired) return null;
+  const have=meOf(o); if(have) return have;
+  const nm=(getProfile().name||"").trim();
+  const p={id:uid(),name:nm||"Me",title:(o.hired.title)||o.role||"",linkedin:"",email:"",notes:"",
+    managerId:o.hired.managerId||"",at:Date.now()};
+  o.people=o.people||[]; o.people.push(p);
+  o.hired.meId=p.id;
+  if(p.managerId&&p.managerId!==p.id) addLink(o.id,"person",p.id,"REPORTS_TO","person",p.managerId,1,"");
+  return p;
+}
+function setMe(o,personId){
+  if(!o||!o.hired||!personId) return;
+  const p=entGet("person",personId); if(!p) return;
+  o.hired.meId=personId;
+  // whoever you already recorded as your manager is your reporting line
+  if(o.hired.managerId&&o.hired.managerId!==personId&&!personMgrId(p)){
+    p.managerId=o.hired.managerId;
+    addLink(o.id,"person",p.id,"REPORTS_TO","person",p.managerId,1,"");
+  }
+  if(!p.title&&o.hired.title) p.title=o.hired.title;
+  save();
+}
+function personMgrId(p){ return p&&(p.managerId||personManager(p))||""; }
+/* Where you sit, computed from the graph — the sentence every prompt needs and the line the
+   People tab opens with. Never invented: each part is dropped if the record isn't there. */
+function myPlace(o){
+  const me=meOf(o); if(!me) return null;
+  const mgrId=personMgrId(me), mgr=mgrId?entGet("person",mgrId):null;
+  const reports=(o.people||[]).filter(p=>personHere(p)&&p.id!==me.id&&personMgrId(p)===me.id);
+  const dept=me.deptId?entGet("department",me.deptId):null;
+  const team=me.teamId?entGet("team",me.teamId):null;
+  const mine=wOf("projects",o.id).filter(p=>p.ownerId===me.id);
+  const chain=[]; let cur=me, guard=0;
+  while(guard++<12){ const id=personMgrId(cur); const up=id?entGet("person",id):null; if(!up||chain.includes(up)) break; chain.push(up); cur=up; }
+  return {me,mgr,reports,dept,team,projects:mine,chain};
+}
+function myPlaceText(o){
+  const m=myPlace(o); if(!m) return "";
+  const bits=[`You are ${m.me.name}${m.me.title?", "+m.me.title:""}`];
+  if(m.mgr) bits.push(`reporting to ${m.mgr.name}${m.mgr.title?" ("+m.mgr.title+")":""}`);
+  if(m.dept) bits.push(`in ${m.dept.name}${m.team?" / "+m.team.name:""}`);
+  if(m.reports.length) bits.push(`with ${m.reports.length} ${m.reports.length===1?"person":"people"} reporting to you`);
+  if(m.projects.length) bits.push(`owning ${m.projects.map(p=>p.name).join(", ")}`);
+  return bits.join(", ")+".";
+}
+/* The card the People tab opens with: where you sit, computed from the same graph as everything
+   else. When you aren't in the map yet it says so and offers to put you there, because that is the
+   thing the whole post-hire half is oriented around. */
+function myCard(o){
+  const m=myPlace(o);
+  if(!m){
+    return `<div class="ai-box me-box">
+      <div class="ai-head">${I.user} Where do you sit?</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:11px">You aren't on your own map yet.
+        Adding yourself is what lets everything else be measured from where you actually are — who's above you,
+        who's beside you, and who to ask.</div>
+      <button class="btn primary sm" data-act="me-add">${I.plus} Put me on the map</button></div>`;
+  }
+  const bit=(l,v)=>v?`<div class="me-bit"><span>${esc(l)}</span>${v}</div>`:"";
+  const chip=(t,id)=>`<span class="cite" data-ent="${t}|${esc(id)}">${esc(entLabel(t,id))}</span>`;
+  return `<div class="ai-box me-box">
+    <div class="ai-head">${I.user} You <span class="me-name">${esc(m.me.name)}${m.me.title?" · "+esc(m.me.title):""}</span></div>
+    <div class="me-grid">
+      ${bit("Reports to", m.mgr?chip("person",m.mgr.id):"")}
+      ${bit("Department", m.dept?chip("department",m.dept.id):"")}
+      ${bit("Team", m.team?chip("team",m.team.id):"")}
+      ${bit("Your reports", m.reports.length?m.reports.map(p=>chip("person",p.id)).join(" "):"")}
+      ${bit("You own", m.projects.length?m.projects.map(p=>chip("project",p.id)).join(" "):"")}
+      ${bit("Above you", m.chain.length>1?m.chain.slice(1).map(p=>chip("person",p.id)).join(" "):"")}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:11px">
+      <button class="btn ghost sm" data-ent="person|${esc(m.me.id)}">${I.edit} Edit your record</button>
+      <button class="btn ghost sm" data-setmgr="${esc(m.me.id)}">${I.people} Set your manager</button>
+      <button class="btn ghost sm" data-setdept="${esc(m.me.id)}">${I.building} Set your department</button>
+    </div></div>`;
+}
+function mePrompt(o){ const t=myPlaceText(o); return t?`\nWHERE I SIT: ${t}\n`:""; }
+
+/* ---- Merging two records for the same person ----
+   The old merge kept whatever was already on the record you were keeping and quietly discarded
+   the other value when both had one. That is where the useful correction usually lives: one
+   record says "Analyst" from an interview six months ago, the other says "Head of Finance" from
+   last week. So nothing is thrown away any more — you review every field where the two disagree,
+   the AI recommends which is right and says why, and whatever you don't pick is written into the
+   notes rather than deleted. */
+const MERGE_FIELDS=[["name","Name"],["title","Title"],["email","Email"],["linkedin","LinkedIn"],
+  ["deptId","Department"],["teamId","Team"],["standing","Standing"],["photo","Photo"]];
+function mergeConflicts(keep,drop){
+  const label=(f,v)=>{ if(!v) return ""; if(f==="deptId") return entLabel("department",v)||""; if(f==="teamId") return entLabel("team",v)||""; if(f==="photo") return "a photo"; return String(v); };
+  return MERGE_FIELDS.map(([f,l])=>({field:f,label:l,a:keep[f]||"",b:drop[f]||"",
+      aText:label(f,keep[f]),bText:label(f,drop[f])}))
+    .filter(x=>x.a&&x.b&&String(x.a)!==String(x.b));
+}
+function mergePromptText(o,keep,drop,conf){
+  const notesFor=p=>wOf("captures",o.id).filter(c=>(c.entities||[]).some(e=>e.t==="person"&&e.id===p.id))
+    .sort((a,b)=>b.at-a.at).slice(0,6).map(c=>`- ${fmtDate(ymdOf(c.at))}: ${String(c.text||"").replace(/\s+/g," ").slice(0,220)}`).join("\n");
+  return `Two records describe the same person at ${o.company} and are being merged. For each field where they disagree, say which value is more likely to be current and correct, and why.
+
+RECORD A (the one being kept) — first recorded ${fmtDate(ymdOf(keep.at||Date.now()))}
+${MERGE_FIELDS.map(([f,l])=>`${l}: ${keep[f]||"—"}`).join("\n")}
+What's written on A: ${String(keep.notes||"(nothing)").slice(0,600)}
+Notes mentioning A:
+${notesFor(keep)||"(none)"}
+
+RECORD B (being folded in) — first recorded ${fmtDate(ymdOf(drop.at||Date.now()))}
+${MERGE_FIELDS.map(([f,l])=>`${l}: ${drop[f]||"—"}`).join("\n")}
+What's written on B: ${String(drop.notes||"(nothing)").slice(0,600)}
+Notes mentioning B:
+${notesFor(drop)||"(none)"}
+
+Rules:
+- Choose only between the two values given. Never invent a third.
+- Later information usually wins for things that change — a title, a team, an email at a new domain. Older information can be right for things that don't.
+- If both could be true at once (two email addresses, a title that reads like a promotion from the other), answer "both" and both are kept.
+- If the notes don't tell you, say so in "why" and pick the more recent record.
+- "why" is one short sentence, in plain words, citing what in the material above decided it.
+
+Return ONLY:
+{"picks":[{"field":"title","choose":"a","why":""}]}
+Fields to decide: ${conf.map(c=>c.field).join(", ")}`;
+}
+let mergePlan=null;
+async function openMergeReview(keepId,dropId){
+  const keep=entGet("person",keepId), drop=entGet("person",dropId);
+  if(!keep||!drop||keepId===dropId) return;
+  const o=opById(entOpId("person",keepId)); if(!o) return;
+  const conf=mergeConflicts(keep,drop);
+  mergePlan={keepId,dropId,conf:conf.map(c=>Object.assign({},c,{choose:"a",why:""})),asked:false};
+  renderMergeReview();
+  if(conf.length && aiEngine()!=="paste" && aiEngine()!=="off"){
+    try{
+      const out=await aiCall(mergePromptText(o,keep,drop,conf),null,{maxTokens:900});
+      const d=aiParse(out);
+      (d.picks||[]).forEach(p=>{
+        const c=mergePlan&&mergePlan.conf.find(x=>x.field===p.field);
+        if(!c) return;
+        if(["a","b","both"].includes(p.choose)) c.choose=p.choose;   // only ever one of the two
+        c.why=String(p.why||"").slice(0,200);
+      });
+      if(mergePlan){ mergePlan.asked=true; renderMergeReview(); }
+    }catch(e){ if(mergePlan){ mergePlan.err=e.message; renderMergeReview(); } }
+  }
+}
+function renderMergeReview(){
+  const p=mergePlan; if(!p) return;
+  const keep=entGet("person",p.keepId), drop=entGet("person",p.dropId);
+  if(!keep||!drop){ closeEditor(); return; }
+  const live=aiEngine()!=="paste"&&aiEngine()!=="off";
+  const body=`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+      <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Merge into one person</h2>
+        <div style="font-size:12.5px;color:var(--faint)">${esc(keep.name)} ← ${esc(drop.name)}</div></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    ${p.conf.length?`
+      <div class="sect-note" style="margin:0 2px 12px">${p.err?`⚠ ${esc(p.err)}`:live?(p.asked?"Checked against your notes — pick whichever is right.":"Reading your notes…"):"Pick whichever is right for each."}</div>
+      ${p.conf.map((c,i)=>`<div class="mg-row">
+        <div class="mg-label">${esc(c.label)}</div>
+        <div class="mg-opts">
+          <button class="mg-opt${c.choose==="a"?" on":""}" data-mgpick="${i}|a">${esc(c.aText||"—")}<i>kept record</i></button>
+          <button class="mg-opt${c.choose==="b"?" on":""}" data-mgpick="${i}|b">${esc(c.bText||"—")}<i>folded in</i></button>
+          <button class="mg-opt${c.choose==="both"?" on":""}" data-mgpick="${i}|both">Keep both<i>the other goes in notes</i></button>
+        </div>
+        ${c.why?`<div class="mg-why">${esc(c.why)}</div>`:""}
+      </div>`).join("")}`
+    :`<div class="sect-note" style="margin:0 2px 12px">These two don't disagree about anything — everything from both records will be kept.</div>`}
+    <div class="mg-keep">Nothing is discarded either way: whatever you don't pick is written into the notes, and every link, note and mention moves across.</div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn primary" style="flex:1" data-act="merge-go">${I.check} Merge</button>
+      <button class="btn ghost" data-act="cancel-editor">Cancel</button>
+    </div>`;
+  if(document.getElementById("mgWrap")) spSetBody(body); else openEditor(`<div id="mgWrap">${body}</div>`);
+}
+function applyMergeReview(){
+  const p=mergePlan; if(!p) return;
+  const keep=entGet("person",p.keepId), drop=entGet("person",p.dropId);
+  if(!keep||!drop) return;
+  const spare=[];
+  p.conf.forEach(c=>{
+    if(c.choose==="b"){ spare.push(`${c.label} (also recorded): ${c.aText}`); keep[c.field]=drop[c.field]; }
+    else if(c.choose==="both"){ spare.push(`${c.label} (also recorded): ${c.bText}`); }
+    else spare.push(`${c.label} (also recorded): ${c.bText}`);
+    c.chosen=true;
+  });
+  if(mergePeople(p.keepId,p.dropId)){
+    if(spare.length) keep.notes=(keep.notes?keep.notes+"\n":"")+spare.join("\n");
+    save(); mergePlan=null; closeEditor(); render(); openEnt("person",p.keepId);
+    toast("Merged — nothing lost");
+  }
+}
 function mergePeople(keepId,dropId){
   const keep=entGet("person",keepId), drop=entGet("person",dropId);
   if(!keep||!drop||keepId===dropId) return false;
@@ -4946,6 +5179,7 @@ function mergePeople(keepId,dropId){
   });
   w.projects.concat(w.systems).forEach(r=>{ if(r.ownerId===dropId) r.ownerId=keepId; });
   if(o.hired&&o.hired.managerId===dropId) o.hired.managerId=keepId;
+  if(o.hired&&o.hired.meId===dropId) o.hired.meId=keepId;
   o.people=(o.people||[]).filter(p=>p.id!==dropId);
   o.updatedAt=Date.now();
   return true;
@@ -5439,7 +5673,7 @@ function whoToAsk(o,q){
   const hit=s=>{ const n=norm(s); return T.filter(t=>n.includes(t)).length; };
   const out=[];
   // never send you to someone who has left — their knowledge is in your notes, not at their desk
-  (o.people||[]).filter(personHere).forEach(p=>{
+  (o.people||[]).filter(p=>personHere(p)&&!isMe(o,p)).forEach(p=>{
     let score=0; const why=[];
     const rel=relatedTo("person",p.id,true);
     rel.forEach(r=>{
@@ -7549,7 +7783,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -7703,6 +7937,14 @@ document.addEventListener("click",e=>{
   if(act==="sync-disconnect"){ if(confirm("Stop using the sync code on this device? Your data stays here; it just stops syncing through the code.")){ delete sync.code; saveSync(); setSyncState(signedIn()?"idle":"off"); openSettings(); } return; }
   if(act==="sync-gencode"){ const f=document.querySelector('#syncCode'); if(f) f.value=randomCode(); return; }
   if(act==="sync-pull"){ pullNow(); return; }
+  if(act==="merge-go"){ applyMergeReview(); return; }
+  if(act==="me-add"){
+    const o=workOp(); if(!o||!o.hired){ toast("Mark a role as hired first"); return; }
+    const me=ensureMe(o); save(); render();
+    toast("You're on the map — open your record to set your manager and department");
+    if(me) openEnt("person",me.id);
+    return;
+  }
   if(act==="obj-run"){ runObjectives(); return; }
   if(act==="ask-clear"){
     const o=workOp(); if(!o) return;
@@ -7848,6 +8090,8 @@ document.addEventListener("click",e=>{
   if(t.dataset.spcrop!==undefined){ openCropper(spShots,+t.dataset.spcrop,spRedrawShots); return; }
   if(t.dataset.capshotdel!==undefined){ capShots.splice(+t.dataset.capshotdel,1); capRedrawShots(); return; }
   if(t.dataset.spshotdel!==undefined){ spShots.splice(+t.dataset.spshotdel,1); spRedrawShots(); return; }
+  if(t.dataset.setme){ const o=opById(entOpId("person",t.dataset.setme)); if(o){ setMe(o,t.dataset.setme); render(); openEnt("person",t.dataset.setme); toast("That's you"); } return; }
+  if(t.dataset.notme){ const o=opById(entOpId("person",t.dataset.notme)); if(o&&o.hired){ delete o.hired.meId; save(); render(); openEnt("person",t.dataset.notme); } return; }
   if(t.dataset.objdone){ objToggle(t.dataset.objdone); return; }
   if(t.dataset.askload){ askLoad(t.dataset.askload); return; }
   if(t.dataset.askdel){ const w=W(); w.asks=w.asks.filter(x=>x.id!==t.dataset.askdel); save(); render(); return; }
@@ -7885,10 +8129,9 @@ document.addEventListener("click",e=>{
     const d=ensureEnt("department",opId,nm,{},"");
     setPersonDept(pid,d.id); return; }
   if(t.dataset.mergewith){ openMergePicker(t.dataset.mergewith); return; }
-  if(t.dataset.mergeinto){ const [keep,drop]=t.dataset.mergeinto.split("|");
-    if(confirm(`Merge "${entLabel("person",drop)}" into "${entLabel("person",keep)}"? Everything moves across and the other record is removed.`)){
-      if(mergePeople(keep,drop)){ save(); closeEditor(); render(); openEnt("person",keep); toast("Merged ✓"); } }
-    return; }
+  if(t.dataset.mergeinto){ const [keep,drop]=t.dataset.mergeinto.split("|"); openMergeReview(keep,drop); return; }
+  if(t.dataset.mgpick){ const [i,ch]=t.dataset.mgpick.split("|");
+    if(mergePlan&&mergePlan.conf[+i]){ mergePlan.conf[+i].choose=ch; renderMergeReview(); } return; }
   if(act==="meeting-prep"){ openMeetingPrep(); return; }
   if(t.dataset.mpprep){ closeEditor(); openMeetingPrep(t.dataset.mpprep); return; }
   if(t.dataset.mp){ const id=t.dataset.mp; mpSel=mpSel.includes(id)?mpSel.filter(x=>x!==id):mpSel.concat(id);

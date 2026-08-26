@@ -1738,7 +1738,7 @@ function vaultErr(status,txt){
    Leave them empty and nothing changes: the app keeps asking each device, as before.
    A project configured ON the device always wins over this, so anyone can point their own copy
    somewhere else without touching the code. */
-const DEFAULT_PROJECT = { url: "", key: "" };
+const DEFAULT_PROJECT = { url: "https://cngufzdyyikbmcmqvibj.supabase.co", key: "" };
 function haveDefaultProject(){ return !!(DEFAULT_PROJECT.url && DEFAULT_PROJECT.key); }
 function loadSync(){
   const s=readLS(SYNC_KEY, SYNC_KEY_OLD);

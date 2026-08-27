@@ -108,6 +108,20 @@ you paste into a new AI chat to prep for interviews.
   so a device that has been syncing for months doesn't wake up unconfigured. The iOS `appId`,
   App Group and `callback://` scheme are **not** renamed — they are the app's identity to Apple.
 - `HELPERS`, `ICONS` (the `I` object), `NAV`, `RENDER ROUTER`.
+- **`listFilter` / `data-lfz` — every list in the app is searchable.** One component, not a search
+  box per renderer: `listFilter(scope,{count,sorts,…})` draws the bar, and any container marked
+  `data-lfz="<scope>"` is filtered. **Matching reads each row's own `textContent`**, so no renderer
+  declares what is searchable and nothing can drift from what you can actually see; every word in
+  the query must match (`"ada fin"` finds Ada Reed in Finance) and `norm()` folds case and accents.
+  Sorting reads `data-s-name`/`data-s-at`/`data-s-n`, which **`entRow` writes for every row**, so
+  each list built from it sorts for free. `lfState` survives a re-render and `lfRefresh()` re-applies
+  after `render()` and `openEditor()`; typing mutates the DOM in place, so the caret never moves.
+  Several zones can share one scope (Knowledge searches all seven kinds); wrap a heading+zone in
+  `data-lfsec` and the whole section leaves when it has no hits, and `data-lfskip` exempts a row.
+  Below `LF_MIN` (7) rows the bar doesn't render — a search box over five things is clutter.
+  **`[hidden]{display:none!important}` is load-bearing**: rows are `display:flex`, which beats the
+  UA's `[hidden]` rule, so without it the filter marks every row hidden and nothing moves. A test
+  that asserts `el.hidden` rather than computed `display` will not catch that.
 - `emptyState()` is the first screen: four **tappable** rows (`.wf` buttons, each with a `data-act`)
   rather than tiles that only describe features — paste a link, add by hand, connect AI, add résumé.
   The last two tick themselves off (`.wf.done`) once `aiEngine()` is live / a résumé exists.
@@ -623,8 +637,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,300 browser
-assertions** across thirty-six Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,360 browser
+assertions** across thirty-seven Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

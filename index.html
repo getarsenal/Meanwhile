@@ -729,6 +729,33 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .wov-cname{flex-basis:42%;max-width:42%}
 }
 
+/* The UA sheet hides [hidden] with display:none, but ANY author display rule beats it — and most
+   rows here are display:flex. Without this the list filter sets .hidden on every non-matching row
+   and nothing moves. It is the one place !important earns its keep. */
+[hidden]{display:none!important}
+/* ---- the search/sort bar that sits above any list ---- */
+.lfilt{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 2px 10px}
+.lf-box{flex:1 1 190px;min-width:0;display:flex;align-items:center;gap:8px;background:var(--panel);
+  border:1px solid var(--line);border-radius:11px;padding:0 10px;transition:.14s}
+.lf-box:focus-within{border-color:var(--accent2);background:var(--panel2)}
+.lf-box>svg{width:15px;height:15px;flex:0 0 15px;color:var(--faint)}
+.lf-input{flex:1 1 0;min-width:0;background:none;border:none;outline:none;color:var(--txt);
+  font:inherit;font-size:13.5px;font-weight:600;padding:9px 0}
+.lf-input::placeholder{color:var(--faint);font-weight:500}
+.lf-clear{flex:0 0 auto;background:none;border:none;cursor:pointer;color:var(--faint);padding:3px;display:grid;place-items:center;border-radius:6px}
+.lf-clear:hover{color:var(--txt);background:var(--panel2)}
+.lf-clear svg{width:13px;height:13px}
+.lf-sorts{display:flex;gap:6px;flex-wrap:wrap}
+.lf-sorts .chip{cursor:pointer;white-space:nowrap}
+.lf-count{flex:0 0 auto;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.lf-none{flex:1 1 100%;font-size:13px;color:var(--muted);padding:14px 2px 4px;text-align:center}
+.lf-reset{background:none;border:none;color:var(--accent3);font:inherit;font-weight:750;cursor:pointer;padding:0 2px}
+/* a filtered tree is a flat list of matches — the indent guides describe a shape that is no
+   longer on screen, so they come off while a search is running */
+[data-lfz].lf-on .ent-row{margin-left:0!important}
+[data-lfz].lf-on .ppl-rail{display:none}
+@media(max-width:430px){ .lf-box{flex-basis:100%} }
+
 .ent-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;cursor:pointer;transition:.12s;min-width:0}
 .ent-row:hover{background:var(--panel2)}
 .ent-row+.ent-row{border-top:1px solid var(--line)}
@@ -1313,7 +1340,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v56 · 2026-08-27";
+const BUILD = "v57 · 2026-08-27";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2211,6 +2238,7 @@ const I = {
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10a2 2 0 0 1 2 2 2 2 0 0 1 2-2h4.5A1.5 1.5 0 0 1 20 5.5v12a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 0 0-2 2 2 2 0 0 0-2-2H5.5A1.5 1.5 0 0 1 4 17.5Z"/><path d="M12 6v14"/></svg>',
   crown:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8.5 6.5 12 12 5l5.5 7L21 8.5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/></svg>',
   map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 3.5-6 2.4V21l6-2.4 6 2.4 6-2.4V3.5L15 5.9Z"/><path d="M9 3.5v15M15 5.9v15"/></svg>',
+  search:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>`,
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>',
 };
 
@@ -2289,6 +2317,7 @@ function render(){
   else if(view==="calendar") c.innerHTML = renderCalendar();
   else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="org") setTimeout(armWorkGraph,0); }
   else if(view==="insights") c.innerHTML = renderInsights(); }
+  lfRefresh();      // a list filter has to survive the re-render that most actions trigger
 }
 /* The Capture button follows you everywhere once you're employed — capture is the whole game
    (see POST-HIRE). Hidden pre-hire so nothing new clutters the job-search app. */
@@ -4682,12 +4711,100 @@ function workOverview(o){
   h+=`<div class="section-head"><h3>Timeline</h3><div class="line"></div></div><div class="card panel">${timelineHTML(o,5)}</div>`;
   return h;
 }
+/* ======================== FILTERABLE LISTS ========================
+   Forty-four people in a merge picker is a scroll-and-squint problem, and the same is true of
+   every other list once you have been somewhere a few months. Rather than bolting a search box
+   onto each renderer, this is one component: a bar, and a container marked `data-lfz`.
+
+   Filtering reads each row's own TEXT, so no renderer has to declare what is searchable and
+   nothing can fall out of sync with what you can actually see. Sorting reads three attributes
+   that `entRow` writes for every row in the app, so every list built from it sorts for free.
+
+   The bar hides itself below LF_MIN rows — a search box over five things is clutter, not help. */
+const LF_MIN = 7;
+let lfState = {};                                   // {scope:{q,sort}} — survives a re-render
+function lfGet(scope){ return lfState[scope] || (lfState[scope]={q:"",sort:""}); }
+function lfSel(scope){ return `[data-lfz="${String(scope).replace(/"/g,"")}"]`; }
+function listFilter(scope,opts){
+  opts=opts||{};
+  const n=+opts.count||0;
+  if(n < (opts.min==null?LF_MIN:opts.min)) return "";
+  const st=lfGet(scope), sorts=opts.sorts||[];
+  if(sorts.length && !st.sort) st.sort=sorts[0].key;
+  return `<div class="lfilt">
+    <div class="lf-box">${I.search}
+      <input class="lf-input" data-lfin="${esc(scope)}" value="${esc(st.q)}" spellcheck="false" autocomplete="off"
+        enterkeyhint="search" aria-label="${esc(opts.placeholder||"Search this list")}"
+        placeholder="${esc(opts.placeholder||("Search "+n+" "+(opts.noun||"items")+"…"))}"/>
+      <button type="button" class="lf-clear" data-lfclear="${esc(scope)}"${st.q?"":" hidden"} aria-label="Clear search">${I.x}</button>
+    </div>
+    ${sorts.length?`<div class="lf-sorts">${sorts.map(s=>
+      `<span class="chip${st.sort===s.key?" tag-chip":""}" data-lfsort="${esc(scope)}|${esc(s.key)}">${esc(s.label)}</span>`).join("")}</div>`:""}
+  </div>`;
+}
+function lfZones(scope){ return [...document.querySelectorAll(lfSel(scope))]; }
+function lfRows(z){ return [...z.children].filter(el=>el.nodeType===1 && el.dataset.lfskip===undefined); }
+// every word has to appear somewhere in the row — "ada fin" finds Ada Reed in Finance
+function lfMatch(hay,terms){ return terms.every(t=>hay.includes(t)); }
+function lfApply(scope){
+  const st=lfGet(scope), zones=lfZones(scope);
+  if(!zones.length) return;
+  const terms=norm(st.q).split(" ").filter(Boolean);
+  let shown=0, total=0;
+  zones.forEach(z=>{
+    let hits=0;
+    lfRows(z).forEach(r=>{
+      total++;
+      const hit=!terms.length || lfMatch(norm(r.dataset.lfText||r.textContent||""),terms);
+      r.hidden=!hit; if(hit){ shown++; hits++; }
+    });
+    z.classList.toggle("lf-on",!!terms.length);      // a filtered tree drops its indent guides
+    // a section that no longer has anything in it gets out of the way, heading and all
+    const sec=z.closest("[data-lfsec]")||null;
+    if(sec) sec.hidden = !!terms.length && !hits;
+    else if(z.dataset.lfhide!==undefined) z.hidden = !!terms.length && !hits;
+  });
+  const inp=document.querySelector(`[data-lfin="${scope}"]`);
+  const clr=document.querySelector(`[data-lfclear="${scope}"]`);
+  if(clr) clr.hidden=!st.q;
+  if(inp){
+    const bar=inp.closest(".lfilt");
+    let none=bar&&bar.querySelector(".lf-none");
+    if(terms.length && !shown){
+      if(!none&&bar){ none=el(`<div class="lf-none"></div>`); bar.appendChild(none); }
+      if(none) none.innerHTML=`Nothing matches “${esc(st.q)}”. <button type="button" class="lf-reset" data-lfclear="${esc(scope)}">Clear</button>`;
+    } else if(none) none.remove();
+    if(bar){ const cnt=bar.querySelector(".lf-count")||bar.appendChild(el(`<div class="lf-count"></div>`));
+      cnt.textContent = terms.length ? `${shown} of ${total}` : ""; }
+  }
+}
+const LF_SORTS={
+  az:      r=>[0, (r.dataset.sName||"")],
+  recent:  r=>[-(+r.dataset.sAt||0), ""],
+  oldest:  r=>[ (+r.dataset.sAt||0), ""],
+  contact: r=>[-(+r.dataset.sN||0), (r.dataset.sName||"")]
+};
+function lfSortNow(scope){
+  const st=lfGet(scope), f=LF_SORTS[st.sort]; if(!f) return;
+  lfZones(scope).forEach(z=>{
+    const rows=lfRows(z);
+    if(rows.length<2) return;
+    rows.map(r=>({r,k:f(r)}))
+      .sort((a,b)=> (a.k[0]-b.k[0]) || String(a.k[1]).localeCompare(String(b.k[1])))
+      .forEach(x=>z.appendChild(x.r));
+  });
+}
+// re-applied after every render, because the view is rebuilt from scratch on most actions
+function lfRefresh(){ Object.keys(lfState).forEach(s=>{ if(lfZones(s).length){ lfSortNow(s); lfApply(s); } }); }
 function entRow(type,rec,opts){
   opts=opts||{};
   const meta=opts.meta!=null?opts.meta:entRowMeta(type,rec);
-  return `<div class="ent-row" data-ent="${type}|${rec.id}">
+  // the three keys every list in the app can sort by, written once, here
+  const nm=entName(type,rec)||"";
+  const n = type==="person" ? personInteractions(rec).length : 0;
+  return `<div class="ent-row" data-ent="${type}|${rec.id}" data-s-name="${esc(norm(nm))}" data-s-at="${+rec.at||0}" data-s-n="${n}">
     ${entIcoHTML(type,rec)}
-    <div class="ent-body"><div class="ent-name">${esc(entName(type,rec))}</div>${meta?`<div class="ent-meta">${esc(meta)}</div>`:""}</div>
+    <div class="ent-body"><div class="ent-name">${esc(nm)}</div>${meta?`<div class="ent-meta">${esc(meta)}</div>`:""}</div>
     ${opts.pill||""}
     ${opts.tail?`<div class="ent-tail" style="display:flex;gap:6px;align-items:center">${opts.tail}</div>`:""}
   </div>`;
@@ -4783,13 +4900,16 @@ function workPeople(o){
   const unfiled=ppl.filter(x=>!x.deptId).length;
   if(depts.length&&unfiled) h+=`<div class="sect-note" style="margin-top:-4px">${unfiled} ${unfiled===1?"person isn't":"people aren't"} in a department yet — open anyone and tap their department to set it.</div>`;
   if(!linked&&ppl.length>1) h+=`<div class="sect-note" style="margin-top:-4px">Open anyone and set their manager — they'll stack up underneath them here, and on the map.</div>`;
-  h+=`<div class="card panel" style="padding:5px">${rows.map(r=>pplRow(r.p,r.depth,r.anc,r.reports)).join("")}</div>`;
+  // search only — this list IS the reporting order, so offering to re-sort it would scramble the
+  // one thing it exists to show. While a search runs the indent guides come off (see .lf-on).
+  h+= listFilter("wpeople",{count:ppl.length,noun:"people",placeholder:`Search ${ppl.length} people, titles, departments…`});
+  h+=`<div class="card panel" data-lfz="wpeople" style="padding:5px">${rows.map(r=>pplRow(r.p,r.depth,r.anc,r.reports)).join("")}</div>`;
   /* People who've left keep their record — the notes and citations still point at them — but they
      come off the reporting tree, because showing a predecessor under your manager is a lie about
      how the place works today. Same rule as the org chart. */
   if(gone.length){
-    h+=`<div class="ppl-gone-head">No longer here</div>
-      <div class="card panel ppl-gone" style="padding:5px">${gone.map(p=>pplRow(p,0,[],0)).join("")}</div>`;
+    h+=`<div data-lfsec><div class="ppl-gone-head">No longer here</div>
+      <div class="card panel ppl-gone" data-lfz="wpeople" style="padding:5px">${gone.map(p=>pplRow(p,0,[],0)).join("")}</div></div>`;
   }
   h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
     <button class="btn ghost sm" data-act="meeting-prep">${I.cal} Prep for a meeting</button>
@@ -4900,26 +5020,38 @@ function workOrg(o){
 function workSimpleList(o,type,note){
   const list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
   let h=`<div class="sect-note">${esc(note)}</div>`;
+  h+= listFilter("w-"+type,{count:list.length,noun:ENT[type].plural.toLowerCase(),
+    sorts:[{key:"recent",label:"Newest"},{key:"az",label:"A–Z"},{key:"oldest",label:"Oldest"}]});
   h+= list.length
-    ? `<div class="card panel" style="padding:5px">${list.map(r=>entRow(type,r,{pill:type==="project"?projPill(r.status):type==="problem"?probPill(r.status):""})).join("")}</div>`
+    ? `<div class="card panel" data-lfz="w-${type}" style="padding:5px">${list.map(r=>entRow(type,r,{pill:type==="project"?projPill(r.status):type==="problem"?probPill(r.status):""})).join("")}</div>`
     : `<div class="card panel"><div class="ent-empty">Nothing here yet — capture a note and anything relevant lands here automatically.</div></div>`;
   h+=`<button class="add-sub" data-entadd="${type}" style="margin-top:12px">＋ Add ${esc(ENT[type].label.toLowerCase())}</button>`;
   return h;
 }
 function workKnowledge(o){
+  const TYPES=[["bite","Small true things you'd otherwise forget — what a name used to mean, an unwritten rule, a number."],
+   ["info","Products, meetings, acronyms — the things you have to just know."],["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["capture","Everything you've captured."]];
+  // one search across all seven kinds — you rarely remember which drawer you filed something in
+  const q=lfGet("knowledge").q;
+  const total=TYPES.reduce((n,[type])=>n+wOf(ENT[type].list,o.id).length,0);
   let h=`<div class="sect-note">What you know about this place: the things to look up, the tools you depend on, how work gets done and why. <span data-wtab="org" style="color:var(--accent3);cursor:pointer;font-weight:700">The org map moved to Departments →</span></div>`;
-  [["bite","Small true things you'd otherwise forget — what a name used to mean, an unwritten rule, a number."],
-   ["info","Products, meetings, acronyms — the things you have to just know."],["question","The things you still don't know."],["system","Tools you depend on and who owns them."],["process","How work actually gets done."],["decision","Why things are the way they are."],["capture","Everything you've captured."]].forEach(([type,note])=>{
+  h+= listFilter("knowledge",{count:total,noun:"things",placeholder:`Search everything you know — ${total} things…`,
+    sorts:[{key:"recent",label:"Newest"},{key:"az",label:"A–Z"},{key:"oldest",label:"Oldest"}]});
+  TYPES.forEach(([type,note])=>{
     let list=wOf(ENT[type].list,o.id).slice().sort((a,b)=>b.at-a.at);
     if(type==="question") list=list.sort((a,b)=>(a.status==="Open"?0:1)-(b.status==="Open"?0:1)||b.at-a.at);
+    // the notes list is capped for browsing, but a search should reach all of them
+    const cap = q ? 400 : (type==="capture"?12:50);
+    h+=`<div data-lfsec>`;
     h+=`<div class="section-head"><h3>${esc(ENT[type].plural)}</h3><div class="line"></div>${list.length?`<span class="tag">${list.length}</span>`:""}</div>`;
     h+= list.length
-      ? `<div class="card panel" style="padding:5px">${list.slice(0,type==="capture"?12:50).map(r=>entRow(type,r,{
+      ? `<div class="card panel" data-lfz="knowledge" style="padding:5px">${list.slice(0,cap).map(r=>entRow(type,r,{
           pill:type==="question"?statusPill(r.status,{Open:"#c6a45c",Answered:"#4ea381",Dismissed:"#7c828f"}[r.status]||"#7c828f"):"",
           tail:type==="question"&&r.status==="Open"?`<button class="btn sm ghost" data-qstat="${r.id}|Answered" title="Mark answered">✓</button>`:""
         })).join("")}</div>`
-      : `<div class="card panel"><div class="ent-empty">${esc(note)}</div></div>`;
+      : `<div class="card panel" data-lfz="knowledge"><div class="ent-empty" data-lfskip>${esc(note)}</div></div>`;
     if(type!=="capture") h+=`<button class="add-sub" data-entadd="${type}" style="margin-top:10px">＋ Add ${esc(ENT[type].label.toLowerCase())}</button>`;
+    h+=`</div>`;
   });
   return h;
 }
@@ -4978,7 +5110,9 @@ function openWorksWithPicker(personId){
       <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
   <div class="sect-note">Meanwhile already draws a dashed line when two people keep appearing on the same work. Add one here to state it outright — it shows on the map and on both their records.</div>
-  ${others.length?`<div class="card panel" style="padding:5px;max-height:320px;overflow:auto">${
+  ${listFilter("wwpick",{count:others.length,noun:"people",
+    sorts:[{key:"contact",label:"Most contact"},{key:"az",label:"A–Z"}]})}
+  ${others.length?`<div class="card panel" data-lfz="wwpick" style="padding:5px;max-height:min(46vh,320px);overflow:auto">${
     others.map(x=>entRow("person",x,{tail:`<button class="btn sm ghost" data-workswith="${personId}|${x.id}">${linked.has(x.id)?"✓ Linked":"Link"}</button>`})).join("")}</div>`
     :`<div class="ent-empty">Nobody else recorded here yet.</div>`}`);
 }
@@ -5215,7 +5349,9 @@ function pickPersonThen(title,note,fn){
     <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${esc(title)}</h2>
       <div style="font-size:12.5px;color:var(--faint)">${esc(note)}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-  <div class="card panel" style="padding:5px;max-height:340px;overflow:auto">${
+  ${listFilter("pickperson",{count:ppl.length,noun:"people",
+    sorts:[{key:"contact",label:"Most contact"},{key:"az",label:"A–Z"},{key:"recent",label:"Newest"}]})}
+  <div class="card panel" data-lfz="pickperson" style="padding:5px;max-height:min(48vh,340px);overflow:auto">${
     ppl.map(p=>entRow("person",p,{tail:`<button class="btn sm ghost" data-pickperson="${p.id}">Pick</button>`})).join("")}</div>`);
 }
 /* Said once, on the map, instead of a paragraph of instructions under it. */
@@ -5795,8 +5931,9 @@ function openDeptPicker(personId){
     <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Which department?</h2>
       <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-  <div class="dept-strip">${depts.map(d=>`<span class="dept-pill${p.deptId===d.id?" add":""}" data-pickdept="${personId}|${d.id}">${esc(d.name)}${p.deptId===d.id?" ✓":""}</span>`).join("")}
-    ${p.deptId?`<span class="dept-pill" data-pickdept="${personId}|">Clear</span>`:""}</div>
+  ${listFilter("deptpick",{count:depts.length,noun:"departments",min:10})}
+  <div class="dept-strip" data-lfz="deptpick">${depts.map(d=>`<span class="dept-pill${p.deptId===d.id?" add":""}" data-s-name="${esc(norm(d.name||""))}" data-pickdept="${personId}|${d.id}">${esc(d.name)}${p.deptId===d.id?" ✓":""}</span>`).join("")}
+    ${p.deptId?`<span class="dept-pill" data-lfskip data-pickdept="${personId}|">Clear</span>`:""}</div>
   <div class="form-row" style="margin-top:6px"><label>Or add a new one</label>
     <div style="display:flex;gap:8px"><input id="newDept" placeholder="Finance" autocomplete="off"/>
     <button class="btn ghost" data-newdept="${personId}">＋ Add</button></div></div>`);
@@ -5811,7 +5948,9 @@ function openMgrPicker(personId){
     <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Who do they report to?</h2>
       <div style="font-size:12.5px;color:var(--faint)">${esc(p.name)}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-  ${others.length?`<div class="card panel" style="padding:5px;max-height:300px;overflow:auto">${
+  ${listFilter("mgrpick",{count:others.length,noun:"people",
+    sorts:[{key:"contact",label:"Most contact"},{key:"az",label:"A–Z"}]})}
+  ${others.length?`<div class="card panel" data-lfz="mgrpick" style="padding:5px;max-height:min(46vh,300px);overflow:auto">${
     others.map(x=>entRow("person",x,{tail:cur===x.id?`<span class="st-pill" style="background:rgba(78,163,129,.18);color:var(--good)">current</span>`:`<button class="btn sm ghost" data-pickmgr="${personId}|${x.id}">Pick</button>`})).join("")}</div>`
     :`<div class="ent-empty">Nobody else recorded here yet.</div>`}
   ${cur?`<button class="btn ghost sm" data-pickmgr="${personId}|" style="margin-top:10px">Clear reporting line</button>`:""}
@@ -5948,7 +6087,9 @@ function openMergePicker(keepId){
       <div style="font-size:12.5px;color:var(--faint)">Fold another record into ${esc(keep.name)}</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
   <div class="sect-note">Everything from the record you pick — notes, expertise, connections and the notes that mention them — moves onto <b>${esc(keep.name)}</b>. The other record goes away.</div>
-  <div class="card panel" style="padding:5px">${others.map(p=>{
+  ${listFilter("merge",{count:others.length,noun:"people",placeholder:`Search ${others.length} people…`,
+    sorts:[{key:"",label:"Likeliest"},{key:"az",label:"A–Z"},{key:"contact",label:"Most contact"},{key:"recent",label:"Newest"}]})}
+  <div class="card panel" data-lfz="merge" style="padding:5px;max-height:min(52vh,420px);overflow:auto">${others.map(p=>{
     const likely=personMatch(p.name,keep.name)>0;
     return entRow("person",p,{tail:`${likely?`<span class="st-pill" style="background:rgba(198,164,92,.18);color:var(--warn)">likely</span>`:""}<button class="btn sm ghost" data-mergeinto="${keepId}|${p.id}">Merge in</button>`});
   }).join("")}</div>`);
@@ -5969,8 +6110,9 @@ function meetingPrepBody(){
     <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Prep for a meeting</h2>
       <div style="font-size:12.5px;color:var(--faint)">Who are you seeing?</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
-  <div class="card panel" style="padding:5px;max-height:230px;overflow:auto">${
-    ppl.length?ppl.map(p=>`<div class="rev-item ${mpSel.includes(p.id)?"":"off"}" style="background:transparent;border:none;padding:7px 6px;margin:0">
+  ${listFilter("mprep",{count:ppl.length,noun:"people"})}
+  <div class="card panel" data-lfz="mprep" style="padding:5px;max-height:min(40vh,260px);overflow:auto">${
+    ppl.length?ppl.map(p=>`<div class="rev-item ${mpSel.includes(p.id)?"":"off"}" data-s-name="${esc(norm(p.name||""))}" data-s-at="${+p.at||0}" style="background:transparent;border:none;padding:7px 6px;margin:0">
       <span class="rev-cb ${mpSel.includes(p.id)?"on":""}" data-mp="${p.id}">${I.check}</span>
       <div class="rev-b" data-mp="${p.id}" style="cursor:pointer"><div class="rev-n">${esc(p.name)}</div>
       <div class="rev-m">${esc([p.title,p.deptId?entLabel("department",p.deptId):""].filter(Boolean).join(" · "))}</div></div></div>`).join("")
@@ -6738,14 +6880,15 @@ function prepBankBody(){
     <div><h2 style="margin:0;font-size:18px;font-weight:850">Prep bank</h2><div style="font-size:12px;color:var(--faint)">Reusable stories &amp; questions — feeds your AI prep</div></div>
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
-  <div class="rs-sec">⭐ STAR stories</div>
+  ${listFilter("prepbank",{count:stories.length+qs.length,noun:"entries",placeholder:"Search stories and questions…"})}
+  <div data-lfsec><div class="rs-sec">⭐ STAR stories</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Bank your best accomplishment stories once — AI pulls them into behavioral answers for every interview.</div>
-  ${stories.length?stories.map(sCard).join(""):`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No stories yet.</div>`}
-  <button class="btn ghost sm" data-act="story-add" style="margin-bottom:6px">＋ Add story</button>
-  <div class="rs-sec">❓ Questions they've asked</div>
+  ${stories.length?`<div data-lfz="prepbank">${stories.map(sCard).join("")}</div>`:`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No stories yet.</div>`}
+  <button class="btn ghost sm" data-act="story-add" style="margin-bottom:6px">＋ Add story</button></div>
+  <div data-lfsec><div class="rs-sec">❓ Questions they've asked</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Log questions you get asked (and your answer) to build a personal question bank.</div>
-  ${qs.length?qs.map(qCard).join(""):`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No questions yet.</div>`}
-  <button class="btn ghost sm" data-act="q-add">＋ Add question</button>`;
+  ${qs.length?`<div data-lfz="prepbank">${qs.map(qCard).join("")}</div>`:`<div style="font-size:12px;color:var(--faint);margin-bottom:8px">No questions yet.</div>`}
+  <button class="btn ghost sm" data-act="q-add">＋ Add question</button></div>`;
 }
 function storyForm(s){ s=s||{};
   return `<h2 style="margin:0 0 14px;font-size:18px;font-weight:850">${s.id?"Edit story":"Add a STAR story"}</h2>
@@ -6840,6 +6983,7 @@ function openEditor(html){
   // nothing to lose; if there is, it asks. The ✕ and Cancel buttons still close outright.
   editorEl.addEventListener("click",e=>{ if(e.target===editorEl) tryCloseEditor(); });
   snapshotEditor();
+  lfRefresh();       // a picker opened over a filtered list keeps its search
   const f=editorEl.querySelector("input,textarea,select"); if(f) setTimeout(()=>f.focus(),50);
 }
 // remember what every field looked like when the screen appeared, so "changed" means changed
@@ -8534,7 +8678,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -8597,6 +8741,14 @@ document.addEventListener("click",e=>{
     return;
   }
   if(act==="work-add"){ openAddRecord(); return; }
+  if(t.dataset.lfclear){ const sc=t.dataset.lfclear; lfGet(sc).q="";
+    const inp=document.querySelector(`[data-lfin="${sc}"]`); if(inp){ inp.value=""; inp.focus(); }
+    lfApply(sc); return; }
+  if(t.dataset.lfsort){ const [sc,key]=t.dataset.lfsort.split("|");
+    lfGet(sc).sort=key;
+    const bar=t.closest(".lf-sorts");
+    if(bar) bar.querySelectorAll("[data-lfsort]").forEach(c=>c.classList.toggle("tag-chip",c.dataset.lfsort===t.dataset.lfsort));
+    lfSortNow(sc); lfApply(sc); return; }
   if(t.dataset.toastAct){ const el=$("#toast"); if(el) el.classList.remove("show"); undoLast(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
   if(t.dataset.mode){ setAppMode(t.dataset.mode); openSettings(); toast("Switched to "+(APP_MODES.find(x=>x.id===t.dataset.mode)||{}).label); return; }
@@ -8943,6 +9095,23 @@ document.addEventListener("keydown",e=>{
   else if($("#drawer").classList.contains("show")) closeDrawer();
 });
 
+/* Typing in a list filter never re-renders — the DOM is mutated in place, so the caret, the
+   scroll position and any half-finished form around it all survive. */
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(!t||!t.dataset||!t.dataset.lfin) return;
+  lfGet(t.dataset.lfin).q=t.value;
+  lfApply(t.dataset.lfin);
+});
+// Escape clears the filter before it closes anything — one press to see the whole list again
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(e.key!=="Escape"||!t||!t.dataset||!t.dataset.lfin) return;
+  const st=lfGet(t.dataset.lfin);
+  if(!st.q) return;
+  e.stopPropagation(); e.preventDefault();
+  st.q=""; t.value=""; lfApply(t.dataset.lfin);
+});
 // stage select in drawer footer
 document.addEventListener("change",e=>{
   // picking "＋ New …" in any entity picker opens an inline name field instead of sending you away

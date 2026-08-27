@@ -324,8 +324,13 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .tl-legend i.lg.offer{border:none;color:var(--warn);width:auto;height:auto;font-size:12px}
 .tl-nowkey:before{content:"";width:0;height:13px;border-left:1.5px dashed var(--accent2);margin-right:4px}
 .tl-axis{position:relative;height:18px;margin:0 11px 8px;border-bottom:1px solid var(--line)}
-.tl-tick{position:absolute;top:1px;transform:translateX(-50%);font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
-.tl-tick:after{content:"";position:absolute;left:50%;top:16px;width:1px;height:5px;background:var(--line)}
+/* The tick is a zero-width anchor ON the date; only the label inside it moves, so an end-of-axis
+   month can align inward without dragging its mark off the point it labels. */
+.tl-tick{position:absolute;top:1px;width:0;height:0}
+.tl-tick>span{position:absolute;left:0;top:0;transform:translateX(-50%);font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+.tl-tick.at-start>span{transform:none}
+.tl-tick.at-end>span{transform:translateX(-100%)}
+.tl-tick:after{content:"";position:absolute;left:0;top:16px;width:1px;height:5px;background:var(--line)}
 /* Everything plotted at 0–100% — dots, labels, the today line — is centred on its point, so both
    ends overhang. Inset the whole plotting area by that overhang, in one place, so they stay
    aligned with each other and inside the card. */
@@ -400,10 +405,46 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ai-box .ai-head svg{width:18px;height:18px;color:var(--accent3)}
 .ai-pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;color:var(--muted);white-space:pre-wrap;max-height:260px;overflow:auto;margin-bottom:10px}
 
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel2);border:1px solid var(--line2);color:var(--txt);
-  padding:12px 18px;border-radius:12px;font-weight:700;font-size:13.5px;box-shadow:var(--shadow);z-index:200;opacity:0;pointer-events:none;transition:.25s;display:flex;align-items:center;gap:9px}
+/* A toast is a glance, not a document. Without a cap a raw provider error stretched to the full
+   width of the phone and grew into a wall of JSON — so it is bounded in both directions, the text
+   is left-aligned like a sentence, and the icon holds its size instead of being squashed. */
+.toast{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--panel2);border:1px solid var(--line2);color:var(--txt);width:max-content;max-width:min(430px,calc(100vw - 28px));
+  padding:12px 16px;border-radius:13px;font-weight:650;font-size:13.5px;line-height:1.5;text-align:left;
+  box-shadow:var(--shadow);z-index:200;opacity:0;pointer-events:none;display:flex;align-items:flex-start;gap:10px;
+  transition:opacity .25s,transform .25s}   /* NOT `all` — that animates the width on a rotate/resize */
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast svg{width:17px;height:17px;color:var(--good)}
+.toast svg{width:17px;height:17px;flex:0 0 17px;margin-top:1px;color:var(--good)}
+.toast span{min-width:0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.toast.bad{border-color:rgba(208,107,107,.5);background:linear-gradient(160deg,rgba(208,107,107,.15),var(--panel2))}
+.toast.bad svg{color:var(--bad)}
+
+/* A destructive choice: one button per outcome, each saying what it does. Above the sign-in gate. */
+.choice-wrap{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,4,9,.72);backdrop-filter:blur(7px);
+  padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom));overflow:auto}
+.choice-card{background:var(--panel);border:1px solid var(--line2);border-radius:20px;padding:22px 20px 18px;
+  width:100%;max-width:430px;box-shadow:0 30px 70px rgba(0,0,0,.6);margin:auto}
+.choice-card h3{margin:0 0 8px;font-size:19px;font-weight:850;letter-spacing:-.02em}
+.choice-card p{margin:0 0 16px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.choice-opts{display:flex;flex-direction:column;gap:9px}
+.choice-opt{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:14px;padding:13px 15px;cursor:pointer;color:var(--txt);font:inherit;transition:.14s}
+.choice-opt:hover{border-color:var(--accent2);transform:translateY(-1px)}
+.choice-opt .co-l{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em}
+.choice-opt .co-n{display:block;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.choice-opt.primary{border-color:rgba(94,106,210,.55);background:linear-gradient(150deg,rgba(94,106,210,.2),var(--panel2))}
+.choice-opt.danger{border-color:rgba(208,107,107,.4)}
+.choice-opt.danger:hover{border-color:rgba(208,107,107,.75)}
+.choice-opt.danger .co-n{color:var(--bad)}
+.choice-foot{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:15px}
+.choice-note{font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:11px;text-align:right}
+@media(max-width:420px){
+  .choice-card{padding:19px 16px 15px}
+  .choice-foot{justify-content:stretch}
+  .choice-foot .btn{flex:1 1 auto;justify-content:center}
+  .choice-note{text-align:left}
+}
 
 .detail-hero{display:flex;align-items:center;gap:14px;margin-bottom:6px}
 .detail-hero .fav{width:48px;height:48px;border-radius:13px;flex:0 0 48px;display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;overflow:hidden}
@@ -1265,7 +1306,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v54 · 2026-08-25";
+const BUILD = "v55 · 2026-08-27";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1685,6 +1726,43 @@ async function vaultPut(doc,rev){
     body:JSON.stringify({user_id:session.uid,doc,rev:+rev||0,updated_at:new Date().toISOString()})});
   if(!res.ok) throw new Error(vaultErr(res.status,(await res.text()).slice(0,160)));
 }
+/* A choice that can destroy data does not belong in confirm(). Two buttons force one of the two
+   outcomes onto the word "Cancel", and the instinct on a dialog you don't understand is to press
+   Cancel — which here meant "overwrite my account". So: every outcome gets its own button that
+   says what it does, Cancel means nothing happens, and the way to be sure (take a backup first)
+   is in the dialog rather than in a sentence telling you to go and find it.
+   Sits above the sign-in gate (z-index 300), because that is where it is usually shown. */
+function askChoice(o){
+  return new Promise(resolve=>{
+    const kill=v=>{ try{ wrap.remove(); }catch(e){} document.removeEventListener("keydown",onKey,true); resolve(v); };
+    const onKey=e=>{ if(e.key==="Escape"){ e.stopPropagation(); e.preventDefault(); kill(null); } };
+    const wrap=el(`<div class="choice-wrap" role="dialog" aria-modal="true" aria-label="${esc(o.title||"Choose")}">
+      <div class="choice-card">
+        <h3>${esc(o.title||"")}</h3>
+        ${o.body?`<p>${esc(o.body)}</p>`:""}
+        <div class="choice-opts">${(o.options||[]).map((x,i)=>`
+          <button type="button" class="choice-opt${x.kind?" "+esc(x.kind):""}" data-i="${i}">
+            <span class="co-l">${esc(x.label)}</span>
+            ${x.note?`<span class="co-n">${esc(x.note)}</span>`:""}
+          </button>`).join("")}</div>
+        <div class="choice-foot">
+          ${o.backup?`<button type="button" class="btn ghost sm" data-backup="1">${I.copy} Export a backup first</button>`:""}
+          <button type="button" class="btn ghost sm" data-cancel="1">${esc(o.cancelLabel||"Cancel")}</button>
+        </div>
+        ${o.cancelNote?`<div class="choice-note">${esc(o.cancelNote)}</div>`:""}
+      </div></div>`);
+    wrap.addEventListener("click",e=>{
+      const b=e.target.closest("button"); if(!b) return;
+      e.preventDefault(); e.stopPropagation();
+      if(b.dataset.backup){ exportData(); return; }        // stays open — taking a backup isn't a choice
+      if(b.dataset.cancel){ kill(null); return; }
+      const x=(o.options||[])[+b.dataset.i]; kill(x?x.id:null);
+    },true);
+    document.addEventListener("keydown",onKey,true);
+    document.body.appendChild(wrap);
+    const first=wrap.querySelector(".choice-opt"); if(first) first.focus();
+  });
+}
 /* Signing in on a device that already has notes is the one moment sync can destroy something.
    Last-write-wins is right for the same person's two devices; it is NOT right the first time two
    real datasets meet. So when both sides have something, ask — and name what each side is. */
@@ -1698,13 +1776,29 @@ async function afterSignIn(){
     lockedBlob=doc; remoteLocked=true; renderLockGate(); return "locked";
   }
   if(doc && remoteN && localN){
-    const takeCloud = confirm(
-      `This device has ${localN} ${localN===1?"role":"roles"} on it, and your account has ${remoteN}.\n\n`+
-      `OK — use your account's data (this device's copy is replaced)\n`+
-      `Cancel — upload this device's data (your account's copy is replaced)\n\n`+
-      `Either way, export a backup first if you're unsure.`);
-    if(takeCloud){ state=migrate(doc); persist(); adoptSyncedAI(); }
-    else { await pushNow(); }
+    const r=(n,w)=>`${n} ${n===1?w:w+"s"}`;
+    const pick = await askChoice({
+      title:"Two sets of notes",
+      body:`This device has ${r(localN,"role")} on it. Your account has ${r(remoteN,"role")}. Only one of them can be kept — pick which.`,
+      options:[
+        {id:"cloud", kind:"primary", label:"Keep what's in my account",
+         note:`The ${r(localN,"role")} on this device ${localN===1?"is":"are"} replaced.`},
+        {id:"local", kind:"danger", label:"Keep what's on this device",
+         note:`The ${r(remoteN,"role")} in your account ${remoteN===1?"is":"are"} replaced, on every device.`}
+      ],
+      backup:true,
+      cancelLabel:"Cancel — don't sign in",
+      cancelNote:"Cancelling changes nothing: this device keeps its notes and your account keeps its own."
+    });
+    if(pick==="cloud"){ state=migrate(doc); persist(); adoptSyncedAI(); }
+    else if(pick==="local"){ await pushNow(); }
+    else {
+      // Cancel has to be genuinely safe. Staying signed in would let the very next save() push this
+      // device over the account, which is the outcome they just declined — so end the session and
+      // leave both sides exactly as they were.
+      clearSession(); setSyncState("idle");
+      return "cancelled";
+    }
   } else if(doc && remoteN){
     state=migrate(doc); persist(); adoptSyncedAI();
   } else {
@@ -2690,7 +2784,12 @@ function renderTimeline(){
   let ticks="", cur=new Date(new Date(min).getFullYear(), new Date(min).getMonth(), 1);
   if(cur.getTime()<min) cur=new Date(cur.getFullYear(), cur.getMonth()+1, 1);
   while(cur.getTime()<=max){
-    ticks+=`<div class="tl-tick" style="left:${X(cur.getTime())}%"><span>${cur.toLocaleDateString(undefined,{month:'short'})}${cur.getMonth()===0?" '"+String(cur.getFullYear()).slice(2):""}</span></div>`;
+    // The tick MARK sits exactly on its date; the label is what would hang off the ends, so the
+    // first and last ones align inward instead of centring. Insetting the axis is not an option —
+    // it would slide the months out of line with the dots they label.
+    const pct=X(cur.getTime());
+    const edge = pct<7 ? " at-start" : pct>93 ? " at-end" : "";
+    ticks+=`<div class="tl-tick${edge}" style="left:${pct}%"><span>${cur.toLocaleDateString(undefined,{month:'short'})}${cur.getMonth()===0?" '"+String(cur.getFullYear()).slice(2):""}</span></div>`;
     cur=new Date(cur.getFullYear(), cur.getMonth()+1, 1);
   }
 
@@ -7048,6 +7147,12 @@ async function finishSignIn(){
   try{
     const r=await afterSignIn();
     if(r==="locked"){ closeAuthGate(); return; }   // the unlock screen is up; it takes it from here
+    if(r==="cancelled"){                            // they backed out of the two-datasets choice
+      acctBusy(false); acctReset("Sign in");
+      if(authGateUp()) authSet("signin"); else { render(); openSettings(); }
+      toast("Signed out again — nothing was changed on either side");
+      return;
+    }
     if(authGateUp()){ closeAuthGate(); render(); toast("Signed in as "+(session.email||"you")); return; }
     render(); openSettings();
     toast("Signed in as "+(session.email||"you"));
@@ -7305,25 +7410,76 @@ function groqUsable(ids){
 function groqCached(){ try{ return groqUsable(JSON.parse(localStorage.getItem("meanwhile_groq_models")||"[]")); }catch(e){ return []; } }
 /* The multimodal ones, picked from the RAW catalogue — groqUsable() deliberately drops anything
    named "vision" from the chat list, which is exactly the model we want when there's a photo. */
-const GROQ_VISION=/scout|maverick|vision|llava|multimodal/i;
+const GROQ_VISION=/scout|maverick|vision|llava|multimodal|llama-4|qwen.*vl|pixtral|gemma-3/i;
 function groqVision(){
   let raw=[]; try{ raw=JSON.parse(localStorage.getItem("meanwhile_groq_models")||"[]")||[]; }catch(e){}
   return raw.filter(id=>id&&GROQ_VISION.test(id)&&!/whisper|tts|guard|embed/i.test(id));
 }
 /* Ask the key what it can run. Cached for a day so it costs one call, not one per request. */
+let groqDiscoverFailed=false;
 async function groqDiscover(force){
   const K="meanwhile_groq_models", T="meanwhile_groq_models_at";
   const age=Date.now()-(+localStorage.getItem(T)||0);
   if(!force && age<864e5){ const c=groqCached(); if(c.length) return c; }
   try{
     const r=await fetch("https://api.groq.com/openai/v1/models",{headers:{Authorization:"Bearer "+aiKey()}});
-    if(!r.ok) return groqCached();
+    if(!r.ok){ groqDiscoverFailed=true; return groqCached(); }
     const j=await r.json();
     const ids=(j.data||[]).map(m=>m.id).filter(Boolean);
-    if(!ids.length) return groqCached();
+    groqDiscoverFailed=false;
+    if(!ids.length) return groqCached();     // reached them; they just listed nothing
     try{ localStorage.setItem(K,JSON.stringify(ids)); localStorage.setItem(T,String(Date.now())); }catch(e){}
     return groqUsable(ids);
-  }catch(e){ return groqCached(); }
+  }catch(e){ groqDiscoverFailed=true; return groqCached(); }
+}
+/* Gemini retires model names on its own schedule too, and a hard-coded chain dies exactly the way
+   Groq's did: a 404 naming a model the user never chose ("gemini-2.0-flash-lite is no longer
+   available"). So the catalogue comes from the key, not from us. The list endpoint says which
+   models the key may call AND which of them support generateContent, which is better evidence than
+   Groq gives us — no name-guessing needed. GEM_PREF is only the tie-breaker. */
+const GEM_PREF=[/flash-lite/i,/flash/i,/pro/i];
+// embeddings, image/video/audio generators and the answer-attribution model all reject a chat call
+const GEM_SKIP=/embed|aqa|imagen|veo|tts|image-generation|native-audio|live-|learnlm/i;
+function gemRank(id){
+  const i=GEM_PREF.findIndex(rx=>rx.test(id));
+  const gen=/gemini-(\d+(?:\.\d+)?)/i.exec(id);
+  // newest generation first, then cheapest/fastest family, then stable over preview
+  return [ -(gen?parseFloat(gen[1]):0), i<0?GEM_PREF.length:i, /preview|exp|latest/i.test(id)?1:0, id ];
+}
+function gemUsable(ids){
+  return (ids||[]).filter(id=>id&&!GEM_SKIP.test(id)&&/gemini/i.test(id))
+    .sort((a,b)=>{ const x=gemRank(a),y=gemRank(b);
+      for(let i=0;i<x.length;i++){ if(x[i]<y[i]) return -1; if(x[i]>y[i]) return 1; } return 0; });
+}
+function gemCached(){ try{ return gemUsable(JSON.parse(localStorage.getItem("meanwhile_gem_models")||"[]")); }catch(e){ return []; } }
+let gemDiscoverFailed=false;
+async function gemDiscover(force){
+  const K="meanwhile_gem_models", T="meanwhile_gem_models_at";
+  const age=Date.now()-(+localStorage.getItem(T)||0);
+  if(!force && age<864e5){ const c=gemCached(); if(c.length) return c; }
+  try{
+    const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key="+encodeURIComponent(aiKey()));
+    if(!r.ok){ gemDiscoverFailed=true; return gemCached(); }
+    const j=await r.json();
+    const ids=(j.models||[])
+      .filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent"))
+      .map(m=>String(m.name||"").replace(/^models\//,"")).filter(Boolean);
+    // reached them and they listed nothing usable is NOT the same as not reaching them
+    gemDiscoverFailed=false;
+    if(!ids.length) return gemCached();
+    try{ localStorage.setItem(K,JSON.stringify(ids)); localStorage.setItem(T,String(Date.now())); }catch(e){}
+    return gemUsable(ids);
+  }catch(e){ gemDiscoverFailed=true; return gemCached(); }
+}
+/* Providers answer with a JSON envelope; a toast is not the place for it. Pull out the sentence
+   the provider actually wrote and leave the braces behind. */
+function apiErrText(body){
+  const s=String(body||"").trim();
+  try{ const j=JSON.parse(s); const m=(j.error&&(j.error.message||j.error.status))||j.message||j.detail;
+    if(m) return String(m).replace(/\s+/g," ").trim().slice(0,200); }catch(e){}
+  const m=/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(s);
+  if(m) return m[1].replace(/\\"/g,'"').replace(/\s+/g," ").trim().slice(0,200);
+  return s.replace(/\s+/g," ").slice(0,160);
 }
 function engineIsFree(e){ return FREE_ENGINES.includes(e||aiCfg.engine||"google"); }
 // the key in play: this device's, or the synced one if this device hasn't got its own
@@ -7475,30 +7631,37 @@ async function aiCall(prompt, doc, opts){
         tried.push(model);
         res=await attempt(model);
         if(res.ok) return true;
-        lastStatus=res.status; lastErr=(await res.text()).slice(0,200);
+        lastStatus=res.status; lastErr=(await res.text()).slice(0,600);   // enough to still parse
         if(![404,400].includes(res.status)) return false;   // a real error, not a dead model name
       }
       return false;
     };
+    groqDiscoverFailed=false;     // same: this call reports on itself, not on the last one
     // a photo needs a multimodal model, which is a different (and smaller) set than the chat one
     let cands=[aiCfg.model, ...groqCached(), ...GROQ_PREF];
     if(imgs.length){
       let vis=groqVision(); if(!vis.length){ await groqDiscover(true); vis=groqVision(); }
-      if(!vis.length) throw new Error("This Groq key has no model that can read pictures right now. Gemini's free tier can — switch the engine in AI settings.");
-      cands=vis;
+      // Whether a model reads pictures is a guess from its NAME — Groq's catalogue doesn't say. So
+      // never refuse on that guess: if nothing looks multimodal, send the picture to the best chat
+      // models anyway and let the API answer. A 400 from Groq is evidence; our regex isn't.
+      cands = vis.length ? vis : [aiCfg.model, ...groqCached(), ...GROQ_PREF];
     }
     let done=await run(cands);
     // everything we knew about is gone — re-read the catalogue once and try what it says
     if(!done && [404,400].includes(lastStatus)){
       await groqDiscover(true);
-      const fresh = imgs.length ? groqVision() : groqCached();
+      const fresh = imgs.length ? (groqVision().length?groqVision():groqCached()) : groqCached();
       if(fresh.length) done=await run(fresh);
     }
     if(!done){
+      const said=apiErrText(lastErr);
       if(lastStatus===429) throw new Error("Groq rate limit — wait a few seconds and retry (the free tier resets quickly).");
       if(lastStatus===401) throw new Error("That Groq key looks invalid — re-copy it from console.groq.com/keys.");
+      if(imgs.length && [404,400].includes(lastStatus)) throw new Error(groqDiscoverFailed
+        ? "Couldn't reach Groq to see which models your key can run. Check the connection and try again."
+        : "No model on this Groq key would read the picture. Gemini's free tier does — switch the engine in AI settings, or save the note without it.");
       if([404,400].includes(lastStatus)) throw new Error("Groq has no model this key can run right now. Open AI settings and pick one from the list — it reads them straight from your account.");
-      throw new Error("Groq "+lastStatus+" "+lastErr);
+      throw new Error("Groq "+lastStatus+(said?" — "+said:""));
     }
     // remember what worked, so the next call goes straight there
     const won=tried[tried.length-1];
@@ -7509,21 +7672,44 @@ async function aiCall(prompt, doc, opts){
     const parts = docs.map(d=>({inline_data:{mime_type:d.mime||"application/pdf",data:d.data}})).concat([{text:prompt}]);
     const genCfg = wantJson ? {responseMimeType:"application/json",maxOutputTokens:maxTok} : {maxOutputTokens:maxTok};
     const body=JSON.stringify({contents:[{parts}],generationConfig:genCfg});
-    // try the chosen/default model, then fall back to others. Each free-tier model has its OWN
-    // quota, so on a 429 (or a model rename = 404/400) we try the next one before giving up.
-    const models=[aiCfg.model||"gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"].filter((m,i,a)=>m&&a.indexOf(m)===i);
-    let res,lastStatus=0,lastErr="";
-    for(const model of models){
-      res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(aiKey())}`,{method:"POST",headers:{"Content-Type":"application/json"},body});
-      if(res.ok) break;
-      lastStatus=res.status; lastErr=(await res.text()).slice(0,160);
-      if(![404,400,429].includes(res.status)) break; // model-not-found or quota → try the next model
+    // The model list comes from the key, never from a constant in here — Google retires names on
+    // its own schedule and a hard-coded chain dies naming a model the user never picked. Each
+    // free-tier model also has its OWN quota, so a 429 is still worth trying the next one for.
+    let res,lastStatus=0,lastErr="",tried=[];
+    const attempt=async model=>fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(aiKey())}`,
+      {method:"POST",headers:{"Content-Type":"application/json"},body});
+    const run=async list=>{
+      for(const model of list){
+        if(!model||tried.includes(model)) continue;
+        tried.push(model);
+        res=await attempt(model);
+        if(res.ok) return true;
+        lastStatus=res.status; lastErr=await res.text();
+        if(![404,400,429].includes(res.status)) return false;   // a real error, not a dead name
+      }
+      return false;
+    };
+    gemDiscoverFailed=false;      // a stale flag from an earlier call must not describe this one
+    let cands=[aiCfg.model, ...gemCached()].filter(Boolean);
+    if(!cands.length) cands=await gemDiscover(false);
+    let done=cands.length ? await run(cands) : false;
+    // everything we knew about is gone (or we never knew anything) — re-read the catalogue once
+    if(!done && (!tried.length || [404,400].includes(lastStatus))){
+      const fresh=await gemDiscover(true);
+      if(fresh.length) done=await run(fresh);
     }
-    if(!res||!res.ok){
+    if(!done){
+      const said=apiErrText(lastErr);
       if(lastStatus===429) throw new Error("Gemini's free limit was hit. Free keys reset per-minute (and daily) — wait a bit and retry. For uninterrupted use, enable billing on your key (Flash stays ~free at low volume) or paste a different key in Settings.");
-      if(lastStatus===400 && /API key/i.test(lastErr)) throw new Error("That Gemini key looks invalid — re-copy it from aistudio.google.com/apikey.");
-      throw new Error("Gemini "+lastStatus+" "+lastErr);
+      if((lastStatus===400||lastStatus===403) && /API key|API_KEY|permission/i.test(said)) throw new Error("That Gemini key looks invalid — re-copy it from aistudio.google.com/apikey.");
+      // never tried anything means we never got a model name — that is a catalogue problem, not a
+      // request problem, and blaming the key for a dropped connection is the wrong sentence.
+      if(gemDiscoverFailed) throw new Error("Couldn't reach Google to see which models your key can run. Check the connection and try again.");
+      if(!tried.length) throw new Error("This Gemini key can't run any chat models right now — re-copy it from aistudio.google.com/apikey, or switch the engine in AI settings.");
+      if([404,400].includes(lastStatus)) throw new Error("None of the Gemini models on this key would take that request. Open AI settings and pick one — the list is read straight from your key.");
+      throw new Error("Gemini "+lastStatus+(said?" — "+said:""));
     }
+    if(tried.length){ const won=tried[tried.length-1]; if(won&&aiCfg.model!==won){ aiCfg.model=won; saveAICfg(); } }
     const j=await res.json(); return ((((j.candidates||[])[0]||{}).content||{}).parts||[{}])[0].text||"";
   }
   throw new Error("paste-mode");
@@ -7817,7 +8003,9 @@ function aiEngineFields(){
   const eng=aiCfg.engine||"google";
   const opt=(v,l)=>`<option value="${v}" ${eng===v?"selected":""}>${l}</option>`;
   const needsKey=eng==="anthropic"||eng==="openai"||eng==="groq"||eng==="google";
-  const mph=eng==="google"?"gemini-2.0-flash":eng==="openai"?"gpt-4o-mini":eng==="groq"?"llama-3.3-70b-versatile":"claude-haiku-4-5";
+  // for the two providers that retire names, the hint is a model the key can actually run today
+  const mph=MODEL_PROV[eng] ? ((MODEL_PROV[eng].cached()[0])||"leave blank — picked from your key")
+    : eng==="openai"?"gpt-4o-mini":"claude-haiku-4-5";
   const kph=eng==="google"?"AIza…":eng==="groq"?"gsk_…":"sk-…";
   return `<div class="form-row"><label>Choose your AI</label><select id="aiEngine">
     ${opt("google","Gemini — free, recommended")}
@@ -7840,24 +8028,28 @@ function aiEngineFields(){
     <div id="aiKeptNote" class="ai-kept">${keptKeysNote(eng)}</div>
     <div class="ai-keylinks">🔑 Get a key — <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Gemini (free) ↗</a> · <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq (free) ↗</a> · <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">ChatGPT ↗</a> · <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Claude ↗</a></div>
     <div class="form-row"><label>Model <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="aiModel" value="${esc((aiCfg.models&&aiCfg.models[eng])||(aiCfg.engine===eng?aiCfg.model:"")||"")}" placeholder="${mph}"/></div>
-    ${eng==="groq"?`<div id="groqModels" class="ai-models">${groqModelChips()}</div>`:""}
+    ${MODEL_PROV[eng]?`<div id="groqModels" class="ai-models">${modelChips(eng)}</div>`:""}
   </div>
   <div id="aiProxyRow" style="display:${eng==="proxy"?"block":"none"}">
     <div class="form-row"><label>Proxy URL <span style="color:var(--faint);font-weight:500">— defaults to your Supabase function</span></label><input id="aiProxy" value="${esc(aiCfg.proxyUrl||"")}" placeholder="${esc(aiProxyUrl()||"https://xxxx.supabase.co/functions/v1/ai")}"/></div>
   </div>
   <div class="note-block" style="margin-top:6px;font-size:12px">${needsKey?"Your key is stored only in this browser (like the sync code) and used to call your chosen provider directly — your data goes to them, not to us. <b>Gemini and Groq are free</b> (no card); ChatGPT &amp; Claude need paid API credits (separate from a ChatGPT/Claude subscription). (PDF résumé reading works on Gemini, Claude, or the proxy.)":eng==="proxy"?"Deploy the Supabase Edge Function (see the repo, Gemini-based) so the key stays server-side and users need no setup.":"No key needed — the app builds a prompt you paste into any AI, then paste the reply back. Always works as a fallback."}</div>`;
 }
-/* Groq retires model names, so rather than making the user guess, show what their own key can run
-   right now — read from their account, one tap to choose. */
-function groqModelChips(){
-  const cached=groqCached();
+/* Both free providers retire model names on their own schedule, so rather than making the user
+   guess, show what their own key can run right now — read from their account, one tap to choose. */
+const MODEL_PROV={groq:{label:"Groq",cached:()=>groqCached(),find:f=>groqDiscover(f)},
+                  google:{label:"Google",cached:()=>gemCached(),find:f=>gemDiscover(f)}};
+function modelChips(eng){
+  const P=MODEL_PROV[eng]; if(!P) return "";
+  const cached=P.cached();
   if(!cached.length) return `<div class="sect-note" style="margin:0 2px">Leave the model blank and Meanwhile picks one that works.
-    <span data-act="groq-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">See what your key can run ↻</span></div>`;
+    <span data-act="models-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">See what your key can run ↻</span></div>`;
   return `<div class="sect-note" style="margin:0 2px 6px">What this key can run — tap to pick one.
-      <span data-act="groq-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">Refresh ↻</span></div>
+      <span data-act="models-refresh" style="color:var(--accent3);cursor:pointer;font-weight:700">Refresh ↻</span></div>
     <div class="ask-chips">${cached.slice(0,10).map(m=>
-      `<span class="chip${aiCfg.model===m?" on":""}" data-groqmodel="${esc(m)}" title="${esc(m)}">${esc(m)}</span>`).join("")}</div>`;
+      `<span class="chip${aiCfg.model===m?" on":""}" data-pickmodel="${esc(m)}" title="${esc(m)}">${esc(m)}</span>`).join("")}</div>`;
 }
+function groqModelChips(){ return modelChips("groq"); }   // kept: older call sites
 // Inline section rendered inside Settings, right under Cloud sync
 function aiIntegrationBox(){
   return `<div class="ai-box" style="margin-top:16px">
@@ -8082,7 +8274,7 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -8134,22 +8326,24 @@ document.addEventListener("click",e=>{
   if(act==="force-update"){ forceUpdate(); return; }
   if(act==="lock-off"){ disableLock(); return; }
   if(act==="lock-import"){ const f=$("#fileInput"); if(f) f.click(); return; }
-  if(act==="groq-refresh"){
-    const box=document.getElementById("groqModels"); if(box) box.innerHTML=`<div class="sect-note" style="margin:0 2px">Asking Groq what your key can run…</div>`;
-    groqDiscover(true).then(list=>{
+  if(act==="groq-refresh"||act==="models-refresh"){
+    const eng=aiCfg.engine||"google", P=MODEL_PROV[eng]; if(!P) return;
+    const box=document.getElementById("groqModels"); if(box) box.innerHTML=`<div class="sect-note" style="margin:0 2px">Asking ${esc(P.label)} what your key can run…</div>`;
+    P.find(true).then(list=>{
       const b2=document.getElementById("groqModels");
-      if(b2) b2.innerHTML=list.length?groqModelChips():`<div class="sect-note" style="margin:0 2px">Couldn't reach Groq — check the key.</div>`;
+      if(b2) b2.innerHTML=list.length?modelChips(eng):`<div class="sect-note" style="margin:0 2px">Couldn't reach ${esc(P.label)} — check the key.</div>`;
     }).catch(()=>{});
     return;
   }
   if(act==="work-add"){ openAddRecord(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
   if(t.dataset.mode){ setAppMode(t.dataset.mode); openSettings(); toast("Switched to "+(APP_MODES.find(x=>x.id===t.dataset.mode)||{}).label); return; }
-  if(t.dataset.groqmodel){
-    const inp=document.getElementById("aiModel"); if(inp) inp.value=t.dataset.groqmodel;
-    aiCfg.model=t.dataset.groqmodel; saveAICfg();
-    const box=document.getElementById("groqModels"); if(box) box.innerHTML=groqModelChips();
-    toast("Model set to "+t.dataset.groqmodel); return;
+  if(t.dataset.groqmodel||t.dataset.pickmodel){
+    const m=t.dataset.pickmodel||t.dataset.groqmodel;
+    const inp=document.getElementById("aiModel"); if(inp) inp.value=m;
+    aiCfg.model=m; saveAICfg();
+    const box=document.getElementById("groqModels"); if(box) box.innerHTML=modelChips(aiCfg.engine||"google");
+    toast("Model set to "+m); return;
   }
   if(t.dataset.addent){ const ty=t.dataset.addent; closeEditor(); openEntForm(ty,null,(workOp()||{}).id); return; }
   if(t.dataset.newadd!==undefined){ addEntInline(t); return; }
@@ -8601,7 +8795,22 @@ function copy(text,msg){
 }
 function fallbackCopy(text,msg){ const ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast(msg||"Copied");}catch(e){toast("Press ⌘/Ctrl+C to copy");} ta.remove(); }
 let toastT;
-function toast(msg){ const t=$("#toast"); t.innerHTML=`${I.check}<span>${esc(msg)}</span>`; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
+/* A leading ⚠ is how every error site in here has always marked itself, so that is the signal:
+   it becomes a red toast with a warning icon rather than a green tick over a stack trace. The
+   text is trimmed to something a person can read at a glance — the full message is still thrown,
+   and anything longer belongs on the page, not floating over it. */
+function toast(msg,kind){
+  const t=$("#toast"); if(!t) return;
+  let s=String(msg==null?"":msg).replace(/\s+/g," ").trim();
+  const bad = kind==="bad" || /^⚠/.test(s);
+  s=s.replace(/^⚠\s*/,"");
+  if(s.length>190) s=s.slice(0,187).replace(/[\s,;:{("']+$/,"")+"…";
+  t.className="toast"+(bad?" bad":"");
+  t.innerHTML=`${bad?I.problem:I.check}<span>${esc(s)}</span>`;
+  t.classList.add("show");
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove("show"), bad?5200:2400);   // an error needs time to read
+}
 
 /* ============================ DEMO DATA ============================ */
 function loadSample(){

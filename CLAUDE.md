@@ -153,8 +153,23 @@ you paste into a new AI chat to prep for interviews.
   only a tie-breaker. `aiCall` tries the remembered model → cache → `GROQ_PREF`, then **re-reads the
   catalogue once** if everything 404s, and remembers whichever model answered. AI settings shows the
   key's own models as tappable chips (`groqModelChips`/`data-groqmodel`).
-- Gemini reliability: `aiCall` tries `gemini-2.0-flash`→`1.5-flash`→`2.0-flash-lite`, falling through on
-  **404/400/429** (each free-tier model has its own quota), with friendly messages for quota/bad-key.
+- Gemini reliability: **same rule as Groq — the model list comes from the key, not from us.** A
+  hard-coded chain (`gemini-2.0-flash`→`1.5-flash`→`2.0-flash-lite`) died exactly as Groq's did, with
+  a 404 naming a model the user never picked. `gemDiscover()` reads `GET /v1beta/models` and keeps
+  only those whose `supportedGenerationMethods` include `generateContent` — better evidence than
+  Groq gives, so no name-guessing. `gemUsable()`/`gemRank()` order them newest generation → cheapest
+  family (`GEM_PREF`) → stable over preview; `GEM_SKIP` drops embedding/imagen/veo/tts. `aiCall`
+  tries remembered model → cache → catalogue, re-reads once if everything 404s, remembers the winner,
+  and still falls through on **429** (each free-tier model has its own quota). `MODEL_PROV` drives the
+  tappable chips (`modelChips`/`data-pickmodel`) for **both** free providers.
+  **`gemDiscoverFailed`/`groqDiscoverFailed` are reset at the start of each call** — a stale flag from
+  an earlier failure describes the wrong request — and "reached them and they listed nothing" is NOT
+  "couldn't reach them": three different sentences, because blaming the key for a dropped connection
+  sends the user to re-copy a key that was fine.
+- **A picture is never refused on a guess.** Whether a Groq model is multimodal is inferred from its
+  *name* (`GROQ_VISION`) because the catalogue doesn't say. So when nothing looks multimodal the
+  photo goes to the best chat models anyway and the API gets to answer — a 400 from Groq is
+  evidence, a regex isn't. Only then does it name Gemini as the fix.
 - `COMPANY ENRICH (logo + pre-call brief)` — instant visual ID for juggling many processes.
   `resolveCompany()` hits Clearbit autocomplete (free, no key, CORS-ok) for a real logo + canonical
   domain; `enrichLogo()/enrichLater()` cache `o.domain`/`o.logo` and fire after create/edit.
@@ -195,6 +210,19 @@ you paste into a new AI chat to prep for interviews.
   topbar "Smart add" + Settings.
 - `POST-HIRE (90-day mode → My Company)` — everything that happens *after* you get the job. See the
   dedicated section below; it's the largest addition to the app.
+- **A destructive choice never goes in `confirm()`** (`askChoice`, above the sign-in gate at z-index
+  400). Two native buttons force one outcome onto the word "Cancel", and on the two-datasets prompt
+  at sign-in "Cancel" meant *overwrite my account* — the instinct on a dialog you don't understand.
+  Now every outcome has its own button saying what it replaces, the destructive one is marked as
+  such, a backup is offered in the dialog, and **Cancel means nothing happens**: `afterSignIn`
+  returns `"cancelled"` and `clearSession()`s, because staying signed in would let the very next
+  `save()` push the copy they just declined to push.
+- **A toast is a glance, not a document.** It's capped (`max-width:min(430px,100vw-28px)`, 4-line
+  clamp) and the message trimmed to ~190 chars — a raw provider error used to stretch the phone and
+  wrap into a wall of JSON. A leading `⚠` (how every error site here already marks itself) makes it
+  red with a warning icon and holds it on screen longer. `apiErrText()` lifts the provider's own
+  sentence out of its JSON envelope so the braces never reach the screen. The transition is
+  `opacity,transform` — **never `all`**, which animates the width on a rotate or resize.
 - **Modals never eat your typing**: `openEditor()` takes a `snapshotEditor()` of every field (and
   again on `spSetBody`); a backdrop tap or Escape goes through `tryCloseEditor()`, which only closes
   silently when `editorDirty()` is false and otherwise asks. The ✕/Cancel buttons still close outright.
@@ -541,7 +569,9 @@ edit/delete work. Don't create rounds/people without ids.
   carrying a name needs `max-width:100%` + ellipsis; a fixed-size box in a flex row needs
   `flex:0 0 <size>` or it gets squeezed and crops its contents (the sidebar mark did); and anything
   positioned at `0–100%` and centred on its point overhangs both ends, so inset its plotting area
-  (the Upcoming timeline) rather than letting the card shave it.
+  (the Upcoming timeline) rather than letting the card shave it. Where insetting would break
+  alignment — a month label must stay over the dates it labels — make the positioned element a
+  zero-width anchor and shift only the text inside it (`.tl-tick` / `.tl-tick.at-start|.at-end`).
 - **Mobile = no horizontal scrolling, ever.** Pipeline stacks vertically on mobile; the table
   becomes `renderRoleCards()`. Test that `document.documentElement.scrollWidth <= innerWidth`.
 - Respect iOS safe areas (`env(safe-area-inset-*)`) for top bar / bottom nav / drawer.

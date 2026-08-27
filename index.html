@@ -418,6 +418,11 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .toast span{min-width:0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .toast.bad{border-color:rgba(208,107,107,.5);background:linear-gradient(160deg,rgba(208,107,107,.15),var(--panel2))}
 .toast.bad svg{color:var(--bad)}
+/* An offer to undo has to be tappable, so this one toast takes pointer events back */
+.toast.act{pointer-events:auto}
+.toast-act{flex:0 0 auto;margin:-4px -6px -4px 2px;padding:5px 11px;border-radius:9px;border:1px solid var(--line2);
+  background:var(--panel);color:var(--accent3);font:inherit;font-weight:800;font-size:12.5px;cursor:pointer;transition:.12s}
+.toast-act:hover{border-color:var(--accent2);color:var(--txt)}
 
 /* A destructive choice: one button per outcome, each saying what it does. Above the sign-in gate. */
 .choice-wrap{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;
@@ -789,6 +794,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .shot-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .shot-cell{position:relative;flex:0 0 auto}
 .shot-thumb{width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px solid var(--line2);background:var(--card2);cursor:zoom-in;display:block}
+/* the bytes are on another device — say so rather than showing a broken frame */
+.shot-thumb[data-shot-missing]{cursor:default;object-fit:contain;border-style:dashed;opacity:.85}
 .shot-x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
 .shot-x svg{width:12px;height:12px}
 .shot-x:hover{color:var(--bad);border-color:var(--bad)}
@@ -1306,7 +1313,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v55 · 2026-08-27";
+const BUILD = "v56 · 2026-08-27";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1322,6 +1329,17 @@ let lockKey = null;                      // this session's key. Never written do
 let lockMeta = null;                     // {salt, iter} — travels with the ciphertext
 let lockedBlob = null;                   // the sealed vault, while it is still sealed
 let remoteLocked = false;                // ...and whether it arrived from the cloud, not from disk
+/* The shape of the document, so two devices on different builds can tell. Bump this ONLY when the
+   document changes in a way an older build would mangle or silently drop. Without it, a device
+   running a stale cached build happily overwrites a newer document with its own understanding of
+   it — the failure is invisible and the data is simply gone.
+
+   DECLARED ABOVE `load()` ON PURPOSE. migrate() reads it, load() calls migrate() inside a
+   try/catch, and a `const` reached from above its declaration throws — which that catch would
+   swallow, handing back an empty app that the next save writes over the real one. Same trap as the
+   lock keys and DEFAULT_PROJECT; it has now bitten three times. */
+const SCHEMA = 2;
+function docSchema(d){ return +(((d||{}).meta||{}).schema)||1; }
 let state = load();
 let view = "dashboard";
 let searchQ = "";
@@ -1359,8 +1377,51 @@ function migrate(s){
   if(s.work) WORK_LISTS.forEach(k=>{ (s.work[k]||[]).forEach(r=>{ if(!r.id) r.id=uid(); if(!r.at) r.at=Date.now(); }); });
   // derive a real revision from the newest record so cloud-seed comparisons work
   if(s.rev==null) s.rev = s.opportunities.reduce((m,o)=>Math.max(m,+o.updatedAt||0),0);
+  s.meta=s.meta||{};
+  // Never write a schema number DOWN. An older build reading a newer document leaves the marker
+  // alone, so the newer build can still recognise its own document when it comes back.
+  s.meta.schema=Math.max(SCHEMA, docSchema(s));
   return s;
 }
+/* ---------------- UNDO ----------------
+   "This can't be undone" was literally true of every delete in here, which makes every destructive
+   button a small act of courage. It is a whole-document app, so undo can be a whole-document
+   snapshot: cheap to take (one JSON copy of a ~150KB object), impossible to get subtly wrong, and
+   it covers deletes, merges, conversions and a bad batch of AI-applied changes with one mechanism.
+
+   Deliberately in memory only. Persisting it would double what localStorage has to hold, and undo
+   is about the mistake you just made — not one from last Tuesday. Attachment BYTES are not part of
+   it either: they live in IndexedDB and are never deleted by an undoable action (sweepOrphanFiles
+   runs on its own schedule), so restoring the document restores the references intact. */
+const UNDO_MAX = 12;
+let undoStack = [];
+function snapshotUndo(label){
+  try{ undoStack.push({label:String(label||"that change"), json:JSON.stringify(state), at:Date.now()}); }
+  catch(e){ return; }                       // unserialisable state: better no undo than a broken one
+  if(undoStack.length>UNDO_MAX) undoStack.shift();
+}
+function canUndo(){ return undoStack.length>0; }
+function undoLast(){
+  const snap=undoStack.pop();
+  if(!snap){ toast("Nothing to undo"); return false; }
+  let doc; try{ doc=JSON.parse(snap.json); }catch(e){ toast("⚠ That undo is no longer readable"); return false; }
+  state=migrate(doc);
+  // rev must keep climbing or the cloud would treat the restored copy as stale and hand back the
+  // very thing we just undid on the next pull.
+  state.rev=Math.max(Date.now(),(+state.rev||0)+1);
+  save(); closeEditor(); render();
+  toast("Undone — "+snap.label);
+  return true;
+}
+/* Do something destructive, take the snapshot first, and offer the way back in the toast itself.
+   An undo you have to go and find is one most people never find. */
+function withUndo(label,fn,note){
+  snapshotUndo(label);
+  const out=fn();
+  toast(note||("Deleted "+label), null, "Undo");
+  return out;
+}
+
 /* Device-local prefs — how THIS device is doing, not what's in your data. Never synced:
    "I have a backup file" is a fact about a device, not about the vault. */
 const DEV_KEY = "meanwhile_device_v1";
@@ -1646,6 +1707,10 @@ function setSession(j){
    failing. A refresh token that no longer works means the session is genuinely over — say so
    once and drop it, rather than retrying forever against a dead credential. */
 let refreshing=null;
+/* Refreshing is memoized so a burst of vault calls makes one refresh, not five. The part that
+   matters is WHY it failed: a refresh token the server rejected really is the end of the session,
+   but a dropped connection is not — and ending the session on a flaky train tunnel logs you out of
+   an app that works offline, which is both wrong and alarming. Only a real rejection clears it. */
 async function authToken(){
   if(!session.access) throw new Error("Sign in to sync.");
   if(Date.now() < (session.expires||0)-60000) return session.access;
@@ -1653,8 +1718,17 @@ async function authToken(){
     try{
       const j=await gotrue("/token?grant_type=refresh_token",{body:{refresh_token:session.refresh}});
       setSession(j); return session.access;
-    }catch(e){ clearSession(); updateSyncUI(); throw new Error("Your session expired — sign in again."); }
-    finally{ setTimeout(()=>{ refreshing=null; },0); }
+    }catch(e){
+      const msg=String((e&&e.message)||"");
+      const rejected = /\b(400|401|403)\b/.test(msg) || /invalid|expired|revoked|not found|grant/i.test(msg);
+      if(rejected){ clearSession(); updateSyncUI(); throw new Error("Your session expired — sign in again."); }
+      updateSyncUI();
+      throw new Error("Couldn't reach your project to refresh the session — still signed in, will retry.");
+    }
+    // Cleared synchronously, not on a timer. Callers already inside the refresh hold the promise
+    // itself so they still share one round trip; a caller arriving AFTER it settles must start a
+    // fresh one — with the timer, the next call in the same tick was handed back the old rejection.
+    finally{ refreshing=null; }
   })();
   return refreshing;
 }
@@ -1790,7 +1864,7 @@ async function afterSignIn(){
       cancelLabel:"Cancel — don't sign in",
       cancelNote:"Cancelling changes nothing: this device keeps its notes and your account keeps its own."
     });
-    if(pick==="cloud"){ state=migrate(doc); persist(); adoptSyncedAI(); }
+    if(pick==="cloud"){ state=migrate(doc); persist(); markPushed(remote.rev||state.rev||0); lastPushSig=docSig(state); adoptSyncedAI(); }
     else if(pick==="local"){ await pushNow(); }
     else {
       // Cancel has to be genuinely safe. Staying signed in would let the very next save() push this
@@ -1800,7 +1874,7 @@ async function afterSignIn(){
       return "cancelled";
     }
   } else if(doc && remoteN){
-    state=migrate(doc); persist(); adoptSyncedAI();
+    state=migrate(doc); persist(); markPushed(remote.rev||state.rev||0); lastPushSig=docSig(state); adoptSyncedAI();
   } else {
     await pushNow();                            // the account is empty — seed it from here
   }
@@ -1809,7 +1883,11 @@ async function afterSignIn(){
 }
 function vaultErr(status,txt){
   if(/relation .*user_vaults.* does not exist|PGRST205/i.test(txt)) return "The user_vaults table isn't set up yet — run the SQL from Settings in your Supabase project.";
-  if(status===401||status===403||/row-level security|42501/i.test(txt)) return "Your account can't write to the vault — re-run the SQL from Settings (it sets the access policy).";
+  // A free Supabase project pauses after a stretch of inactivity, and a paused project fails
+  // looking exactly like a bad key. Name it, or the next hour goes into re-copying a good key.
+  if(status===503||status===502||status===504||/paus|inactiv|upstream connect|no healthy/i.test(txt))
+    return "Your Supabase project isn't answering. Free projects pause after a period of inactivity — open the Supabase dashboard and resume it, then try again.";
+  if(status===401||status===403||/row-level security|42501/i.test(txt)) return "Your account can't write to the vault — re-run the SQL from Settings (it sets the access policy). If you have two-factor on, finish the code prompt first.";
   return "Vault "+status+" "+txt;
 }
 
@@ -1867,7 +1945,15 @@ function updateSyncUI(msg){
   const dot=$("#syncDot"); if(dot){ dot.style.display = syncOn()?"block":"none";
     dot.style.background = syncState==="error"?"var(--bad)":syncState==="saving"||syncState==="pulling"?"var(--warn)":"var(--good)"; }
   const lbl=$("#syncStatusLbl");
-  if(lbl){ const map={off:"Not connected",idle:"Synced ✓",saving:"Saving…",pulling:"Checking cloud…",error:"⚠ "+(msg||"Sync error")}; lbl.textContent=map[syncState]||""; lbl.style.color = syncState==="error"?"var(--bad)":syncState==="idle"?"var(--good)":"var(--muted)"; }
+  if(lbl){
+    // "Synced ✓" must mean the cloud actually has this. If it doesn't, say so — under
+    // last-write-wins, whether your edits are up there is the only number that matters.
+    const behind = syncState==="idle" && unsyncedEdits();
+    const map={off:"Not connected",idle:behind?"Not uploaded yet":"Synced ✓",saving:"Saving…",pulling:"Checking cloud…",error:"⚠ "+(msg||"Sync error")};
+    lbl.textContent=map[syncState]||"";
+    lbl.style.color = (syncState==="error"||behind)?(behind?"var(--warn)":"var(--bad)"):syncState==="idle"?"var(--good)":"var(--muted)";
+  }
+  if(dot && syncState==="idle" && unsyncedEdits()) dot.style.background="var(--warn)";
 }
 async function rpc(fn, body){
   const base = sync.url.trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,"");
@@ -1880,16 +1966,72 @@ async function rpc(fn, body){
   const txt = await res.text(); return txt ? JSON.parse(txt) : null;
 }
 function schedulePush(){ if(!syncOn()) return; clearTimeout(pushTimer); pushTimer=setTimeout(pushNow, 1500); }
+/* Every save() uploads the WHOLE document — that is the deal whole-document sync makes. But many
+   handlers call save() whether or not anything actually changed, and re-uploading an identical
+   document is pure waste on a phone. So the content (with rev zeroed, since rev always moves) is
+   fingerprinted and an unchanged document is never sent. */
+function cheapHash(str){ let h=5381; for(let i=0;i<str.length;i++) h=((h*33)^str.charCodeAt(i))>>>0; return h.toString(36); }
+function docSig(d){
+  try{ const c=Object.assign({},d); c.rev=0; const j=JSON.stringify(c); return j.length+":"+cheapHash(j); }
+  catch(e){ return ""; }   // unserialisable means "assume changed", which is the safe answer
+}
+let lastPushSig="";
+// what the cloud is known to hold, so "you have edits that aren't uploaded" is a fact, not a guess
+function markPushed(rev){ devPrefs.pushedRev=+rev||0; saveDev(); updateSyncUI(); }
+function unsyncedEdits(){ return syncOn() && (+state.rev||0) > (+devPrefs.pushedRev||0); }
+let remoteIsNewerBuild=false;   // set by pullNow; blocks this build from overwriting a newer document
 async function pushNow(){
   const mode=syncMode(); if(mode==="off") return;
   if(vaultLocked()) return;                  // still sealed on this device — nothing to say yet
+  if(remoteIsNewerBuild){                    // a newer build wrote that document; do not flatten it
+    setSyncState("error","This device is running an older Meanwhile — tap Check for update");
+    return;
+  }
+  // an unchanged document is not worth a round trip (a sealed one re-encrypts every time, so skip)
+  const sig = lockKey ? "" : docSig(state);
+  if(sig && sig===lastPushSig){ markPushed(state.rev||0); setSyncState("idle"); return; }
   try{ setSyncState("saving");
     // a legacy encrypted vault leaves already sealed; rev stays outside so sync can compare
     const payload = lockKey ? await sealDoc(state) : state;
     if(mode==="account") await vaultPut(payload, state.rev||0);
     else await rpc("set_vault",{ p_code:sync.code, p_data:payload, p_updated: state.rev||0 });
+    lastPushSig=sig; markPushed(state.rev||0);
     setSyncState("idle");
   }catch(e){ setSyncState("error", e.message); }
+}
+/* Two devices edited the same document and neither knows about the other. Whole-document sync can
+   only keep one of them, so the one thing it must never do is choose in silence. Same rule as the
+   sign-in dialog: each outcome is its own button, a backup is offered, and Cancel changes nothing —
+   the edits stay on this device and the cloud copy stays where it is until you decide. */
+let pullConflictUp=false;
+async function resolvePullConflict(remote,rRev){
+  if(pullConflictUp) return;
+  pullConflictUp=true;
+  const mine=(state.opportunities||[]).length, theirs=((remote||{}).opportunities||[]).length;
+  const when=devPrefs.pushedRev?relTime(devPrefs.pushedRev):"";
+  const r=(n,w)=>`${n} ${n===1?w:w+"s"}`;
+  const pick=await askChoice({
+    title:"Edited in two places",
+    body:`You changed things on this device${when?" since "+when:""} that never reached the cloud, and another device has saved since. Only one version can be kept.`,
+    options:[
+      {id:"mine", kind:"primary", label:"Keep this device's version",
+       note:`${r(mine,"role")} here, uploaded now. The cloud copy (${r(theirs,"role")}) is replaced.`},
+      {id:"theirs", kind:"danger", label:"Keep the cloud version",
+       note:`${r(theirs,"role")} downloaded. The unsaved changes on this device are lost.`}
+    ],
+    backup:true,
+    cancelLabel:"Decide later",
+    cancelNote:"Nothing changes either way. This device stops syncing until you choose — your edits are safe here."
+  });
+  pullConflictUp=false;
+  if(pick==="mine"){ await pushNow(); toast("This device's version is now the one in the cloud"); }
+  else if(pick==="theirs"){
+    state=migrate(remote); persist(); markPushed(rRev); lastPushSig=docSig(state);
+    adoptSyncedAI(); if(openId && !getOp()) closeDrawer(); else if(openId) renderDrawer();
+    render(); toast("Using the cloud version on this device");
+  } else {
+    setSyncState("error","Two versions — choose which to keep");
+  }
 }
 async function pullNow(opts){
   opts=opts||{};
@@ -1918,13 +2060,32 @@ async function pullNow(opts){
           pulling=false; return;
         }
       }
+      // A document written by a NEWER build must not be adopted by this one — migrate() only ever
+      // moves forward, so an older build silently drops what it doesn't understand and then saves.
+      if(docSchema(remote) > SCHEMA){
+        remoteIsNewerBuild=true;
+        setSyncState("error","This device is running an older Meanwhile — tap Check for update");
+        if(!opts.silent) toast("⚠ Your other device is on a newer version. Update this one before it overwrites anything.");
+        pulling=false; return;
+      }
+      remoteIsNewerBuild=false;
       if(rRev > (state.rev||0)){
-        state=remote; persist();
+        // The dangerous case: this device has edits that never reached the cloud, and the cloud has
+        // moved on. Replacing state here would destroy them with no prompt and no backup — which is
+        // exactly what it used to do, on a pull nobody asked for.
+        if(unsyncedEdits() && !opts.force){
+          pulling=false;
+          await resolvePullConflict(remote,rRev);
+          return;
+        }
+        state=migrate(remote); persist(); markPushed(rRev); lastPushSig=docSig(state);
         adoptSyncedAI();   // a key that arrived with the document should be usable straight away
         if(openId && !getOp()) closeDrawer(); else if(openId) renderDrawer();
         render(); if(!opts.silent) toast("Synced latest from cloud");
       } else if((state.rev||0) > rRev){
         await pushNow(); // local is newer — push it up
+      } else {
+        markPushed(rRev);            // identical revisions: the cloud really does have this
       }
     } else {
       // nothing in cloud yet — seed it with whatever we have locally
@@ -1953,7 +2114,27 @@ function fmtDate(d){ if(!d) return ""; const dt=new Date(d+(d.length<=10?"T00:00
 function fmtDateTime(d,t){ if(!d) return ""; let s=fmtDate(d); if(t){ const [h,m]=t.split(":"); const dt=new Date(); dt.setHours(+h,+m); s+=" · "+dt.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); } return s; }
 function daysUntil(d){ if(!d) return null; const dt=new Date(d+(d.length<=10?"T00:00":"")); if(isNaN(dt)) return null; return Math.round((dt - new Date().setHours(0,0,0,0))/86400000); }
 function daysSince(ts){ if(!ts) return null; return Math.floor((Date.now()-ts)/86400000); }
+/* A date the app will act on has to be a real one. The shape test alone let "2026-13-45" through,
+   which then becomes an Invalid Date in the calendar and on the reminder — so the parts are checked
+   against a real Date, which also catches 31 February. */
+function validYMD(s){
+  s=String(s||"").trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
+  const [y,m,d]=s.split("-").map(Number);
+  if(m<1||m>12||d<1||d>31) return "";
+  const dt=new Date(y,m-1,d);
+  return (dt.getFullYear()===y&&dt.getMonth()===m-1&&dt.getDate()===d)?s:"";
+}
 function relDays(n){ if(n==null) return ""; if(n===0) return "Today"; if(n===1) return "Tomorrow"; if(n===-1) return "Yesterday"; if(n>1) return "in "+n+"d"; return Math.abs(n)+"d ago"; }
+// "2 minutes ago" for a timestamp — used where the gap itself is the point (last upload, last edit)
+function relTime(ts){
+  const s=Math.round((Date.now()-(+ts||0))/1000);
+  if(!ts||s<0) return "";
+  if(s<45) return "moments ago";
+  const m=Math.round(s/60); if(m<60) return m+(m===1?" minute ago":" minutes ago");
+  const h=Math.round(m/60); if(h<24) return h+(h===1?" hour ago":" hours ago");
+  const d=Math.round(h/24); return d+(d===1?" day ago":" days ago");
+}
 
 function colorFor(str){ const colors=["#6d72c4","#5b86b3","#8a72bd","#4ea381","#5b9c97","#a874a0","#bf8a4f","#7c828f","#6d8bc4","#52a08f"]; let h=0; for(let i=0;i<str.length;i++) h=str.charCodeAt(i)+((h<<5)-h); return colors[Math.abs(h)%colors.length]; }
 // esc() is for text; a colour lands inside style="" where ; and ) are the dangerous characters.
@@ -2369,6 +2550,18 @@ function modeBox(){
     </div>
   </div>`;
 }
+/* Safari evicts site data for sites left untouched for about a week, and IndexedDB — where every
+   photo lives — goes with it. A granted persistence request exempts the origin. It is a request,
+   not a guarantee (browsers grant it on their own criteria, typically once a site looks "used"),
+   so the answer is recorded and shown rather than assumed. */
+async function askPersistentStorage(){
+  try{
+    if(!navigator.storage||!navigator.storage.persist) return;
+    if(navigator.storage.persisted && await navigator.storage.persisted()){ devPrefs.persisted=true; saveDev(); return; }
+    devPrefs.persisted = await navigator.storage.persist();
+    saveDev();
+  }catch(e){}
+}
 function dataStatusBox(){
   const h=dataHealth(), last=devPrefs.lastExport||0;
   const lastTxt=last?`${daysSince(last)===0?"today":daysSince(last)+"d ago"}`:"never";
@@ -2382,6 +2575,8 @@ function dataStatusBox(){
     <div style="font-size:12.5px;color:var(--muted)">Using <b>${fileSizeStr(h.bytes)||"—"}</b> of about 5 MB${files?` · ${files} attached ${files===1?"file":"files"} stored separately`:""}</div>
     <div class="meter"><i style="width:${Math.max(2,h.pct)}%;background:${h.pct>85?"var(--bad)":h.pct>70?"var(--warn)":"var(--accent)"}"></i></div>
     <div style="font-size:12.5px;color:var(--muted);margin-top:10px">Last backup file: <b>${esc(lastTxt)}</b></div>
+    <div style="font-size:12.5px;color:var(--muted);margin-top:6px">Browser eviction: <b style="color:${devPrefs.persisted?"var(--good)":"var(--warn)"}">${devPrefs.persisted?"this site is marked as persistent":"not guaranteed — keep the app on your home screen"}</b></div>
+    <div class="sect-note" style="margin:10px 2px 0">Photos on a note stay on the device that took them — they are not part of what syncs. The transcription travels with the note, and a backup file includes the pictures themselves.</div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn primary sm" data-act="export">${I.copy} Export backup</button>
       <button class="btn ghost sm" data-act="import">↑ Import backup</button>
@@ -3637,6 +3832,13 @@ async function capRefine(){
 }
 // turn the model's JSON into a reviewable plan, resolved against what already exists
 function buildPlan(o,text,d,shots){
+  // Everything below reads the model's reply as a list. A model that returns a string, an object
+  // or a number where an array belongs would otherwise throw straight out of here — and a thrown
+  // buildPlan means the whole note is refused, which is the one outcome a capture must never have.
+  // nullish entries are dropped too: a model that pads a list with nulls would otherwise throw on
+  // the first one, and losing the whole note to a stray null is not a trade worth making
+  const L=v=>(Array.isArray(v)?v:(v==null||v===""?[]:[v])).filter(x=>x!=null);
+  d=(d&&typeof d==="object"&&!Array.isArray(d))?d:{};
   const items=[]; const seen={};
   const add=(type,name,rec,extra)=>{
     if(!name||!String(name).trim()) return;
@@ -3653,24 +3855,24 @@ function buildPlan(o,text,d,shots){
     const it={type,name,rec:r.rec,conf:r.conf,candidates:r.candidates,fields:rec||{},extra:extra||"",on,choice};
     items.push(it); seen[key]=it; return it;
   };
-  (d.people||[]).forEach(p=>add("person",p.name,{title:p.title||"",department:p.department||"",team:p.team||"",expertise:p.expertise||[],notes:p.note||""}));
-  (d.departments||[]).forEach(x=>add("department",x.name||x,{}));
-  (d.systems||[]).forEach(x=>add("system",x.name||x,{note:x.note||""}));
-  (d.projects||[]).forEach(x=>add("project",x.name||x,{status:x.status||"Unknown",note:x.note||""}));
-  (d.problems||[]).forEach(x=>add("problem",x.title||x.name||x,{status:x.status||"Discovered",description:x.note||""}));
-  (d.processes||[]).forEach(x=>add("process",x.name||x,{note:x.note||""}));
-  (d.decisions||[]).forEach(x=>add("decision",x.title||x,{madeBy:x.madeBy||"",date:x.date||"",reason:x.reason||""}));
-  (d.teams||[]).forEach(x=>add("team",x.name||x,{department:x.department||"",lead:x.lead||""}));
-  (d.info||[]).forEach(x=>add("info",x.title||x.name||x,{kind:INFO_KINDS.includes(x.kind)?x.kind:"Other",summary:x.summary||""}));
-  (d.questions||[]).forEach(q=>{ const t=typeof q==="string"?q:(q.q||""); if(t.trim()) add("question",t.trim(),{status:"Open"}); });
+  L(d.people).forEach(p=>add("person",p.name,{title:p.title||"",department:p.department||"",team:p.team||"",expertise:p.expertise||[],notes:p.note||""}));
+  L(d.departments).forEach(x=>add("department",x.name||x,{}));
+  L(d.systems).forEach(x=>add("system",x.name||x,{note:x.note||""}));
+  L(d.projects).forEach(x=>add("project",x.name||x,{status:x.status||"Unknown",note:x.note||""}));
+  L(d.problems).forEach(x=>add("problem",x.title||x.name||x,{status:x.status||"Discovered",description:x.note||""}));
+  L(d.processes).forEach(x=>add("process",x.name||x,{note:x.note||""}));
+  L(d.decisions).forEach(x=>add("decision",x.title||x,{madeBy:x.madeBy||"",date:x.date||"",reason:x.reason||""}));
+  L(d.teams).forEach(x=>add("team",x.name||x,{department:x.department||"",lead:x.lead||""}));
+  L(d.info).forEach(x=>add("info",x.title||x.name||x,{kind:INFO_KINDS.includes(x.kind)?x.kind:"Other",summary:x.summary||""}));
+  L(d.questions).forEach(q=>{ const t=typeof q==="string"?q:(q.q||""); if(t.trim()) add("question",t.trim(),{status:"Open"}); });
   // people mentioned only inside a relationship still deserve a record
-  const rels=(d.relationships||[]).filter(r=>r&&r.from&&r.to&&ENT[r.fromType]&&ENT[r.toType]&&REL_LABEL[r.rel]).map(r=>{
+  const rels=L(d.relationships).filter(r=>r&&r.from&&r.to&&ENT[r.fromType]&&ENT[r.toType]&&REL_LABEL[r.rel]).map(r=>{
     add(r.fromType,r.from,{}); add(r.toType,r.to,{});
     return {from:r.from,fromType:r.fromType,to:r.to,toType:r.toType,rel:r.rel,conf:Math.max(0,Math.min(1,+r.confidence||0.7)),on:true};
   });
   // --- things that aren't "create a record": changes, answers, a next step, questions for me ---
   const ops=[];
-  (d.updates||[]).forEach(u=>{
+  L(d.updates).forEach(u=>{
     if(!u||!u.type||!ENT[u.type]||!u.name||!u.set) return;
     const r=resolveEnt(u.type,u.name,o.id);
     if(!r.rec||r.conf<1) return;                      // only touch a record we're sure about
@@ -3684,25 +3886,25 @@ function buildPlan(o,text,d,shots){
     ops.push({kind:"update",type:u.type,id:r.rec.id,name:entName(u.type,r.rec),set,why:u.why||"",on:true,
       was:set.status?r.rec.status:""});
   });
-  (d.answers||[]).forEach(a=>{
+  L(d.answers).forEach(a=>{
     if(!a||!a.question||!a.answer) return;
     const q=wOf("questions",o.id).find(x=>x.status==="Open"&&canonThing(x.q)===canonThing(a.question));
     if(!q) return;
     ops.push({kind:"answer",id:q.id,name:q.q,answer:String(a.answer).trim(),why:a.why||"",on:true});
   });
-  (d.tasks||[]).forEach(t=>{
+  L(d.tasks).forEach(t=>{
     if(!t||!t.label) return;
-    ops.push({kind:"task",label:String(t.label).trim(),date:/^\d{4}-\d{2}-\d{2}$/.test(t.date||"")?t.date:"",why:t.why||"",on:true});
+    ops.push({kind:"task",label:String(t.label).trim(),date:validYMD(t.date),why:t.why||"",on:true});
   });
-  const asks=(d.ask_me||[]).filter(q=>q&&q.ask).slice(0,3).map((q,i)=>({
+  const asks=L(d.ask_me).filter(q=>q&&q.ask).slice(0,3).map((q,i)=>({
     id:"q"+i, ask:String(q.ask).trim(), why:(q.why||"").trim(),
-    options:(q.options||[]).filter(Boolean).map(String).slice(0,4), answer:""
+    options:L(q.options).filter(Boolean).map(String).slice(0,4), answer:""
   }));
   // what it read off the picture, kept separate from what you typed until you approve it
   const transcript=String(d.transcript||"").trim().slice(0,20000);
-  return {opId:o.id,captureId:capEditId||null,text,summary:(d.summary||"").trim(),
-    understood:(d.understood||[]).filter(Boolean).map(String).slice(0,5),
-    advice:(d.advice||[]).filter(Boolean).map(String).slice(0,2),
+  return {opId:o.id,captureId:capEditId||null,text,summary:String(d.summary||"").trim(),
+    understood:L(d.understood).filter(Boolean).map(String).slice(0,5),
+    advice:L(d.advice).filter(Boolean).map(String).slice(0,2),
     shots:(shots||[]).slice(), transcript,
     items,rels,ops,asks};
 }
@@ -3848,6 +4050,7 @@ function capReview(){
 function capApply(){
   const p=capPlan; if(!p) return;
   const o=opById(p.opId); if(!o) return;
+  snapshotUndo("that note and everything it added");
   // any correction you made to the transcription wins over what the model read
   const tEl=document.getElementById("capTranscript");
   if(tEl) p.transcript=tEl.value.trim();
@@ -5545,6 +5748,7 @@ function applyMergeReview(){
   const p=mergePlan; if(!p) return;
   const keep=entGet("person",p.keepId), drop=entGet("person",p.dropId);
   if(!keep||!drop) return;
+  snapshotUndo("that merge");
   const spare=[];
   p.conf.forEach(c=>{
     if(c.choose==="b"){ spare.push(`${c.label} (also recorded): ${c.aText}`); keep[c.field]=drop[c.field]; }
@@ -5555,7 +5759,7 @@ function applyMergeReview(){
   if(mergePeople(p.keepId,p.dropId)){
     if(spare.length) keep.notes=(keep.notes?keep.notes+"\n":"")+spare.join("\n");
     save(); mergePlan=null; closeEditor(); render(); openEnt("person",p.keepId);
-    toast("Merged — nothing lost");
+    toast("Merged — nothing lost", null, "Undo");
   }
 }
 function mergePeople(keepId,dropId){
@@ -5984,21 +6188,34 @@ function citeHTML(text){
    loses the wording. The last ASK_KEEP land on state.work.asks so they sync like everything else.
    Answers are trimmed: this is one localStorage key that gets pushed to the vault on every save. */
 const ASK_KEEP=10, ASK_MAX=4000;
+/* Answers you have already read are a convenience for THIS device, not part of the record of the
+   company — and at ten entries of four thousand characters they were the single largest block in a
+   document that gets re-uploaded on every save. So they live in devPrefs now. Anything already
+   filed in the synced document is taken over on load rather than thrown away. */
+function askStore(){ if(!Array.isArray(devPrefs.asks)) devPrefs.asks=[]; return devPrefs.asks; }
+function absorbAsks(){
+  const w=state.work; if(!w||!Array.isArray(w.asks)||!w.asks.length) return;
+  const mine=askStore(), have=new Set(mine.map(x=>x.id));
+  w.asks.forEach(x=>{ if(x&&x.id&&!have.has(x.id)) mine.push(x); });
+  w.asks=[];                      // out of the synced document for good
+  saveDev();
+}
 function askLog(o,q,a){
   if(!o||!q||!a) return;
-  const w=W();
+  absorbAsks();
+  let list=askStore();
   // asking the same thing again replaces the old entry rather than stacking a near-duplicate
-  w.asks=w.asks.filter(x=>!(x.opId===o.id && canonThing(x.q)===canonThing(q)));
+  list=list.filter(x=>!(x.opId===o.id && canonThing(x.q)===canonThing(q)));
   // Date.now() ties inside one millisecond, and a tie makes "keep the newest ten" arbitrary —
   // the same reason save() forces rev strictly upward.
-  const last=w.asks.reduce((m,x)=>Math.max(m,+x.at||0),0);
-  w.asks.push({id:uid(),opId:o.id,at:Math.max(Date.now(),last+1),q:String(q).slice(0,300),a:String(a).slice(0,ASK_MAX)});
-  const mine=w.asks.filter(x=>x.opId===o.id).sort((x,y)=>y.at-x.at);
+  const last=list.reduce((m,x)=>Math.max(m,+x.at||0),0);
+  list.push({id:uid(),opId:o.id,at:Math.max(Date.now(),last+1),q:String(q).slice(0,300),a:String(a).slice(0,ASK_MAX)});
+  const mine=list.filter(x=>x.opId===o.id).sort((x,y)=>y.at-x.at);
   const keep=new Set(mine.slice(0,ASK_KEEP).map(x=>x.id));
-  w.asks=w.asks.filter(x=>x.opId!==o.id||keep.has(x.id));
-  save();
+  devPrefs.asks=list.filter(x=>x.opId!==o.id||keep.has(x.id));
+  saveDev();
 }
-function askHistory(o){ return wOf("asks",o.id).sort((a,b)=>b.at-a.at); }
+function askHistory(o){ absorbAsks(); return askStore().filter(x=>x&&x.opId===o.id).sort((a,b)=>b.at-a.at); }
 function askHistoryHTML(o){
   const list=askHistory(o);
   if(!list.length) return "";
@@ -6012,7 +6229,7 @@ function askHistoryHTML(o){
       </div>`).join("")}</div>`;
 }
 function askLoad(id){
-  const x=wFind("asks",id); if(!x) return;
+  const x=askStore().find(y=>y&&y.id===id); if(!x) return;
   const inp=$("#wAskInput"); if(inp) inp.value=x.q;
   askRefs=(workRefs(workOp()||{id:x.opId},x.q)||{}).refs||askRefs;
   aiGenText=x.a;
@@ -6683,6 +6900,45 @@ create policy "delete own vault" on user_vaults for delete
 revoke all on user_vaults from anon;
 grant select, insert, update, delete on user_vaults to authenticated;`;
 
+/* Two-factor was, until now, enforced only by this app: the policies above check auth.uid() and
+   nothing else, so a password alone yields an aal1 token that can read and write the vault
+   straight over the REST API without ever seeing the code prompt. This makes Postgres enforce it.
+
+   It is deliberately separate and optional. It affects ONLY accounts that have a verified factor
+   (everyone else takes the `else true` branch untouched), and the last line of the block is the
+   one-liner that puts it back exactly as it was — because this is the one change in here that
+   could lock someone out of their own notes, and the way back should not need looking up. */
+const MFA_SQL = `-- Optional: make two-factor real at the database level, not just in the app.
+-- Safe for accounts without 2FA — they are unaffected. Run AFTER the setup SQL above.
+
+create or replace function public.mw_mfa_ok() returns boolean
+  language sql stable security definer set search_path = public, auth as $$
+  select case
+    when exists (select 1 from auth.mfa_factors f
+                 where f.user_id = auth.uid() and f.status = 'verified')
+    then coalesce(auth.jwt() ->> 'aal', 'aal1') = 'aal2'
+    else true
+  end;
+$$;
+grant execute on function public.mw_mfa_ok() to authenticated;
+
+drop policy if exists "read own vault"   on user_vaults;
+drop policy if exists "insert own vault" on user_vaults;
+drop policy if exists "update own vault" on user_vaults;
+drop policy if exists "delete own vault" on user_vaults;
+
+create policy "read own vault"   on user_vaults for select
+  using (auth.uid() = user_id and public.mw_mfa_ok());
+create policy "insert own vault" on user_vaults for insert
+  with check (auth.uid() = user_id and public.mw_mfa_ok());
+create policy "update own vault" on user_vaults for update
+  using (auth.uid() = user_id and public.mw_mfa_ok())
+  with check (auth.uid() = user_id and public.mw_mfa_ok());
+create policy "delete own vault" on user_vaults for delete
+  using (auth.uid() = user_id and public.mw_mfa_ok());
+
+-- TO UNDO: re-run the setup SQL above. It recreates the four policies without the 2FA check.`;
+
 /* ============================ THE LOGIN SCREEN ============================
    Signing in is the first thing you see, so it gets to be a place rather than a form buried in
    Settings. The backdrop is built once and left alone; only the panel body swaps between views,
@@ -6909,7 +7165,9 @@ async function paintMFA(){
   const on=factors.filter(f=>f.status==="verified");
   box.innerHTML = on.length
     ? `<div class="mfa-on">${I.check}<div><b>Two-factor is on.</b><div style="font-size:11.5px;color:var(--faint)">A code from your authenticator app is needed on every new sign-in.</div></div>
-        <button class="btn ghost sm danger" data-mfaoff="${esc(on[0].id)}" style="margin-left:auto">Turn off</button></div>`
+        <button class="btn ghost sm danger" data-mfaoff="${esc(on[0].id)}" style="margin-left:auto">Turn off</button></div>
+       <div class="sect-note" style="margin:10px 2px 0">This app asks for the code, but your database doesn't require it — a password alone can still reach your notes through the API. One more piece of SQL makes Postgres enforce it.
+        <button class="btn ghost sm" data-act="copy-mfa-sql" style="margin-top:8px;display:block">${I.copy} Copy the 2FA policy SQL</button></div>`
     : `<div class="mfa-off"><div><b>Two-factor is off.</b><div style="font-size:11.5px;color:var(--faint)">Add a code from an authenticator app on top of your password.</div></div>
         <button class="btn ghost sm" data-act="mfa-enroll" style="margin-left:auto">Turn on</button></div>`;
 }
@@ -8274,7 +8532,9 @@ async function pullContactInto(){
 
 /* ============================ EVENT WIRING ============================ */
 document.addEventListener("click",e=>{
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
+  if(!e.target||typeof e.target.closest!=="function") return;
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -8311,12 +8571,13 @@ document.addEventListener("click",e=>{
   if(act==="close-drawer"){ closeDrawer(); return; }
   if(act==="cancel-editor"){ closeEditor(); return; }
   if(act==="del-op"){ const op=getOp(); const work=wOf("captures",op.id).length+wOf("projects",op.id).length+wOf("problems",op.id).length;
-    if(confirm(`Delete ${op.company} and all its rounds/people${work?", plus everything you've captured about working there":""}? This can't be undone.`)){
+    if(confirm(`Delete ${op.company} and all its rounds/people${work?", plus everything you've captured about working there":""}?`)){
+      snapshotUndo(op.company);
       const id=openId; state.opportunities=state.opportunities.filter(o=>o.id!==id);
       if(state.scorecard&&state.scorecard.scores) delete state.scorecard.scores[id];
       // don't leave the post-hire records and graph edges behind as orphans
       WORK_LISTS.forEach(k=>{ W()[k]=W()[k].filter(r=>r.opId!==id); });
-      save(); closeDrawer(); render(); toast("Deleted"); } return; }
+      save(); closeDrawer(); render(); toast("Deleted "+op.company, null, "Undo"); } return; }
   if(act==="add-round"){ openEditor(roundForm(null)); return; }
   if(act==="add-person"){ openEditor(personForm(null)); return; }
   if(act==="export"){ exportData(); return; }
@@ -8336,6 +8597,7 @@ document.addEventListener("click",e=>{
     return;
   }
   if(act==="work-add"){ openAddRecord(); return; }
+  if(t.dataset.toastAct){ const el=$("#toast"); if(el) el.classList.remove("show"); undoLast(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
   if(t.dataset.mode){ setAppMode(t.dataset.mode); openSettings(); toast("Switched to "+(APP_MODES.find(x=>x.id===t.dataset.mode)||{}).label); return; }
   if(t.dataset.groqmodel||t.dataset.pickmodel){
@@ -8442,7 +8704,7 @@ document.addEventListener("click",e=>{
   if(act==="ask-clear"){
     const o=workOp(); if(!o) return;
     if(!confirm("Clear your earlier questions? The answers go with them; your notes are untouched.")) return;
-    W().asks=W().asks.filter(x=>x.opId!==o.id); save(); render(); return;
+    devPrefs.asks=askStore().filter(x=>x.opId!==o.id); saveDev(); render(); return;
   }
   if(act==="acct-signin"){ doSignIn(); return; }
   if(act==="acct-signup"){ doSignUp(); return; }
@@ -8488,9 +8750,31 @@ document.addEventListener("click",e=>{
   }
   if(act==="acct-signout"){
     // On a shared computer "sign out" has to be able to take the local copy with it.
-    const wipe=confirm("Sign out.\n\nOK — also remove this account's data from this device (use this on a shared computer)\nCancel — leave the local copy here");
-    // signing out puts the login screen back; staying local is a choice you make there, not here
-    authSignOut(wipe).then(()=>{ devPrefs.localOnly=false; saveDev(); closeEditor(); render(); renderAuthGate(); toast("Signed out"); });
+    // Same rule as the sign-in conflict: one of these erases this device, so it does not get to
+    // hide behind the word "OK". Each outcome says what it does and Cancel means stay signed in.
+    (async ()=>{
+      const n=(state.opportunities||[]).length, r=`${n} ${n===1?"role":"roles"}`;
+      const pick=await askChoice({
+        title:"Sign out",
+        body:unsyncedEdits()
+          ? "Some changes on this device haven't reached the cloud yet — upload them first if you want to keep them."
+          : "Everything here is already in your account.",
+        options:[
+          {id:"keep", kind:"primary", label:"Sign out, leave my notes here",
+           note:`The ${r} on this device stay on it. Sign back in any time.`},
+          {id:"wipe", kind:"danger", label:"Sign out and erase this device",
+           note:`The ${r} are removed from this device. Your account keeps its copy. Use this on a shared computer.`}
+        ],
+        backup:true,
+        cancelLabel:"Stay signed in",
+        cancelNote:"Nothing happens — you stay signed in and nothing is removed."
+      });
+      if(!pick) return;
+      // signing out puts the login screen back; staying local is a choice you make there, not here
+      await authSignOut(pick==="wipe");
+      devPrefs.localOnly=false; saveDev(); closeEditor(); render(); renderAuthGate();
+      toast(pick==="wipe"?"Signed out — this device was cleared":"Signed out — your notes are still here");
+    })();
     return;
   }
   if(act==="acct-password"){ openChangePassword(); return; }
@@ -8503,13 +8787,15 @@ document.addEventListener("click",e=>{
   }
   if(act==="mfa-enroll"){ openMFAEnroll(); return; }
   if(act==="copy-sql"){ copy(SYNC_SQL,"SQL copied — paste into Supabase SQL editor"); return; }
+  if(act==="copy-mfa-sql"){ copy(MFA_SQL,"2FA policy SQL copied — run it in the Supabase SQL editor"); return; }
   if(act==="copy-code"){ copy(sync.code||"", "Sync code copied"); return; }
 
   // round/person edit/delete
   if(t.dataset.editRound){ const r=getOp().rounds.find(x=>x.id===t.dataset.editRound); openEditor(roundForm(r)); editorEl.dataset.editId=r.id; return; }
-  if(t.dataset.delRound){ const o=getOp(); o.rounds=o.rounds.filter(x=>x.id!==t.dataset.delRound); o.updatedAt=Date.now(); save(); renderDrawer(); render(); return; }
+  if(t.dataset.delRound){ const o=getOp(); snapshotUndo("that round"); o.rounds=o.rounds.filter(x=>x.id!==t.dataset.delRound); o.updatedAt=Date.now(); save(); renderDrawer(); render(); toast("Round deleted", null, "Undo"); return; }
   if(t.dataset.editPerson){ const p=getOp().people.find(x=>x.id===t.dataset.editPerson); openEditor(personForm(p)); editorEl.dataset.editId=p.id; return; }
-  if(t.dataset.delPerson){ const o=getOp(); o.people=o.people.filter(x=>x.id!==t.dataset.delPerson); o.updatedAt=Date.now(); save(); renderDrawer(); return; }
+  if(t.dataset.delPerson){ const o=getOp(); const who=((o.people||[]).find(x=>x.id===t.dataset.delPerson)||{}).name||"that contact";
+    snapshotUndo(who); o.people=o.people.filter(x=>x.id!==t.dataset.delPerson); o.updatedAt=Date.now(); save(); renderDrawer(); toast("Deleted "+who, null, "Undo"); return; }
   if(t.dataset.research){ const o=getOp(); const p=o.people.find(x=>x.id===t.dataset.research); copy(researchPrompt(o,p),"Research prompt copied — paste into any AI"); return; }
 
   // copy brief prompts
@@ -8564,7 +8850,8 @@ document.addEventListener("click",e=>{
     return; }
   if(t.dataset.entedit){ const [ty,id]=t.dataset.entedit.split("|"); openEntForm(ty,entGet(ty,id)); return; }
   if(t.dataset.entdel){ const [ty,id]=t.dataset.entdel.split("|");
-    if(confirm(`Delete "${entLabel(ty,id)}"? Its connections go too. This can't be undone.`)){ entDelete(ty,id); save(); closeEditor(); render(); toast("Deleted"); } return; }
+    const nm=entLabel(ty,id);
+    if(confirm(`Delete "${nm}"? Its connections go too.`)){ snapshotUndo(nm); entDelete(ty,id); save(); closeEditor(); render(); toast("Deleted "+nm, null, "Undo"); } return; }
   if(t.dataset.qstat){ const [id,st]=t.dataset.qstat.split("|"); const q=wFind("questions",id);
     if(q){ q.status=st; if(st==="Answered") q.answeredAt=Date.now(); save();
       const detailOpen=!!(editorEl&&editorEl.querySelector(`[data-entdel="question|${id}"]`));
@@ -8587,7 +8874,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.notme){ const o=opById(entOpId("person",t.dataset.notme)); if(o&&o.hired){ delete o.hired.meId; save(); render(); openEnt("person",t.dataset.notme); } return; }
   if(t.dataset.objdone){ objToggle(t.dataset.objdone); return; }
   if(t.dataset.askload){ askLoad(t.dataset.askload); return; }
-  if(t.dataset.askdel){ const w=W(); w.asks=w.asks.filter(x=>x.id!==t.dataset.askdel); save(); render(); return; }
+  if(t.dataset.askdel){ devPrefs.asks=askStore().filter(x=>x.id!==t.dataset.askdel); saveDev(); render(); return; }
   if(t.dataset.mfacode){ submitMFA(t.dataset.mfacode); return; }
   if(t.dataset.mfaon){ confirmMFA(t.dataset.mfaon); return; }
   if(t.dataset.mfaoff){
@@ -8599,6 +8886,7 @@ document.addEventListener("click",e=>{
   if(t.dataset.convert){ const [ty,id]=t.dataset.convert.split("|"); openConvertPicker(ty,id); return; }
   if(t.dataset.convto){ const [ty,id,to]=t.dataset.convto.split("|");
     const relSel=document.getElementById("convRel"); const rel=relSel?relSel.value:"";
+    snapshotUndo("that change of type");
     const made=convertEnt(ty,id,to);
     if(made){
       if(rel){ const [rt,rid]=rel.split("|");
@@ -8643,6 +8931,13 @@ document.addEventListener("click",e=>{
 // overlay click closes drawer
 $("#overlay").addEventListener("click",closeDrawer);
 document.addEventListener("keydown",e=>{
+  // ⌘Z / Ctrl+Z, but never while you are typing — the browser's own undo owns the caret there
+  if((e.metaKey||e.ctrlKey) && !e.shiftKey && (e.key==="z"||e.key==="Z")){
+    const el=document.activeElement, tag=el?(el.tagName||"").toLowerCase():"";
+    if(tag==="input"||tag==="textarea"||tag==="select"||(el&&el.isContentEditable)) return;
+    if(!canUndo()) return;
+    e.preventDefault(); undoLast(); return;
+  }
   if(e.key!=="Escape") return;
   if(editorEl) tryCloseEditor();
   else if($("#drawer").classList.contains("show")) closeDrawer();
@@ -8781,6 +9076,7 @@ function importFile(file){
   r.onload=async()=>{ try{ const data=JSON.parse(r.result);
     if(!data.opportunities) throw 0;
     if(state.opportunities.length && !confirm("Replace your current data with this backup? (Export first if unsure.)")) return;
+    snapshotUndo("that import");
     state=migrate(data); persist();
     await migrateFilesToIDB();   // put any inlined attachments back in the file vault
     save(); render(); toast("Imported "+data.opportunities.length+" roles");
@@ -8799,17 +9095,19 @@ let toastT;
    it becomes a red toast with a warning icon rather than a green tick over a stack trace. The
    text is trimmed to something a person can read at a glance — the full message is still thrown,
    and anything longer belongs on the page, not floating over it. */
-function toast(msg,kind){
+function toast(msg,kind,action){
   const t=$("#toast"); if(!t) return;
   let s=String(msg==null?"":msg).replace(/\s+/g," ").trim();
   const bad = kind==="bad" || /^⚠/.test(s);
   s=s.replace(/^⚠\s*/,"");
   if(s.length>190) s=s.slice(0,187).replace(/[\s,;:{("']+$/,"")+"…";
-  t.className="toast"+(bad?" bad":"");
-  t.innerHTML=`${bad?I.problem:I.check}<span>${esc(s)}</span>`;
+  t.className="toast"+(bad?" bad":"")+(action?" act":"");
+  t.innerHTML=`${bad?I.problem:I.check}<span>${esc(s)}</span>`+
+    (action?`<button type="button" class="toast-act" data-toast-act="1">${esc(action)}</button>`:"");
   t.classList.add("show");
   clearTimeout(toastT);
-  toastT=setTimeout(()=>t.classList.remove("show"), bad?5200:2400);   // an error needs time to read
+  // an error needs time to read; an offer to undo needs time to take
+  toastT=setTimeout(()=>t.classList.remove("show"), action?7000:bad?5200:2400);
 }
 
 /* ============================ DEMO DATA ============================ */
@@ -9064,11 +9362,32 @@ async function shotDocs(shots){
   return out;
 }
 // bytes live in IndexedDB, so <img data-shot="ref"> starts blank and gets filled in after render
+/* Photo BYTES live in IndexedDB and IndexedDB is per-device — the synced document carries only
+   {name,type,size,ref}. So a whiteboard photographed on the phone has no bytes on the laptop, and
+   the honest thing is to say so. An empty frame reads as a bug; this reads as a fact. The note's
+   transcription is folded into capture.text, so what the picture SAID did travel. */
+const SHOT_MISSING = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+    <rect width="160" height="160" rx="14" fill="#191c22"/>
+    <rect x="4.5" y="4.5" width="151" height="151" rx="11" fill="none" stroke="#2f333c" stroke-dasharray="6 5"/>
+    <g fill="none" stroke="#666b75" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="46" y="54" width="68" height="50" rx="7"/><circle cx="80" cy="79" r="13"/>
+      <path d="M62 54l7-10h22l7 10"/></g>
+    <text x="80" y="128" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#9a9ea8">On the other</text>
+    <text x="80" y="144" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#9a9ea8">device</text>
+  </svg>`);
 async function hydrateShots(root){
   const els=[...(root||document).querySelectorAll("img[data-shot]:not([data-shot-done])")];
   for(const el of els){
     el.setAttribute("data-shot-done","1");
-    try{ const url=await idbGet(el.dataset.shot); if(url) el.src=url; }catch(e){}
+    let url=null;
+    try{ url=await idbGet(el.dataset.shot); }catch(e){}
+    if(url){ el.src=url; el.removeAttribute("data-shot-missing"); }
+    else if(!el.getAttribute("src")){
+      el.src=SHOT_MISSING;
+      el.setAttribute("data-shot-missing","1");
+      el.title="This photo is on the device that took it — photos aren't synced. Its transcription is in the note.";
+    }
   }
 }
 function shotThumb(s,extra){
@@ -9481,6 +9800,9 @@ initSync();
 initNative();
 // attachments: move any legacy inline blobs into the file vault, then bin unreferenced ones
 setTimeout(()=>{ migrateFilesToIDB().then(sweepOrphanFiles).catch(()=>{}); }, 1200);
+// ask the browser not to evict this origin — the photos in IndexedDB are what it would take first
+setTimeout(()=>{ askPersistentStorage(); }, 2500);
+absorbAsks();      // earlier builds filed read answers in the synced document; take them over
 // dismiss the branded launch splash (only visible when installed/standalone)
 (function(){ const s=document.getElementById("splash"); if(!s) return;
   setTimeout(()=>{ s.classList.add("hide"); setTimeout(()=>s.remove(),500); }, 700); })();

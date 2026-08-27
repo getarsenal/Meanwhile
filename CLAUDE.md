@@ -76,6 +76,12 @@ you paste into a new AI chat to prep for interviews.
   overwrites. `pullNow`/`afterSignIn` refuse to touch a sealed remote they cannot open rather than
   treating it as empty, and adopt it + show the gate (`remoteLocked`). `lockBox()` only appears if you
   still have one, and offers the way out.
+- **`SCHEMA`** (declared **above `let state = load()`** — TDZ, the same trap as the lock keys and
+  `DEFAULT_PROJECT`, which has now bitten three times; `migrate()` reads it, `load()`'s catch would
+  swallow the ReferenceError and hand back an empty app that the next save overwrites) stamps
+  `state.meta.schema`. `migrate()` never writes it *down*, and `pullNow` refuses to adopt or
+  overwrite a document from a newer build (`remoteIsNewerBuild`) — an older cached build silently
+  dropping fields it doesn't understand is invisible data loss.
 - `CLOUD SYNC` — whole-document last-write-wins keyed by `state.rev`. **`syncMode()` picks the path**:
   `account` (the default now) writes `user_vaults` straight over PostgREST with the user's own token,
   where **row-level security** compares `auth.uid()` to the row owner — Postgres enforces the scoping,
@@ -90,6 +96,12 @@ you paste into a new AI chat to prep for interviews.
   from anon` in `SYNC_SQL` means it can't read a vault row; the exposure is sign-up spam, closed by
   turning sign-ups off. It must be **declared above `let sync = loadSync()`** (TDZ, same trap as the
   lock keys) and `saveSync()` strips `builtIn` so a later build can move the project.
+  **A pull can no longer eat local edits.** `devPrefs.pushedRev` records what the cloud is known to
+  hold, so `unsyncedEdits()` is a fact rather than a guess; when the remote is newer *and* this
+  device has unpushed work, `resolvePullConflict()` asks via `askChoice` instead of replacing
+  `state` in silence on a background focus-pull. The status line says "Not uploaded yet" rather
+  than "Synced ✓" whenever that's true. `docSig()` fingerprints the document with `rev` zeroed so a
+  `save()` that changed nothing costs no upload — many handlers call `save()` unconditionally.
   A device-configured project always wins. Project URL + anon key live in localStorage `meanwhile_sync_cfg_v1` (NOT in
   `state`, never synced, never in the repo). The app was called **Callback** once: `readLS(new,old)`
   still reads `callback_sync_cfg_v1` / `callback_ai_cfg_v1` as a fallback and leaves them in place,
@@ -223,6 +235,14 @@ you paste into a new AI chat to prep for interviews.
   red with a warning icon and holds it on screen longer. `apiErrText()` lifts the provider's own
   sentence out of its JSON envelope so the braces never reach the screen. The transition is
   `opacity,transform` — **never `all`**, which animates the width on a rotate or resize.
+- **Undo** (`snapshotUndo`/`undoLast`/`withUndo`, `UNDO_MAX` 12) is a whole-document JSON snapshot —
+  cheap at this size, impossible to get subtly wrong, and it covers deletes, merges, conversions,
+  an import and a whole batch of AI-applied changes with one mechanism. **In memory only**:
+  persisting it would double what localStorage holds, and undo is about the mistake you just made.
+  `undoLast()` forces `rev` upward or the next pull hands back the very thing you undid. Offered in
+  the toast itself (`toast(msg,kind,"Undo")`) plus ⌘Z — never while a field has focus, where the
+  browser's own undo owns the caret. Attachment bytes are untouched by it (they're in IndexedDB and
+  no undoable action deletes them), so restoring the document restores working references.
 - **Modals never eat your typing**: `openEditor()` takes a `snapshotEditor()` of every field (and
   again on `spSetBody`); a backdrop tap or Escape goes through `tryCloseEditor()`, which only closes
   silently when `editorDirty()` is false and otherwise asks. The ✕/Cancel buttons still close outright.
@@ -583,6 +603,13 @@ edit/delete work. Don't create rounds/people without ids.
   notes", cite their sources, and are told to answer "you haven't recorded anything about that"
   rather than fill a gap. Anything ranked or counted (who to ask, gaps, report numbers) is computed
   in JS from the records so the evidence is real; the model only does wording.
+- **The AI writes; the code decides what may be written.** `buildPlan` coerces every list the model
+  returns (`L()` — a string, an object or a null where an array belongs must not throw, or the whole
+  note is refused), whitelists the fields an `update` may `set` (never ids, `opId`, names, `meId`,
+  `managerId`, `standing`), validates a status against that type's own list, drops an update that
+  doesn't resolve to exactly one record, only closes questions that are actually open, and passes
+  dates through `validYMD()` — the shape test alone let `2026-13-45` become a calendar entry.
+  `agent.mjs` in the scratchpad attacks all of this deliberately.
 - **`esc()` is for text; markup is not the only escaping context.** Two more helpers exist because
   `esc()` alone doesn't cover them: `cssCol(c)` for anything landing inside `style="…"` (a colour is
   the one a user can set, and `;`/`)` break out of a declaration, which `esc()` doesn't touch), and
@@ -596,8 +623,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,160 browser
-assertions** across thirty-four Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,300 browser
+assertions** across thirty-six Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,
@@ -637,6 +664,23 @@ source art with Pillow if it changes; bump `CACHE` in `sw.js` after asset change
 `git add -A && git commit -m "..." && git push`. GitHub Pages (branch `main`, root) serves it;
 live within ~1 minute. Phones cache hard — hard-refresh to see changes.
 (Local note: `git push` may need the sandbox disabled — "Could not resolve host" otherwise.)
+
+## Known limits, stated on purpose
+- **Photos are device-local.** Bytes live in IndexedDB behind a `ref`; only `{name,type,size,ref}`
+  syncs. `hydrateShots()` renders `SHOT_MISSING` (an inline SVG saying so) rather than an empty
+  frame — the note's *transcription* travels, the picture doesn't, and a backup file re-inlines it.
+  Real attachment sync would mean Supabase Storage; not built.
+- **2FA is app-level until the SQL is run.** `SYNC_SQL`'s policies check `auth.uid()` only, so a
+  password alone yields an `aal1` token that satisfies them over the REST API. `MFA_SQL` (Settings →
+  Your account, once 2FA is on) adds `mw_mfa_ok()` to all four policies. Deliberately opt-in and
+  additive — accounts without a verified factor take the `else true` branch — and the way back is
+  the last line of the block, because it's the one change here that could lock someone out.
+- **`askPersistentStorage()`** asks the browser not to evict this origin. It is a request, not a
+  guarantee; the answer is recorded in `devPrefs.persisted` and shown, never assumed.
+- **A failed refresh is not always the end of a session.** `authToken()` tells a rejected refresh
+  token (400/401/403, `invalid_grant`) from a dropped connection and only clears the session for the
+  first. `refreshing` is cleared **synchronously** — on a timer, the next call in the same tick was
+  handed back the previous rejection.
 
 ## Accounts & cloud sync (the user's own Supabase project)
 Sign-in is email + password with optional TOTP 2FA, and the vault row is owned by the account.

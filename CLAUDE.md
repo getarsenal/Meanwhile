@@ -192,6 +192,18 @@ you paste into a new AI chat to prep for interviews.
   an earlier failure describes the wrong request — and "reached them and they listed nothing" is NOT
   "couldn't reach them": three different sentences, because blaming the key for a dropped connection
   sends the user to re-copy a key that was fine.
+- **Busy is not broken** (`AI_BUSY`, `aiErr(msg,busy)`, `aiCallOne` + the `aiCall` wrapper). A
+  Gemini 503 ("high demand") and a Groq 429 used to end the call outright, even though free-tier
+  quotas and load are **per model** — so both providers now treat 429/5xx exactly like a dead model
+  name: try the next one, then back off (honouring `retry-after` when it's ≤8s) and retry the best
+  two. Only after all that does it throw, tagged `busy`.
+  **Cross-provider failover**: a `busy` failure borrows the *other* free provider for that one call
+  (`altFreeEngine`), toasts which one answered, files the model it learned under that provider, and
+  restores `aiCfg` in a `finally`. Deliberately **only between Gemini and Groq** — falling over to a
+  paid key would spend money the user never agreed to. `aiFailingOver` keeps two overlapping calls
+  from trading engines; `noFailover` is passed by *Test connection*, which must report on the
+  provider you actually picked. `keptKeysNote()` says out loud when both free keys are present,
+  because otherwise nobody would know the safety net exists.
 - **A picture is never refused on a guess.** Whether a Groq model is multimodal is inferred from its
   *name* (`GROQ_VISION`) because the catalogue doesn't say. So when nothing looks multimodal the
   photo goes to the best chat models anyway and the API gets to answer — a 400 from Groq is
@@ -637,8 +649,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,360 browser
-assertions** across thirty-seven Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,395 browser
+assertions** across thirty-eight Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

@@ -1340,7 +1340,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v57 · 2026-08-27";
+const BUILD = "v58 · 2026-08-28";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -7895,7 +7895,13 @@ const ENG_LABEL={google:"Gemini",groq:"Groq",openai:"ChatGPT",anthropic:"Claude"
 function keptKeysNote(current){
   const others=Object.keys(aiKeys()).filter(e=>e!==current&&aiKeys()[e]&&ENG_LABEL[e]).map(e=>ENG_LABEL[e]);
   if(!others.length) return "";
-  return `Your ${others.map(esc).join(" and ")} key${others.length>1?"s are":" is"} still saved — switch back any time and it'll be there.`;
+  let n=`Your ${others.map(esc).join(" and ")} key${others.length>1?"s are":" is"} still saved — switch back any time and it'll be there.`;
+  // Both free keys present is worth saying out loud: it is the difference between "rate limited,
+  // try later" and the app quietly finishing the job on the other one.
+  const cur=current||aiCfg.engine;
+  if(FREE_ENGINES.includes(cur) && keyFor(cur==="google"?"groq":"google"))
+    n+=` <b style="color:var(--good)">Both free providers are set up, so if one is busy or rate-limited Meanwhile finishes the job on the other automatically.</b>`;
+  return n;
 }
 function aiKeys(){ if(!aiCfg.keys||typeof aiCfg.keys!=="object") aiCfg.keys={}; return aiCfg.keys; }
 function keyFor(eng){ const k=aiKeys()[eng]; if(k) return k; return (aiCfg.engine===eng&&aiCfg.key)?aiCfg.key:""; }
@@ -7977,7 +7983,20 @@ function aiParse(s){
 }
 /* prompt + optional attachment(s). `doc` is {data:base64-no-prefix, mime} — or an ARRAY of them,
    because one note can be three photos of the same whiteboard. opts.json=false for prose. */
-async function aiCall(prompt, doc, opts){
+/* A provider being BUSY is not the same as a provider being broken, and the app used to treat
+   every non-404 as fatal — so a Gemini 503 ("high demand, try again later") ended the call even
+   though the very next model on the same key would have answered. These are the statuses worth
+   trying something else for. */
+const AI_BUSY=[429,500,502,503,504,529];
+function aiErr(msg,busy){ const e=new Error(msg); if(busy) e.busy=true; return e; }
+const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
+// providers hand back a retry-after in seconds; honour it when it's short enough to be worth waiting
+function retryAfterMs(res){
+  const h=res&&res.headers&&res.headers.get&&(res.headers.get("retry-after")||res.headers.get("x-ratelimit-reset-requests"));
+  const n=parseFloat(String(h||"").replace(/[^\d.]/g,""));
+  return (isFinite(n)&&n>0&&n<=8) ? Math.ceil(n*1000) : 0;
+}
+async function aiCallOne(prompt, doc, opts){
   const eng=aiEngine(); const wantJson = !(opts&&opts.json===false);
   const docs = doc ? (Array.isArray(doc)?doc:[doc]).filter(d=>d&&d.data) : [];
   const imgs = docs.filter(d=>/^image\//i.test(d.mime||""));
@@ -8026,7 +8045,7 @@ async function aiCall(prompt, doc, opts){
     const attempt=async model=>fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",
       headers:{"Content-Type":"application/json",Authorization:"Bearer "+aiKey()},
       body:JSON.stringify(Object.assign({model},base))});
-    let res,lastStatus=0,lastErr="",tried=[];
+    let res,lastStatus=0,lastErr="",tried=[],lastRetry=0;
     const run=async list=>{
       for(const model of list){
         if(!model||tried.includes(model)) continue;
@@ -8034,7 +8053,10 @@ async function aiCall(prompt, doc, opts){
         res=await attempt(model);
         if(res.ok) return true;
         lastStatus=res.status; lastErr=(await res.text()).slice(0,600);   // enough to still parse
-        if(![404,400].includes(res.status)) return false;   // a real error, not a dead model name
+        lastRetry=retryAfterMs(res);
+        // Groq's free limits are PER MODEL, so a 429 on one is a reason to try the next — not to
+        // stop. Same for a busy 5xx. Only a genuinely broken request ends the loop.
+        if(![404,400,...AI_BUSY].includes(res.status)) return false;
       }
       return false;
     };
@@ -8055,9 +8077,15 @@ async function aiCall(prompt, doc, opts){
       const fresh = imgs.length ? (groqVision().length?groqVision():groqCached()) : groqCached();
       if(fresh.length) done=await run(fresh);
     }
+    // every model was busy — one short wait and another go, which is usually all a burst needs
+    if(!done && AI_BUSY.includes(lastStatus)){
+      await sleepMs(lastRetry||900);
+      tried=[]; done=await run([aiCfg.model, ...groqCached(), ...GROQ_PREF].slice(0,3));
+    }
     if(!done){
       const said=apiErrText(lastErr);
-      if(lastStatus===429) throw new Error("Groq rate limit — wait a few seconds and retry (the free tier resets quickly).");
+      if(lastStatus===429) throw aiErr("Groq rate limit on every model this key can run — it resets quickly. Add a free Gemini key in AI settings and Meanwhile switches over automatically.",true);
+      if(AI_BUSY.includes(lastStatus)) throw aiErr("Groq is busy right now ("+lastStatus+"). Try again in a moment.",true);
       if(lastStatus===401) throw new Error("That Groq key looks invalid — re-copy it from console.groq.com/keys.");
       if(imgs.length && [404,400].includes(lastStatus)) throw new Error(groqDiscoverFailed
         ? "Couldn't reach Groq to see which models your key can run. Check the connection and try again."
@@ -8077,7 +8105,7 @@ async function aiCall(prompt, doc, opts){
     // The model list comes from the key, never from a constant in here — Google retires names on
     // its own schedule and a hard-coded chain dies naming a model the user never picked. Each
     // free-tier model also has its OWN quota, so a 429 is still worth trying the next one for.
-    let res,lastStatus=0,lastErr="",tried=[];
+    let res,lastStatus=0,lastErr="",tried=[],lastRetry=0;
     const attempt=async model=>fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(aiKey())}`,
       {method:"POST",headers:{"Content-Type":"application/json"},body});
     const run=async list=>{
@@ -8086,8 +8114,10 @@ async function aiCall(prompt, doc, opts){
         tried.push(model);
         res=await attempt(model);
         if(res.ok) return true;
-        lastStatus=res.status; lastErr=await res.text();
-        if(![404,400,429].includes(res.status)) return false;   // a real error, not a dead name
+        lastStatus=res.status; lastErr=await res.text(); lastRetry=retryAfterMs(res);
+        // 404/400 = a dead model name; 429/5xx = that model is busy or out of quota. Both are
+        // reasons to try the NEXT model, because each one has its own quota and its own load.
+        if(![404,400,...AI_BUSY].includes(res.status)) return false;
       }
       return false;
     };
@@ -8100,9 +8130,20 @@ async function aiCall(prompt, doc, opts){
       const fresh=await gemDiscover(true);
       if(fresh.length) done=await run(fresh);
     }
+    /* Every model was busy. "High demand" really is usually temporary, so back off briefly and
+       try the best two again before telling the user anything — one wasted second beats a red
+       error over a request that would have worked. */
+    if(!done && AI_BUSY.includes(lastStatus)){
+      for(const wait of [lastRetry||700, 1800]){
+        await sleepMs(wait);
+        tried=[]; done=await run([aiCfg.model, ...gemCached()].filter(Boolean).slice(0,2));
+        if(done) break;
+      }
+    }
     if(!done){
       const said=apiErrText(lastErr);
-      if(lastStatus===429) throw new Error("Gemini's free limit was hit. Free keys reset per-minute (and daily) — wait a bit and retry. For uninterrupted use, enable billing on your key (Flash stays ~free at low volume) or paste a different key in Settings.");
+      if([500,502,503,504,529].includes(lastStatus)) throw aiErr("Gemini is under heavy load — usually temporary. Add a free Groq key in AI settings and Meanwhile switches over automatically when this happens.",true);
+      if(lastStatus===429) throw aiErr("Gemini's free rate limit was hit — it resets within a minute. Add a free Groq key in AI settings and Meanwhile switches over automatically.",true);
       if((lastStatus===400||lastStatus===403) && /API key|API_KEY|permission/i.test(said)) throw new Error("That Gemini key looks invalid — re-copy it from aistudio.google.com/apikey.");
       // never tried anything means we never got a model name — that is a catalogue problem, not a
       // request problem, and blaming the key for a dropped connection is the wrong sentence.
@@ -8115,6 +8156,45 @@ async function aiCall(prompt, doc, opts){
     const j=await res.json(); return ((((j.candidates||[])[0]||{}).content||{}).parts||[{}])[0].text||"";
   }
   throw new Error("paste-mode");
+}
+/* You have keys for both free providers, and they fail at different moments — Groq rate-limits
+   hard on its free tier, Gemini goes "high demand" under load. Sitting on one while the other is
+   idle is the wrong answer, so a BUSY failure (never a bad key, never a bad request) borrows the
+   other one for that single call and says so afterwards.
+
+   Deliberately only between the two FREE providers. Falling over to a paid key would spend money
+   the user never agreed to spend on a request they didn't know had failed. */
+function altFreeEngine(){
+  const cur=aiCfg.engine||"google";
+  const alt = cur==="google" ? "groq" : cur==="groq" ? "google" : "";
+  return (alt && keyFor(alt)) ? alt : "";
+}
+// one at a time: the swap is global, so two overlapping calls must not trade engines under each other
+let aiFailingOver=false;
+async function aiCall(prompt, doc, opts){
+  opts=opts||{};
+  try{ return await aiCallOne(prompt, doc, opts); }
+  catch(e){
+    const alt = (e&&e.busy&&!opts.noFailover&&!aiFailingOver) ? altFreeEngine() : "";
+    if(!alt) throw e;
+    aiFailingOver=true;
+    const from=aiCfg.engine, was={key:aiCfg.key, model:aiCfg.model};
+    try{
+      aiCfg.engine=alt; aiCfg.key=keyFor(alt);
+      aiCfg.model=(aiCfg.models&&aiCfg.models[alt])||"";
+      const out=await aiCallOne(prompt, doc, Object.assign({},opts,{noFailover:true}));
+      // whatever model answered is worth remembering for that provider, not for the one we left
+      aiCfg.models=Object.assign({},aiCfg.models||{});
+      if(aiCfg.model) aiCfg.models[alt]=aiCfg.model;
+      toast(`${ENG_LABEL[from]||"That provider"} was busy — used ${ENG_LABEL[alt]||alt} instead`);
+      return out;
+    }catch(e2){
+      throw aiErr(`${ENG_LABEL[from]||from} and ${ENG_LABEL[alt]||alt} are both busy right now. Give it a minute and try again.`,true);
+    }finally{
+      aiCfg.engine=from; aiCfg.key=was.key; aiCfg.model=was.model; saveAICfg();
+      aiFailingOver=false;
+    }
+  }
 }
 
 let spData=null, spText="", spSourceUrl="", spMatchId="", spShots=[];
@@ -8789,7 +8869,7 @@ document.addEventListener("click",e=>{
   if(act==="ai-test"){ saveAISettings(); const st=$("#aiTestStatus"); const eng=aiEngine();
     if(eng==="paste"||eng==="off"){ if(st){ st.style.color="var(--warn)"; st.textContent="Pick a provider above and paste its API key first, then Test."; } return; }
     if(st){ st.style.color="var(--muted)"; st.textContent="Testing "+aiEngineLabel().replace(" ✓","")+"…"; }
-    aiCall("Reply with exactly: ok", null, {json:false})
+    aiCall("Reply with exactly: ok", null, {json:false, noFailover:true})
       .then(()=>{ if(st){ st.style.color="var(--good)"; st.textContent="✓ Connected — "+aiEngineLabel().replace(" ✓","")+" is working. You're all set."; } })
       .catch(e=>{ if(st){ st.style.color="var(--bad)"; st.textContent="⚠ "+e.message; } });
     return; }

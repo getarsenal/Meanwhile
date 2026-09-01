@@ -423,15 +423,36 @@ that isn't verbatim in the JD, and an objective left with neither is dropped ent
 `state.work.objectives` (one record per employer, stamped with the day) so it costs one call, not
 one per render; `objectivesFallback()` computes the same shape from open problems/questions/projects
 when there's no AI. Items are tickable and the tick persists. Gaps moved down the page.
+**Every objective is schedulable** — `when` (`OBJ_WHEN`: now/today/week), `mins` (10/20/30/60), and
+a **＋ Add to my day** (`data-objday`) that writes `o.nextActionLabel`/`Date`, the same field
+Upcoming and reminders already read, so a suggestion becomes a dated thing. `objMaterial` hands the
+model how long everything has been sitting, because ageing is the only real clock this half has.
+`normObjectives()` applies the "at most one Do first" cap and the urgency sort in the ONE funnel
+both the written and the computed lists pass through (`saveObjectives`) — capping it in
+`buildObjectives` alone let the fallback show two.
 **They run themselves** (`maybeAutoObjectives`): a page that opens with a *button* asking you to
 make a briefing is not a briefing. Once a day, per employer, only when there's something to read —
 so it's one AI call a day, not one per render. The guard key is set **before** the call, or a
 failure retry-loops on every render; `runObjectives(auto)` falls back to the computed list on an
 auto failure rather than leaving a red error where the briefing goes, and stays silent (no toast).
 
-**The Work overview is a home page** (`workOverview`), in this order: `briefingCard` → objectives →
-`growthCard` → count tiles → `worthKnowingCard` → `reconnectCard` → `changedCard` → `coverageCard` →
-open questions → recent notes → gaps → timeline. Something to *read* before something to press.
+**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `paceCard` →
+`gaugesCard` → `actionTiles` → objectives → `growthCard` → count tiles → `worthKnowingCard` →
+`reconnectCard` → `changedCard` → `coverageCard` → open questions → recent notes → gaps → timeline.
+- **`readiness(o)` / `gaugesCard` — five speedometers, every one a real ratio with a real
+  denominator taken from your own records**: people who appear in a note, people with a reporting
+  line, departments you've actually been inside, systems+projects with a known owner, questions
+  closed. There is no industry benchmark here and inventing one would be the same lie the post-hire
+  prompts exist to avoid — so the denominator is *the org you have found so far*, which means
+  discovering more people lowers the score rather than moving the bar. `gaugeSVG` is a hand-rolled
+  240° arc; **the number lives inside the `<svg>` as `<text>`**, not pulled over it with a negative
+  margin, or the containment suite correctly flags two overlapping siblings.
+- **`actionTiles(o)` — the tiles are a to-do list, not a census.** Post-hire the map has exactly one
+  real clock in it: how long things have been sitting. So every tile carries an age ("oldest is 34
+  days old") and `ageDays` drives the `hot` state. Overdue `nextAction` leads. `data-dash="wtab|x"`
+  routes to the tab that would fix it.
+- **`pace(o)` / `paceCard`** — total, added this week vs your own 3-week average, and where your
+  current rate lands by day 90. A projection of your own line, never a target someone made up.
 - `briefLine()`/`briefingCard()` — one true line about today, assembled from the numbers (day N,
   notes this week, people talked to, open problems, unanswered questions), never generic
   encouragement, plus `quoteOfDay()`. The quote index comes from the **date**, not `random()`, so
@@ -573,6 +594,11 @@ question means no bites.
 **`BUILD`** is shown in Settings with a *Check for update* button (`forceUpdate()` unregisters the
 service worker and clears caches). "I don't see the change" has twice been a stale cached file.
 
+**Two FABs, always in the same place** (`renderFab`): Capture puts something in, **Ask** (green,
+sitting above it, `data-act="ask-fab"`) gets something out. Ask was only a tab, which is the wrong
+home for the question you have while looking at something else. Different colour on purpose — they
+do opposite things. Both appear only once `employers().length > 0`.
+
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
 `employers().length > 0`, so a new user never sees an empty object.
 
@@ -649,8 +675,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,395 browser
-assertions** across thirty-eight Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,470 browser
+assertions** across thirty-nine Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

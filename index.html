@@ -617,7 +617,63 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .fab:hover{filter:brightness(1.08);transform:translateY(-1px)}
 .fab:active{transform:translateY(0) scale(.98)}
 .fab svg{width:19px;height:19px}
-@media(max-width:860px){ .fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));padding:13px 17px;font-size:14px} }
+/* Ask sits above Capture — same rail, opposite job, so a different colour rather than a
+   second primary button competing with it. */
+.fab-ask{bottom:84px;background:linear-gradient(150deg,#2f7d6b,#3f9b7f);
+  box-shadow:0 12px 30px -8px rgba(63,155,127,.55),0 2px 6px rgba(0,0,0,.4)}
+@media(max-width:860px){
+  .fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));padding:13px 17px;font-size:14px}
+  .fab-ask{bottom:calc(130px + env(safe-area-inset-bottom))}
+}
+
+/* ---- the dashboard: pace strip, gauges, action tiles ---- */
+.pace{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.pc-cell{background:var(--panel);padding:14px 16px;min-width:0}
+.pc-n{font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.pc-l{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.pc-trend{display:block;font-weight:750;margin-top:2px}
+.pc-trend.up{color:var(--good)} .pc-trend.down{color:var(--warn)}
+
+.gg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px;margin-bottom:18px}
+.gg{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:15px;
+  padding:12px 10px 13px;text-align:center;cursor:pointer;transition:.14s;color:var(--txt);font:inherit;
+  display:flex;flex-direction:column;align-items:center;min-width:0}
+.gg:hover{border-color:var(--line2);transform:translateY(-2px)}
+.gg-dial{width:100%;max-width:112px;height:auto;display:block}
+.gg-num{font-family:inherit;font-size:25px;font-weight:850;letter-spacing:-.03em}
+.gg-pc{font-size:12px;opacity:.65}
+.gg-lab{margin-top:2px;font-size:11.5px;font-weight:750;line-height:1.35;max-width:100%}
+.gg-sub{margin-top:4px;font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
+
+.act-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:11px;margin-bottom:18px}
+.act{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;text-align:left;
+  cursor:pointer;transition:.14s;color:var(--txt);font:inherit;display:block;min-width:0}
+.act:hover{border-color:var(--line2);transform:translateY(-2px)}
+.act.hot{border-color:rgba(208,107,107,.4);background:linear-gradient(155deg,rgba(208,107,107,.09),var(--panel))}
+.act-n{display:block;font-size:25px;font-weight:850;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.act-l{display:block;font-size:12px;font-weight:750;margin-top:7px;line-height:1.35}
+.act-s{display:block;font-size:10.5px;color:var(--faint);margin-top:4px;line-height:1.4}
+
+/* ---- an objective now says when and how long ---- */
+.obj-when{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ow-tag{font-size:10px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;
+  border:1px solid;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.ow-mins{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
+.ow-mins svg{width:11px;height:11px}
+.ow-add{background:none;border:none;color:var(--accent3);font:inherit;font-size:10.5px;font-weight:800;
+  cursor:pointer;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-left:auto}
+.ow-add:hover{background:var(--panel2);color:var(--txt)}
+.ow-on{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:var(--good);margin-left:auto;white-space:nowrap}
+.ow-on svg{width:11px;height:11px}
+@media(max-width:520px){
+  /* three stats over two columns leaves an empty cell — the odd one out takes the full width */
+  .pace{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pc-cell:last-child{grid-column:1/-1}
+  .gg-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .act-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ow-add,.ow-on{margin-left:0}
+}
 
 .work-hero{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid var(--line);background:linear-gradient(150deg,var(--panel),var(--panel2));padding:20px;margin-bottom:16px}
 .work-hero .wh-glow{position:absolute;inset:0;pointer-events:none}
@@ -1340,7 +1396,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v58 · 2026-08-28";
+const BUILD = "v59 · 2026-09-01";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2358,10 +2414,14 @@ function openAddRecord(){
     return `<button class="add-tile" data-addent="${t}"><span class="ai" style="color:${cssCol(c.col)}">${c.icon||I.plus}</span><span>${esc(c.label||t)}</span></button>`;
   }).join("")}</div>`);
 }
+/* Two buttons, always in the same place: the one that puts something IN, and the one that gets
+   something OUT. Ask was buried in a tab, which is the wrong home for the question you have while
+   looking at something else. Different colour on purpose — they do opposite things. */
 function renderFab(){
   const want = employers().length>0;
-  let fab=document.getElementById("captureFab");
-  if(!want){ if(fab) fab.remove(); return; }
+  let fab=document.getElementById("captureFab"), ask=document.getElementById("askFab");
+  if(!want){ if(fab) fab.remove(); if(ask) ask.remove(); return; }
+  if(!ask){ ask=el(`<button class="fab fab-ask" id="askFab" data-act="ask-fab" title="Ask Meanwhile about this company">${I.spark}<span>Ask</span></button>`); document.body.appendChild(ask); }
   if(!fab){ fab=el(`<button class="fab" id="captureFab" data-act="capture" title="Capture what just happened">${I.plus}<span>Capture</span></button>`); document.body.appendChild(fab); }
 }
 
@@ -4280,12 +4340,24 @@ function objMaterial(o){
   if(sys.length) L.push("SYSTEMS: "+sys.slice(0,15).map(s=>`${id("system",s)} ${s.name}`).join(", "));
   const notes=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,15);
   if(notes.length) L.push("RECENT NOTES (newest first):\n"+notes.map(c=>`- ${id("capture",c)} ${fmtDate(ymdOf(c.at))}: ${String(c.text||"").replace(/\s+/g," ").slice(0,300)}`).join("\n"));
-  if(o.nextActionLabel) L.push(`ALREADY ON MY LIST: ${o.nextActionLabel}${o.nextActionDate?" (due "+o.nextActionDate+")":""}`);
+  if(o.nextActionLabel){
+    const d=o.nextActionDate?daysUntil(o.nextActionDate):null;
+    L.push(`ALREADY ON MY LIST: ${o.nextActionLabel}${o.nextActionDate?` (due ${o.nextActionDate}${d!=null?d<0?` — ${Math.abs(d)} DAYS OVERDUE`:d===0?" — TODAY":` — in ${d} days`:""})`:""}`);
+  }
+  // Ageing is the only real clock this half of the app has, so hand it over rather than letting
+  // the model guess at urgency. "Open for 34 days" is what makes an objective urgent today.
+  const aged=[];
+  probs.slice(0,5).forEach(p=>aged.push(`- ${p.title||p.name}: open ${Math.floor((Date.now()-(p.at||Date.now()))/86400000)} days`));
+  qs.slice(0,5).forEach(q=>aged.push(`- "${q.q}": unanswered ${Math.floor((Date.now()-(q.at||Date.now()))/86400000)} days`));
+  reconnectPeople(o,4).forEach(x=>aged.push(`- ${x.p.name}: no contact for ${Math.round(x.gap/86400000)} days`));
+  if(aged.length) L.push("HOW LONG THINGS HAVE BEEN SITTING:\n"+aged.join("\n"));
   return L.join("\n\n");
 }
+const OBJ_WHEN={now:{label:"Do first",col:"var(--bad)",rank:0},today:{label:"Today",col:"var(--warn)",rank:1},week:{label:"This week",col:"var(--muted)",rank:2}};
 function objectivesPrompt(o){
   const jd=jdText(o), day=hireDay(o);
-  return `You help one person work out what to do today in a job they recently started. Today is ${todayYMD()}. They are ${o.hired&&o.hired.title?`a ${o.hired.title} `:""}at ${o.company}${day!=null?`, ${day} days in`:""}.
+  const dow=new Date().toLocaleDateString(undefined,{weekday:"long"});
+  return `You help one person work out what to do today in a job they recently started. Today is ${dow} ${todayYMD()}. They are ${o.hired&&o.hired.title?`a ${o.hired.title} `:""}at ${o.company}${day!=null?`, ${day} days in`:""}.
 
 ${jd?`--- THE JOB DESCRIPTION THEY WERE HIRED AGAINST ---\n${jd.slice(0,3500)}\n--- END ---`:"(No job description on file — work from the notes alone and leave every \"jd\" field empty.)"}
 
@@ -4295,6 +4367,15 @@ ${objMaterial(o)||"(almost nothing yet)"}
 --- END ---
 
 Give them AT MOST 5 objectives for today. Fewer is fine — three real ones beat five padded ones.
+
+EVERY objective must be schedulable. A person should be able to read it and know when to do it and
+roughly how long it takes:
+- "when": "now" (do it before anything else — someone is blocked or a deadline is on top of you),
+  "today" (it belongs in today), or "week" (this week, but not necessarily today). Use "now"
+  sparingly — at most one.
+- "mins": a realistic estimate in minutes, one of 10, 20, 30, 60. A message is 10. A conversation
+  is 30. Digging into something is 60.
+- Order them the way you would actually do them.
 
 What makes a good objective here:
 - It is a thing a person can actually start today: talk to someone, find something out, unblock something, write something down. Not "continue to monitor".
@@ -4310,7 +4391,7 @@ Rules that matter more than being helpful:
 - Do not repeat something already on their list unless it is now overdue and worth restating.
 
 Return ONLY this JSON:
-{"objectives":[{"do":"","why":"","jd":"","cites":["type:id"]}]}`;
+{"objectives":[{"do":"","why":"","jd":"","when":"now|today|week","mins":10,"cites":["type:id"]}]}`;
 }
 /* Keep only the objectives whose evidence is real: ids that resolve, and a JD quote that actually
    appears in the job description. A hallucinated citation is worse than no citation, because it
@@ -4332,7 +4413,10 @@ function buildObjectives(o,d){
     let jd=String(x.jd||"").trim().slice(0,160);
     if(jd && (!jdNorm || !jdNorm.includes(norm(jd)))) jd="";   // not actually in the JD — drop the quote
     if(!cites.length && !jd) return;                  // no real evidence at all — drop the objective
-    out.push({id:uid(), do:String(x.do).trim().slice(0,220), why:String(x.why||"").trim().slice(0,300), jd, cites, done:false});
+    const when = OBJ_WHEN[String(x.when||"").toLowerCase()] ? String(x.when).toLowerCase() : "today";
+    const mins = [10,20,30,60].includes(+x.mins) ? +x.mins : 30;
+    out.push({id:uid(), do:String(x.do).trim().slice(0,220), why:String(x.why||"").trim().slice(0,300),
+      jd, cites, when, mins, done:false});
   });
   return out.slice(0,5);
 }
@@ -4340,14 +4424,18 @@ function buildObjectives(o,d){
    from the records. Plainer wording, but every line is a fact about your own notes. */
 function objectivesFallback(o){
   const out=[];
-  const push=(text,why,cites)=>{ if(out.length<5) out.push({id:uid(),do:text,why,jd:"",cites:cites||[],done:false}); };
-  if(o.nextActionLabel) push(o.nextActionLabel, o.nextActionDate?`You set this yourself, due ${fmtDate(o.nextActionDate)}.`:"You set this yourself.", []);
+  const push=(text,why,cites,when,mins)=>{ if(out.length<5) out.push({id:uid(),do:text,why,jd:"",cites:cites||[],when:when||"today",mins:mins||30,done:false}); };
+  if(o.nextActionLabel){
+    const d=o.nextActionDate?daysUntil(o.nextActionDate):null;
+    push(o.nextActionLabel, o.nextActionDate?`You set this yourself, due ${fmtDate(o.nextActionDate)}${d!=null&&d<0?` — ${Math.abs(d)} days ago`:""}.`:"You set this yourself.",
+      [], d!=null&&d<=0?"now":"today", 30);
+  }
   wOf("problems",o.id).filter(p=>/investigating|discovered/i.test(p.status||"")).sort((a,b)=>a.at-b.at).slice(0,2)
-    .forEach(p=>push(`Move "${p.title||p.name}" forward`,`Still ${String(p.status||"open").toLowerCase()} since ${fmtDate(ymdOf(p.at))}.`,[{t:"problem",id:p.id}]));
+    .forEach(p=>push(`Move "${p.title||p.name}" forward`,`Still ${String(p.status||"open").toLowerCase()} after ${ageDays(p.at)} days.`,[{t:"problem",id:p.id}],ageDays(p.at)>30?"now":"today",30));
   wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>a.at-b.at).slice(0,2)
-    .forEach(q=>push(`Get an answer: ${q.q}`, q.why?String(q.why).slice(0,140):"You wrote this down and it's still open.",[{t:"question",id:q.id}]));
+    .forEach(q=>push(`Get an answer: ${q.q}`, q.why?String(q.why).slice(0,140):`Open for ${ageDays(q.at)} days.`,[{t:"question",id:q.id}],"today",20));
   wOf("projects",o.id).filter(p=>!p.ownerId&&/active/i.test(p.status||"")).slice(0,1)
-    .forEach(p=>push(`Find out who owns ${p.name}`,"It's active in your notes but nobody is recorded as owning it.",[{t:"project",id:p.id}]));
+    .forEach(p=>push(`Find out who owns ${p.name}`,"It's active in your notes but nobody is recorded as owning it.",[{t:"project",id:p.id}],"week",10));
   return out.slice(0,5);
 }
 async function runObjectives(auto){
@@ -4391,7 +4479,18 @@ function maybeAutoObjectives(o){
   objAutoTried=key;
   setTimeout(()=>{ try{ const p=runObjectives(true); if(p&&p.catch) p.catch(()=>{}); }catch(e){} },60);
 }
+/* "Do first" means first. Two of them means neither, so the cap is applied here — the one place
+   both the written and the computed lists pass through on their way to being stored. */
+function normObjectives(items){
+  const out=(items||[]).map(x=>Object.assign({when:"today",mins:30},x));
+  let first=false;
+  out.forEach(x=>{ if(!OBJ_WHEN[x.when]) x.when="today";
+    if(x.when==="now"){ if(first) x.when="today"; first=true; } });
+  out.sort((a,b)=>OBJ_WHEN[a.when].rank-OBJ_WHEN[b.when].rank);
+  return out;
+}
 function saveObjectives(o,items,how){
+  items=normObjectives(items);
   const w=W();
   w.objectives=w.objectives.filter(x=>x.opId!==o.id);
   w.objectives.push({id:uid(),opId:o.id,at:Date.now(),day:todayYMD(),how:how||"ai",items:items||[]});
@@ -4418,10 +4517,17 @@ function objectivesCard(o){
     body=`<div class="obj-empty">Nothing stood out. Capture a few more notes and try again.
       <div style="margin-top:12px"><button class="btn ghost sm" data-act="obj-run">${I.ai} Try again</button></div></div>`;
   } else {
-    body=`<div class="obj-list">${rec.items.map(it=>`
+    body=`<div class="obj-list">${rec.items.map(it=>{
+      const w=OBJ_WHEN[it.when]||OBJ_WHEN.today;
+      const onList = o.nextActionLabel===it.do;
+      return `
       <div class="obj-row${it.done?" done":""}">
         <button class="obj-cb${it.done?" on":""}" data-objdone="${it.id}" aria-label="Mark done">${I.check}</button>
         <div class="obj-b">
+          <div class="obj-when"><span class="ow-tag" style="color:${cssCol(w.col)};border-color:${cssCol(w.col)}44">${esc(w.label)}</span>
+            <span class="ow-mins">${I.clock}${it.mins||30} min</span>
+            ${onList?`<span class="ow-on">${I.check} on your list</span>`
+              :`<button class="ow-add" data-objday="${it.id}" title="Put this on your list with today's date">＋ Add to my day</button>`}</div>
           <div class="obj-do">${esc(it.do)}</div>
           ${it.why?`<div class="obj-why">${esc(it.why)}</div>`:""}
           ${it.jd?`<div class="obj-jd"><span>Job description</span>“${esc(it.jd)}”</div>`:""}
@@ -4430,9 +4536,10 @@ function objectivesCard(o){
             return live.length?`<div class="obj-cites">${live.map(c=>`<span class="cite" data-ent="${esc(c.t)}|${esc(c.id)}">${esc(entLabel(c.t,c.id))}</span>`).join("")}</div>`:"";
           })()}
         </div>
-      </div>`).join("")}</div>
+      </div>`;}).join("")}</div>
       <div class="obj-foot">
-        <span>${rec.how==="computed"?"From your open items":"From your job description and notes"} · ${stale?esc(fmtDate(rec.day)):"today"}</span>
+        <span>${(()=>{ const m=rec.items.filter(x=>!x.done).reduce((n,x)=>n+(+x.mins||30),0);
+          return m? `${m<60?m+" min":(Math.round(m/6)/10)+" hrs"} of work left · ` : ""; })()}${rec.how==="computed"?"from your open items":"from your job description and notes"} · ${stale?esc(fmtDate(rec.day)):"today"}</span>
         <button class="btn ghost sm" data-act="obj-run">${I.ai} ${stale?"Refresh for today":"Redo"}</button>
       </div>`;
   }
@@ -4654,15 +4761,143 @@ function worthKnowingCard(o){
   </div>`;
 }
 
+/* ======================= THE DASHBOARD =======================
+   Counts told you how much you had written down. They never told you how much of it you actually
+   UNDERSTAND, which is the only question this half of the app exists to answer. Each gauge below
+   is a real ratio with a real denominator taken from your own records — nothing here is measured
+   against an invented industry benchmark, because there isn't one and pretending otherwise would
+   be the same lie the post-hire prompts are built to avoid. The denominator is always "the org you
+   have actually found so far", so the gauges get harder as you discover the place is bigger. */
+function readiness(o){
+  const ppl=(o.people||[]).filter(personHere).filter(p=>!isMe(o,p));
+  const depts=wOf("departments",o.id);
+  const sys=wOf("systems",o.id), proj=wOf("projects",o.id).filter(p=>!/complete|cancelled/i.test(p.status||""));
+  const qs=wOf("questions",o.id);
+  const caps=wOf("captures",o.id);
+  const known=p=>personInteractions(p).length>0;
+  const placed=p=>!!personManager(p);
+  const deptCovered=d=>{
+    const mem=ppl.filter(p=>p.deptId===d.id);
+    if(!mem.length) return false;
+    const ids=new Set(mem.map(p=>p.id));
+    return mem.some(known) || caps.some(c=>(c.entities||[]).some(e=>(e.t==="department"&&e.id===d.id)||(e.t==="person"&&ids.has(e.id))));
+  };
+  const owned=r=>!!r.ownerId;
+  const answered=qs.filter(q=>q.status&&q.status!=="Open");
+  const g=(id,label,have,total,hint,tab,col)=>({id,label,have,total,
+    pct: total? Math.round(have/total*100) : 0, hint, tab, col, na: !total});
+  return [
+    g("people","People you actually know",ppl.filter(known).length,ppl.length,
+      "never in a note",   "people","#6d8bc4"),
+    g("org","Reporting lines mapped",ppl.filter(placed).length,ppl.length,
+      "unplaced",          "org","#8a72bd"),
+    g("depts","Departments you've been inside",depts.filter(deptCovered).length,depts.length,
+      "still blank",       "org","#bf8a4f"),
+    g("owners","Who owns what",sys.concat(proj).filter(owned).length,sys.concat(proj).length,
+      "unowned",           "knowledge","#5b9c97"),
+    g("answers","Questions you've closed",answered.length,qs.length,
+      "still open",        "knowledge","#c6a45c")
+  ];
+}
+/* A speedometer, hand-drawn like everything else here. A 240° arc so it reads as a dial rather
+   than a progress bar, with the track and the fill on the same path so they cannot drift. */
+function gaugeSVG(pct,col){
+  const R=46, CX=56, CY=54, START=150, SWEEP=240;
+  const pt=deg=>[CX+R*Math.cos(deg*Math.PI/180), CY+R*Math.sin(deg*Math.PI/180)];
+  const arc=(from,to)=>{ const a=pt(from), b=pt(to);
+    return `M${a[0].toFixed(1)} ${a[1].toFixed(1)} A${R} ${R} 0 ${Math.abs(to-from)>180?1:0} 1 ${b[0].toFixed(1)} ${b[1].toFixed(1)}`; };
+  const p=Math.max(0,Math.min(100,Math.round(pct)));
+  const end=START+SWEEP*p/100;
+  // the number lives INSIDE the svg rather than being pulled over it with a negative margin: it
+  // scales with the dial, it can't drift as the font changes, and it isn't two boxes overlapping
+  return `<svg class="gg-dial" viewBox="0 0 112 86" role="img" aria-label="${p} percent">
+    <path d="${arc(START,START+SWEEP)}" style="fill:none;stroke:var(--line);stroke-width:9;stroke-linecap:round"/>
+    ${p>0?`<path d="${arc(START,end)}" style="fill:none;stroke:${cssCol(col)};stroke-width:9;stroke-linecap:round"/>`:""}
+    <text x="56" y="62" text-anchor="middle" class="gg-num" style="fill:${cssCol(col)}">${p}<tspan class="gg-pc">%</tspan></text>
+  </svg>`;
+}
+function gaugesCard(o){
+  const gs=readiness(o).filter(x=>!x.na);
+  if(gs.length<2) return "";
+  return `<div class="section-head"><h3>How well you know this place</h3><div class="line"></div>
+      <span class="tag" title="Measured against what you've found so far, not an outside benchmark">your own records</span></div>
+    <div class="gg-grid">${gs.map(x=>`
+      <button class="gg" data-wtab="${esc(x.tab)}" title="${esc(x.have+" of "+x.total)}">
+        ${gaugeSVG(x.pct,x.col)}
+        <span class="gg-lab">${esc(x.label)}</span>
+        <span class="gg-sub">${x.have} of ${x.total}${x.total-x.have?` · ${x.total-x.have} ${esc(x.hint)}`:""}</span>
+      </button>`).join("")}</div>`;
+}
+/* Where you are against where this is going. Deliberately a projection of YOUR pace rather than a
+   target somebody made up: the only honest "expected" here is the line you are already on. */
+function pace(o){
+  const day=hireDay(o)||0;
+  const stamps=[];
+  (o.people||[]).forEach(p=>{ if(p.at) stamps.push(p.at); });
+  ["projects","problems","systems","processes","decisions","questions","departments","teams","orgs","infos","bites","captures"]
+    .forEach(k=>{ (W()[k]||[]).forEach(r=>{ if(r&&r.opId===o.id&&r.at) stamps.push(r.at); }); });
+  const now=Date.now(), WK=7*86400000;
+  const total=stamps.length;
+  const week=stamps.filter(t=>t>now-WK).length;
+  const prev=stamps.filter(t=>t>now-4*WK&&t<=now-WK).length/3;   // the three weeks before this one
+  const perDay = day>0 ? total/day : 0;
+  return {day, total, week, avg:Math.round(prev*10)/10, perDay,
+    projected: day>0 ? Math.round(perDay*90) : 0,
+    trend: prev>0 ? Math.round((week-prev)/prev*100) : (week?100:0)};
+}
+function paceCard(o){
+  const p=pace(o);
+  if(p.total<6||!p.day) return "";
+  const up=p.trend>=0;
+  return `<div class="pace">
+    <div class="pc-cell"><div class="pc-n">${p.total}</div><div class="pc-l">things you know</div></div>
+    <div class="pc-cell"><div class="pc-n">${p.week}</div><div class="pc-l">added this week
+      ${p.avg?`<span class="pc-trend ${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(p.trend)}% vs your ${p.avg}/wk</span>`:""}</div></div>
+    <div class="pc-cell"><div class="pc-n">${p.projected}</div><div class="pc-l">by day 90 at this pace</div></div>
+  </div>`;
+}
+/* The tiles that are actually a to-do list. Post-hire the map has one real clock in it — how long
+   things have been sitting — so that is what these count. A number with no age is just a count. */
+function ageDays(ts){ return ts? Math.max(0,Math.floor((Date.now()-ts)/86400000)) : 0; }
+function actionTiles(o){
+  const qs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>a.at-b.at);
+  const probs=wOf("problems",o.id).filter(p=>!/solved|accepted/i.test(p.status||"")).sort((a,b)=>a.at-b.at);
+  const sys=wOf("systems",o.id).filter(s=>!s.ownerId);
+  const projs=wOf("projects",o.id).filter(p=>!p.ownerId&&!/complete|cancelled/i.test(p.status||""));
+  const stale=reconnectPeople(o,50);
+  const blank=deptCoverage(o).filter(r=>r.people===0);
+  const due=o.nextActionDate?daysUntil(o.nextActionDate):null;
+  const T=[];
+  const tile=(n,label,sub,act,col,urgent)=>{ if(!n) return; T.push({n,label,sub,act,col,urgent}); };
+  if(o.nextActionLabel) tile(due==null?"·":(due<0?Math.abs(due):due===0?"Now":due), due!=null&&due<0?"Days overdue":"Your next step",
+    String(o.nextActionLabel).slice(0,44), `open|${o.id}`, due!=null&&due<=0?"var(--bad)":"var(--warn)", due!=null&&due<=0);
+  tile(qs.length,"Open questions", qs.length?`oldest is ${ageDays(qs[0].at)} days old`:"", "wtab|knowledge","var(--warn)", qs.length&&ageDays(qs[0].at)>21);
+  tile(probs.length,"Live problems", probs.length?`oldest is ${ageDays(probs[0].at)} days old`:"", "wtab|problems","var(--hot)", probs.length&&ageDays(probs[0].at)>30);
+  tile(sys.length+projs.length,"Nobody owns these", "systems and projects with no owner", "wtab|knowledge","#5b9c97");
+  tile(stale.length,"Going quiet", stale.length?`longest gap ${Math.round(stale[0].gap/86400000)} days`:"", "wtab|people","#6d8bc4");
+  tile(blank.length,"Departments you know nothing about", blank.map(r=>r.d.name).slice(0,2).join(", "), "wtab|org","#bf8a4f");
+  if(!T.length) return "";
+  return `<div class="section-head"><h3>Worth doing something about</h3><div class="line"></div></div>
+    <div class="act-grid">${T.map(x=>`
+      <button class="act${x.urgent?" hot":""}" data-dash="${esc(x.act)}">
+        <span class="act-n" style="color:${cssCol(x.col)}">${esc(String(x.n))}</span>
+        <span class="act-l">${esc(x.label)}</span>
+        ${x.sub?`<span class="act-s">${esc(x.sub)}</span>`:""}
+      </button>`).join("")}</div>`;
+}
 function workOverview(o){
   maybeAutoObjectives(o);                       // the page should already be a briefing when it opens
   const c=workCounts(o);
   const tile=(n,l,d,tab,col)=>`<div class="w-tile" data-wtab="${tab}"><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></div>`;
-  // a line about today, then what to do about it; the counts orient you after
+  // one line about today, then the dashboard, then what to do about it
   let h=briefingCard(o);
+  h+=paceCard(o);
+  h+=gaugesCard(o);
+  h+=actionTiles(o);
   h+=objectivesCard(o);
   h+=growthCard(o);
-  h+=`<div class="w-tiles">
+  h+=`<div class="section-head"><h3>What's in the map</h3><div class="line"></div></div>
+    <div class="w-tiles">
     ${tile(c.people,"People","you've met","people")}
     ${tile(c.departments,"Departments","","org","var(--warn)")}
     ${tile(c.projects,"Projects","","projects")}
@@ -8758,7 +8993,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -8821,6 +9056,13 @@ document.addEventListener("click",e=>{
     return;
   }
   if(act==="work-add"){ openAddRecord(); return; }
+  if(act==="ask-fab"){
+    if(!employers().length) return;
+    view="work"; workTab="ask"; render();
+    window.scrollTo({top:0,behavior:"smooth"});
+    setTimeout(()=>{ const i=document.getElementById("wAskInput"); if(i) i.focus(); },260);
+    return;
+  }
   if(t.dataset.lfclear){ const sc=t.dataset.lfclear; lfGet(sc).q="";
     const inp=document.querySelector(`[data-lfin="${sc}"]`); if(inp){ inp.value=""; inp.focus(); }
     lfApply(sc); return; }
@@ -8829,6 +9071,21 @@ document.addEventListener("click",e=>{
     const bar=t.closest(".lf-sorts");
     if(bar) bar.querySelectorAll("[data-lfsort]").forEach(c=>c.classList.toggle("tag-chip",c.dataset.lfsort===t.dataset.lfsort));
     lfSortNow(sc); lfApply(sc); return; }
+  if(t.dataset.objday){
+    const o=workOp(); const rec=o&&objRecord(o); const it=rec&&(rec.items||[]).find(x=>x.id===t.dataset.objday);
+    if(!o||!it) return;
+    // this is what turns a suggestion into something with a date on it — the same field the rest
+    // of the app already treats as "the next thing", so it shows up in Upcoming and reminders too
+    snapshotUndo("that change to your list");
+    o.nextActionLabel=it.do; o.nextActionDate=todayYMD(); o.updatedAt=Date.now();
+    save(); render(); toast("On your list for today", null, "Undo"); return;
+  }
+  if(t.dataset.dash){
+    const [kind,arg]=t.dataset.dash.split("|");
+    if(kind==="wtab"){ workTab=arg; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
+    if(kind==="open"){ openDetail(arg); return; }
+    return;
+  }
   if(t.dataset.toastAct){ const el=$("#toast"); if(el) el.classList.remove("show"); undoLast(); return; }
   if(t.dataset.pickperson){ const id=t.dataset.pickperson, fn=pickPersonNext; pickPersonNext=null; closeEditor(); if(fn) setTimeout(()=>fn(id),60); return; }
   if(t.dataset.mode){ setAppMode(t.dataset.mode); openSettings(); toast("Switched to "+(APP_MODES.find(x=>x.id===t.dataset.mode)||{}).label); return; }

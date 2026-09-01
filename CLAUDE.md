@@ -436,8 +436,34 @@ so it's one AI call a day, not one per render. The guard key is set **before** t
 failure retry-loops on every render; `runObjectives(auto)` falls back to the computed list on an
 auto failure rather than leaving a red error where the briefing goes, and stays silent (no toast).
 
-**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `paceCard` →
-`gaugesCard` → `actionTiles` → objectives → `growthCard` → count tiles → `worthKnowingCard` →
+**Every number on the dashboard opens the records behind it** (`digSpec`/`openDig`, `data-dig`).
+A count you cannot open is trivia. `digSpec(o,key)` maps a gauge, tile or stat to the actual rows —
+`people-cold`, `org-unplaced`, `depts-blank`, `owners-unowned`, `q-open`, `problems-open`,
+`stale-people`, `week-added`, `all-known`, `quiet`, `recap` — rendered through `entRow` in a
+`listFilter`ed modal, so every drill-down is searchable and every row opens the thing itself. A
+**gauge digs into the GAP** (`dig`) while there is one and into what you have (`digHave`) when
+there isn't, because the missing half is the point of a gauge. The `data-dash` handler also
+understands `dig|<key>` — the action tiles encode it that way, and forgetting that made every tile
+silently do nothing until a test caught it.
+
+**The three questions a new starter opens this for**, above the numbers:
+- `recapCard`/`recapWindow` — *where you left off*. Since your last visit if that was more than six
+  hours ago, otherwise yesterday. **`lastSeenAtBoot` is read ONCE at load**: `render()` stamps
+  `devPrefs.lastSeen` while you sit there, so reading it live would collapse the window to nothing
+  and the card would always say "yesterday".
+- `circleCard`/`circleOpen` — *your manager and your reports*, each with what is open and touching
+  them (problems, questions, blocked projects, via the graph) and how long since you last spoke.
+  Sorted manager-first, then whoever has the most outstanding, then whoever you've left longest;
+  capped at four, because four cards of "nothing on record" is furniture.
+- `quietCard`/`quietThreads` — *what you started and stopped*. `lastTouched()` is the newest of the
+  record's own timestamps and the newest note citing it; anything silent under six days isn't quiet
+  yet. Ranked by silence × how much you'd already invested, so a thread you worked for a week and
+  dropped beats a one-line note. Each row offers **Update**, which opens a capture pre-seeded with
+  "Update on X: " so the agent files it back against the same record.
+
+**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `recapCard` →
+objectives → `circleCard` → `quietCard` → `paceCard` →
+`gaugesCard` → `actionTiles` → `growthCard` → count tiles → `worthKnowingCard` →
 `reconnectCard` → `changedCard` → `coverageCard` → open questions → recent notes → gaps → timeline.
 - **`readiness(o)` / `gaugesCard` — five speedometers, every one a real ratio with a real
   denominator taken from your own records**: people who appear in a note, people with a reporting
@@ -675,8 +701,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,470 browser
-assertions** across thirty-nine Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,530 browser
+assertions** across forty Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

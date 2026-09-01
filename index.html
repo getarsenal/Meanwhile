@@ -626,10 +626,67 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .fab-ask{bottom:calc(130px + env(safe-area-inset-bottom))}
 }
 
+/* ---- where you left off ---- */
+.recap{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:15px 16px;margin-bottom:14px}
+.rc-head{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--accent3);flex-wrap:wrap}
+.rc-head svg{width:13px;height:13px}
+.rc-all{margin-left:auto;background:none;border:none;color:var(--accent3);font:inherit;font-size:11px;
+  font-weight:800;letter-spacing:.04em;text-transform:none;cursor:pointer;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.rc-all:hover{background:var(--panel2);color:var(--txt)}
+.rc-line{font-size:14px;color:var(--muted);margin-top:8px}
+.rc-line b{color:var(--txt);font-weight:850}
+.rc-notes{display:flex;flex-direction:column;gap:1px;margin-top:11px}
+.rc-note{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:9px 11px;cursor:pointer;color:var(--txt);font:inherit;transition:.12s;min-width:0}
+.rc-note:hover{border-color:var(--line2)}
+.rn-t{display:block;font-size:12.5px;font-weight:700;line-height:1.4}
+.rn-m{display:block;font-size:10.5px;color:var(--faint);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-people{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.rc-p{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:999px;padding:3px 11px 3px 3px;font-size:11.5px;font-weight:700;cursor:pointer;transition:.12s;max-width:100%}
+.rc-p:hover{border-color:var(--line2)}
+.rc-p .ent-ico{width:20px;height:20px;flex:0 0 20px;border-radius:7px;font-size:9px}
+
+/* ---- your manager and your reports ---- */
+.circ-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:11px;margin-bottom:18px}
+.circ{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.circ-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:0;
+  cursor:pointer;color:var(--txt);font:inherit;text-align:left;min-width:0}
+.circ-h .ent-ico{width:32px;height:32px;flex:0 0 32px;border-radius:10px;font-size:12px}
+.ci-b{min-width:0}
+.ci-n{display:block;font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-r{display:block;font-size:10.5px;color:var(--faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.circ-list{display:flex;flex-direction:column;gap:5px;margin-top:11px}
+.circ-i{display:flex;align-items:center;gap:8px;width:100%;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:7px 9px;cursor:pointer;color:var(--txt);font:inherit;text-align:left;transition:.12s;min-width:0}
+.circ-i:hover{border-color:var(--line2)}
+.ci-d{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.ci-t{flex:1 1 0;min-width:0;font-size:11.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ci-a{flex:0 0 auto;font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
+.circ-none{font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5}
+
+/* ---- gone quiet ---- */
+.quiet-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+.qt{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:11px 13px;min-width:0}
+.qt-b{display:flex;align-items:center;gap:12px;flex:1 1 0;min-width:0;background:none;border:none;
+  padding:0;cursor:pointer;color:var(--txt);font:inherit;text-align:left}
+.qt-days{flex:0 0 auto;font-size:21px;font-weight:850;letter-spacing:-.03em;color:var(--warn);font-variant-numeric:tabular-nums;line-height:1}
+.qt-days i{font-size:11px;font-style:normal;opacity:.7;margin-left:1px}
+.qt-t{min-width:0}
+.qt-n{display:block;font-size:13px;font-weight:750;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qt-m{display:block;font-size:10.5px;color:var(--faint);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qt .btn{flex:0 0 auto}
+
 /* ---- the dashboard: pace strip, gauges, action tiles ---- */
 .pace{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);
   border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
-.pc-cell{background:var(--panel);padding:14px 16px;min-width:0}
+.pc-cell{background:var(--panel);padding:14px 16px;min-width:0;border:none;text-align:left;
+  color:var(--txt);font:inherit;width:100%;cursor:pointer;transition:.12s}
+.pc-cell:hover{background:var(--panel2)}
+.pc-cell.pc-flat{cursor:default}
+.pc-cell.pc-flat:hover{background:var(--panel)}
 .pc-n{font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
 .pc-l{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 .pc-trend{display:block;font-weight:750;margin-top:2px}
@@ -666,7 +723,9 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ow-add:hover{background:var(--panel2);color:var(--txt)}
 .ow-on{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:var(--good);margin-left:auto;white-space:nowrap}
 .ow-on svg{width:11px;height:11px}
+.gg-sub b{color:var(--txt);font-weight:800}
 @media(max-width:520px){
+  .circ-grid{grid-template-columns:1fr}
   /* three stats over two columns leaves an empty cell — the odd one out takes the full width */
   .pace{grid-template-columns:repeat(2,minmax(0,1fr))}
   .pc-cell:last-child{grid-column:1/-1}
@@ -720,7 +779,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
 }
 
 .w-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-bottom:18px}
-.w-tile{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 12px;cursor:pointer;transition:.14s;min-width:0}
+.w-tile{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px 12px;cursor:pointer;
+  transition:.14s;min-width:0;text-align:left;color:var(--txt);font:inherit;display:block;width:100%}
 .w-tile:hover{border-color:var(--line2);transform:translateY(-2px)}
 .w-tile .n{font-size:23px;font-weight:850;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
 .w-tile .l{font-size:11px;font-weight:700;color:var(--muted);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1396,7 +1456,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v59 · 2026-09-01";
+const BUILD = "v60 · 2026-09-01";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2373,6 +2433,9 @@ function render(){
   else if(view==="calendar") c.innerHTML = renderCalendar();
   else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="org") setTimeout(armWorkGraph,0); }
   else if(view==="insights") c.innerHTML = renderInsights(); }
+  // stamped AFTER the overview is built, so the recap describes the gap you actually left
+  if(view==="work"&&workTab==="overview"){ const n=Date.now();
+    if(!devPrefs.lastSeen||n-devPrefs.lastSeen>60000){ devPrefs.lastSeen=n; saveDev(); } }
   lfRefresh();      // a list filter has to survive the re-render that most actions trigger
 }
 /* The Capture button follows you everywhere once you're employed — capture is the whole game
@@ -4761,6 +4824,200 @@ function worthKnowingCard(o){
   </div>`;
 }
 
+/* ======================= DIGGING IN =======================
+   Every number on this page is the size of a list, and the list is the useful part. A count you
+   cannot open is trivia. `digSpec` turns any tile, gauge or stat into the actual records behind
+   it — searchable, sortable, and each row opens the thing itself. */
+function lastTouched(type,rec){
+  const ev=evidenceFor(type,rec.id)[0];
+  return Math.max(+rec.at||0, +rec.statusAt||0, +rec.answeredAt||0, ev?+ev.at||0:0);
+}
+function digSpec(o,key,arg){
+  const ppl=(o.people||[]).filter(personHere).filter(p=>!isMe(o,p));
+  const known=p=>personInteractions(p).length>0;
+  const R=(type,list)=>list.map(rec=>({type,rec}));
+  const D={
+    "people-known":  ()=>({title:"People you've actually talked to", note:"They appear in at least one of your notes.", rows:R("person",ppl.filter(known))}),
+    "people-cold":   ()=>({title:"Recorded, but you've never written about them", note:"A name in the map with no note behind it — the quickest wins are usually here.", rows:R("person",ppl.filter(p=>!known(p)))}),
+    "org-placed":    ()=>({title:"People whose reporting line you know", rows:R("person",ppl.filter(p=>personManager(p)))}),
+    "org-unplaced":  ()=>({title:"People you haven't placed on the chart", note:"Open anyone and set their manager — they'll stack up under them on the org map.", rows:R("person",ppl.filter(p=>!personManager(p)))}),
+    "depts-blank":   ()=>({title:"Departments you know nothing about", note:"Nobody recorded, nothing written down.", rows:R("department",deptCoverage(o).filter(r=>r.score===0).map(r=>r.d))}),
+    "depts-inside":  ()=>({title:"Departments you've been inside", rows:R("department",deptCoverage(o).filter(r=>r.score>0).map(r=>r.d))}),
+    "owners-unowned":()=>({title:"Nobody owns these", note:"You depend on them and haven't recorded who runs them.",
+                            rows:R("system",wOf("systems",o.id).filter(x=>!x.ownerId)).concat(R("project",wOf("projects",o.id).filter(x=>!x.ownerId&&!/complete|cancelled/i.test(x.status||""))))}),
+    "owners-known":  ()=>({title:"Things with a known owner",
+                            rows:R("system",wOf("systems",o.id).filter(x=>x.ownerId)).concat(R("project",wOf("projects",o.id).filter(x=>x.ownerId)))}),
+    "q-open":        ()=>({title:"Questions you haven't answered", rows:R("question",wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>a.at-b.at))}),
+    "q-closed":      ()=>({title:"Questions you've closed", rows:R("question",wOf("questions",o.id).filter(q=>q.status&&q.status!=="Open"))}),
+    "problems-open": ()=>({title:"Problems still live", rows:R("problem",wOf("problems",o.id).filter(p=>!/solved|accepted/i.test(p.status||"")).sort((a,b)=>a.at-b.at))}),
+    "stale-people":  ()=>({title:"People you're drifting from", note:"Ranked by how long it's been against how much you used to talk.", rows:R("person",reconnectPeople(o,50).map(x=>x.p))}),
+    "week-added":    ()=>({title:"Added in the last 7 days", note:"Everything that went into the map this week.", rows:sinceRows(o,Date.now()-7*86400000)}),
+    "all-known":     ()=>({title:"Everything you know about this place", rows:sinceRows(o,0)}),
+    "quiet":         ()=>({title:"Threads you haven't touched lately", note:"Open work with no note against it recently.", rows:quietThreads(o,50).map(x=>({type:x.type,rec:x.rec}))}),
+    "recap":         ()=>({title:"What you added "+(arg==="y"?"yesterday":"since you were last here"), rows:sinceRows(o,+arg||0,arg==="y")})
+  };
+  const f=D[key]; return f?f():null;
+}
+// every timestamped record in one list, newest first — the backbone of the recap and the totals
+function sinceRows(o,since,onlyYesterday){
+  const out=[];
+  const add=(type,list)=>(list||[]).forEach(r=>{ if(r&&r.at&&r.at>=since) out.push({type,rec:r}); });
+  add("person",(o.people||[]));
+  [["projects","project"],["problems","problem"],["systems","system"],["processes","process"],
+   ["decisions","decision"],["questions","question"],["departments","department"],["teams","team"],
+   ["orgs","org"],["infos","info"],["bites","bite"],["captures","capture"]]
+    .forEach(([k,type])=>add(type,(W()[k]||[]).filter(r=>r.opId===o.id)));
+  let rows=out;
+  if(onlyYesterday){
+    const d=new Date(); d.setHours(0,0,0,0);
+    const start=d.getTime()-86400000;
+    rows=out.filter(x=>x.rec.at>=start&&x.rec.at<d.getTime());
+  }
+  return rows.sort((a,b)=>b.rec.at-a.rec.at);
+}
+let digKey="";
+function openDig(key,arg){
+  const o=workOp(); if(!o) return;
+  const spec=digSpec(o,key,arg); if(!spec) return;
+  digKey=key; lfState["dig"]={q:"",sort:""};
+  const rows=spec.rows||[];
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.board}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${esc(spec.title)}</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${rows.length} ${rows.length===1?"record":"records"}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${spec.note?`<div class="sect-note">${esc(spec.note)}</div>`:""}
+  ${listFilter("dig",{count:rows.length,noun:"records",sorts:[{key:"recent",label:"Newest"},{key:"az",label:"A–Z"},{key:"oldest",label:"Oldest"}]})}
+  ${rows.length
+    ? `<div class="card panel" data-lfz="dig" style="padding:5px;max-height:min(56vh,460px);overflow:auto">${
+        rows.map(x=>entRow(x.type,x.rec,{pill:x.type==="project"?projPill(x.rec.status):x.type==="problem"?probPill(x.rec.status):"",
+          tail:`<span style="font-size:10.5px;color:var(--faint);white-space:nowrap">${esc(relDays(daysUntil(ymdOf(x.rec.at))))}</span>`})).join("")}</div>`
+    : `<div class="card panel"><div class="ent-empty">Nothing here — which is the good outcome for this one.</div></div>`}`);
+}
+
+/* ======================= WHAT A NEW STARTER ACTUALLY OPENS THIS FOR =======================
+   Three questions, every morning, in this order: where did I leave off, what is outstanding with
+   the people I answer to, and what have I quietly dropped. All three are computed. */
+/* Read ONCE at boot. render() stamps devPrefs.lastSeen as you sit on the page, so reading it live
+   would collapse the window to zero and the recap would always say "yesterday". */
+const lastSeenAtBoot = +devPrefs.lastSeen||0;
+function recapWindow(){
+  const seen=lastSeenAtBoot, now=Date.now();
+  // more than six hours away and there is a "since you were last here" worth showing; otherwise
+  // the interesting window is yesterday, because you have already seen today
+  if(seen && now-seen>6*3600000) return {since:seen, label:"since you were last here", arg:String(seen)};
+  const d=new Date(); d.setHours(0,0,0,0);
+  return {since:d.getTime()-86400000, until:d.getTime(), label:"yesterday", arg:"y"};
+}
+function recapCard(o){
+  const w=recapWindow();
+  const rows=w.arg==="y" ? sinceRows(o,0,true) : sinceRows(o,w.since);
+  if(!rows.length) return "";
+  const by=t=>rows.filter(x=>x.type===t);
+  const notes=by("capture"), people=by("person");
+  const other=rows.filter(x=>x.type!=="capture"&&x.type!=="person");
+  const bits=[];
+  if(notes.length) bits.push(`<b>${notes.length}</b> ${notes.length===1?"note":"notes"}`);
+  if(people.length) bits.push(`<b>${people.length}</b> new ${people.length===1?"person":"people"}`);
+  if(other.length) bits.push(`<b>${other.length}</b> other ${other.length===1?"record":"records"}`);
+  return `<div class="recap">
+    <div class="rc-head">${I.clock} Where you left off — ${esc(w.label)}
+      <button class="rc-all" data-dig="recap|${esc(w.arg)}">See all ${rows.length} →</button></div>
+    <div class="rc-line">${bits.join(" · ")}</div>
+    ${notes.length?`<div class="rc-notes">${notes.slice(0,3).map(x=>`
+      <button class="rc-note" data-ent="capture|${esc(x.rec.id)}">
+        <span class="rn-t">${esc(capTitle(x.rec)).slice(0,90)}</span>
+        <span class="rn-m">${esc((x.rec.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · "))||esc(fmtDate(ymdOf(x.rec.at)))}</span>
+      </button>`).join("")}</div>`:""}
+    ${people.length?`<div class="rc-people">${people.slice(0,6).map(x=>`
+      <span class="rc-p" data-ent="person|${esc(x.rec.id)}">${entIcoHTML("person",x.rec)}${esc((x.rec.name||"?").split(/\s+/)[0])}</span>`).join("")}</div>`:""}
+  </div>`;
+}
+/* The people you answer to and the people who answer to you. Anything open that touches them is
+   the thing most likely to matter today, and the thing most likely to be quietly rotting. */
+function circleOpen(o,person){
+  const open=[];
+  const touches=(type,rec)=>relatedTo(type,rec.id,true).some(r=>r.type==="person"&&r.id===person.id)
+    || rec.ownerId===person.id
+    || evidenceFor(type,rec.id).some(c=>(c.entities||[]).some(e=>e.t==="person"&&e.id===person.id));
+  wOf("problems",o.id).filter(p=>!/solved|accepted/i.test(p.status||"")).forEach(p=>{ if(touches("problem",p)) open.push({type:"problem",rec:p}); });
+  wOf("questions",o.id).filter(q=>q.status==="Open").forEach(q=>{ if(touches("question",q)) open.push({type:"question",rec:q}); });
+  wOf("projects",o.id).filter(p=>/blocked/i.test(p.status||"")).forEach(p=>{ if(touches("project",p)) open.push({type:"project",rec:p}); });
+  return open.sort((a,b)=>(a.rec.at||0)-(b.rec.at||0)).slice(0,4);
+}
+function circleCard(o){
+  const m=myPlace(o); if(!m) return "";
+  let list=[];
+  if(m.mgr) list.push({p:m.mgr,rel:"your manager",boss:true});
+  m.reports.forEach(p=>list.push({p,rel:"reports to you"}));
+  if(!list.length) return "";
+  // work out what's open BEFORE choosing who to show: the people with something outstanding are
+  // the point of this card, and four cards of "nothing on record" is just furniture
+  list=list.map(x=>{
+    const open=circleOpen(o,x.p);
+    const last=(personInteractions(x.p)[0]||{}).at;
+    return Object.assign({},x,{open,gap:last?ageDays(last):null});
+  }).sort((a,b)=>
+      (b.boss?1:0)-(a.boss?1:0) ||                         // your manager always leads
+      b.open.length-a.open.length ||                       // then whoever has the most outstanding
+      (b.gap==null?9999:b.gap)-(a.gap==null?9999:a.gap)    // then whoever you've left longest
+    ).slice(0,4);
+  const cards=list.map(x=>{
+    const open=x.open, gap=x.gap;
+    return `<div class="circ">
+      <button class="circ-h" data-ent="person|${esc(x.p.id)}">
+        ${entIcoHTML("person",x.p)}
+        <span class="ci-b"><span class="ci-n">${esc(x.p.name)}</span>
+          <span class="ci-r">${esc(x.rel)}${gap!=null?` · last spoke ${gap===0?"today":gap+"d ago"}`:" · never in a note"}</span></span>
+      </button>
+      ${open.length
+        ? `<div class="circ-list">${open.map(y=>`<button class="circ-i" data-ent="${esc(y.type)}|${esc(y.rec.id)}">
+            <span class="ci-d" style="background:${cssCol((ENT[y.type]||{}).col)}"></span>
+            <span class="ci-t">${esc(entName(y.type,y.rec))}</span>
+            <span class="ci-a">${ageDays(y.rec.at)}d</span></button>`).join("")}</div>`
+        : `<div class="circ-none">${gap==null
+              ? "You've never written a note about them — start there."
+              : gap>10 ? `Nothing open on record, but you haven't spoken in ${gap} days.`
+              : "Nothing open on record."}</div>`}
+    </div>`;
+  }).join("");
+  return `<div class="section-head"><h3>Your manager and your reports</h3><div class="line"></div>
+      <span class="tag">unresolved</span></div>
+    <div class="circ-grid">${cards}</div>`;
+}
+/* What you started and stopped. Ranked by how long it has been silent against how much you had
+   already put into it, so a thread you worked for a week and dropped beats a one-line note. */
+function quietThreads(o,limit){
+  const now=Date.now(), out=[];
+  const consider=(type,list)=>list.forEach(rec=>{
+    const touched=lastTouched(type,rec);
+    if(!touched) return;
+    const days=Math.floor((now-touched)/86400000);
+    if(days<6) return;                                  // "a week or so" — not yet quiet
+    const invested=evidenceFor(type,rec.id).length+1;
+    out.push({type,rec,days,invested,score:days*Math.log(1+invested)});
+  });
+  consider("problem",wOf("problems",o.id).filter(p=>!/solved|accepted/i.test(p.status||"")));
+  consider("project",wOf("projects",o.id).filter(p=>!/complete|cancelled/i.test(p.status||"")));
+  consider("question",wOf("questions",o.id).filter(q=>q.status==="Open"));
+  return out.sort((a,b)=>b.score-a.score).slice(0,limit||3);
+}
+function quietCard(o){
+  const list=quietThreads(o,3);
+  if(!list.length) return "";
+  return `<div class="section-head"><h3>Gone quiet</h3><div class="line"></div>
+      <button class="btn ghost sm" data-dig="quiet">See all</button></div>
+    <div class="quiet-list">${list.map(x=>`
+      <div class="qt">
+        <button class="qt-b" data-ent="${esc(x.type)}|${esc(x.rec.id)}">
+          <span class="qt-days">${x.days}<i>d</i></span>
+          <span class="qt-t"><span class="qt-n">${esc(entName(x.type,x.rec))}</span>
+            <span class="qt-m">${esc((ENT[x.type]||{}).label||x.type)} · nothing written since ${esc(fmtDate(ymdOf(lastTouched(x.type,x.rec))))}${x.invested>1?` · ${x.invested} notes before that`:""}</span></span>
+        </button>
+        <button class="btn ghost sm" data-qtcap="${esc(x.type)}|${esc(x.rec.id)}">${I.note} Update</button>
+      </div>`).join("")}</div>`;
+}
+
 /* ======================= THE DASHBOARD =======================
    Counts told you how much you had written down. They never told you how much of it you actually
    UNDERSTAND, which is the only question this half of the app exists to answer. Each gauge below
@@ -4784,19 +5041,21 @@ function readiness(o){
   };
   const owned=r=>!!r.ownerId;
   const answered=qs.filter(q=>q.status&&q.status!=="Open");
-  const g=(id,label,have,total,hint,tab,col)=>({id,label,have,total,
-    pct: total? Math.round(have/total*100) : 0, hint, tab, col, na: !total});
+  // `dig` is where the MISSING ones live — the point of a gauge is the gap, so that is what a tap
+  // opens, and `digHave` is the other half for when you want to see what you have got
+  const g=(id,label,have,total,hint,dig,digHave,col)=>({id,label,have,total,
+    pct: total? Math.round(have/total*100) : 0, hint, dig, digHave, col, na: !total});
   return [
     g("people","People you actually know",ppl.filter(known).length,ppl.length,
-      "never in a note",   "people","#6d8bc4"),
+      "never in a note",   "people-cold",   "people-known",   "#6d8bc4"),
     g("org","Reporting lines mapped",ppl.filter(placed).length,ppl.length,
-      "unplaced",          "org","#8a72bd"),
+      "unplaced",          "org-unplaced",  "org-placed",     "#8a72bd"),
     g("depts","Departments you've been inside",depts.filter(deptCovered).length,depts.length,
-      "still blank",       "org","#bf8a4f"),
+      "still blank",       "depts-blank",   "depts-inside",   "#bf8a4f"),
     g("owners","Who owns what",sys.concat(proj).filter(owned).length,sys.concat(proj).length,
-      "unowned",           "knowledge","#5b9c97"),
+      "unowned",           "owners-unowned","owners-known",   "#5b9c97"),
     g("answers","Questions you've closed",answered.length,qs.length,
-      "still open",        "knowledge","#c6a45c")
+      "still open",        "q-open",        "q-closed",       "#c6a45c")
   ];
 }
 /* A speedometer, hand-drawn like everything else here. A 240° arc so it reads as a dial rather
@@ -4822,10 +5081,10 @@ function gaugesCard(o){
   return `<div class="section-head"><h3>How well you know this place</h3><div class="line"></div>
       <span class="tag" title="Measured against what you've found so far, not an outside benchmark">your own records</span></div>
     <div class="gg-grid">${gs.map(x=>`
-      <button class="gg" data-wtab="${esc(x.tab)}" title="${esc(x.have+" of "+x.total)}">
+      <button class="gg" data-dig="${esc(x.total-x.have?x.dig:x.digHave)}" title="Open the ${x.total-x.have?(x.total-x.have)+" "+x.hint:x.have+" you have"}">
         ${gaugeSVG(x.pct,x.col)}
         <span class="gg-lab">${esc(x.label)}</span>
-        <span class="gg-sub">${x.have} of ${x.total}${x.total-x.have?` · ${x.total-x.have} ${esc(x.hint)}`:""}</span>
+        <span class="gg-sub">${x.have} of ${x.total}${x.total-x.have?` · <b>${x.total-x.have} ${esc(x.hint)} →</b>`:" · all of them"}</span>
       </button>`).join("")}</div>`;
 }
 /* Where you are against where this is going. Deliberately a projection of YOUR pace rather than a
@@ -4850,10 +5109,10 @@ function paceCard(o){
   if(p.total<6||!p.day) return "";
   const up=p.trend>=0;
   return `<div class="pace">
-    <div class="pc-cell"><div class="pc-n">${p.total}</div><div class="pc-l">things you know</div></div>
-    <div class="pc-cell"><div class="pc-n">${p.week}</div><div class="pc-l">added this week
-      ${p.avg?`<span class="pc-trend ${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(p.trend)}% vs your ${p.avg}/wk</span>`:""}</div></div>
-    <div class="pc-cell"><div class="pc-n">${p.projected}</div><div class="pc-l">by day 90 at this pace</div></div>
+    <button class="pc-cell" data-dig="all-known"><div class="pc-n">${p.total}</div><div class="pc-l">things you know</div></button>
+    <button class="pc-cell" data-dig="week-added"><div class="pc-n">${p.week}</div><div class="pc-l">added this week
+      ${p.avg?`<span class="pc-trend ${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(p.trend)}% vs your ${p.avg}/wk</span>`:""}</div></button>
+    <div class="pc-cell pc-flat"><div class="pc-n">${p.projected}</div><div class="pc-l">by day 90 at this pace</div></div>
   </div>`;
 }
 /* The tiles that are actually a to-do list. Post-hire the map has one real clock in it — how long
@@ -4871,11 +5130,11 @@ function actionTiles(o){
   const tile=(n,label,sub,act,col,urgent)=>{ if(!n) return; T.push({n,label,sub,act,col,urgent}); };
   if(o.nextActionLabel) tile(due==null?"·":(due<0?Math.abs(due):due===0?"Now":due), due!=null&&due<0?"Days overdue":"Your next step",
     String(o.nextActionLabel).slice(0,44), `open|${o.id}`, due!=null&&due<=0?"var(--bad)":"var(--warn)", due!=null&&due<=0);
-  tile(qs.length,"Open questions", qs.length?`oldest is ${ageDays(qs[0].at)} days old`:"", "wtab|knowledge","var(--warn)", qs.length&&ageDays(qs[0].at)>21);
-  tile(probs.length,"Live problems", probs.length?`oldest is ${ageDays(probs[0].at)} days old`:"", "wtab|problems","var(--hot)", probs.length&&ageDays(probs[0].at)>30);
-  tile(sys.length+projs.length,"Nobody owns these", "systems and projects with no owner", "wtab|knowledge","#5b9c97");
-  tile(stale.length,"Going quiet", stale.length?`longest gap ${Math.round(stale[0].gap/86400000)} days`:"", "wtab|people","#6d8bc4");
-  tile(blank.length,"Departments you know nothing about", blank.map(r=>r.d.name).slice(0,2).join(", "), "wtab|org","#bf8a4f");
+  tile(qs.length,"Open questions", qs.length?`oldest is ${ageDays(qs[0].at)} days old`:"", "dig|q-open","var(--warn)", qs.length&&ageDays(qs[0].at)>21);
+  tile(probs.length,"Live problems", probs.length?`oldest is ${ageDays(probs[0].at)} days old`:"", "dig|problems-open","var(--hot)", probs.length&&ageDays(probs[0].at)>30);
+  tile(sys.length+projs.length,"Nobody owns these", "systems and projects with no owner", "dig|owners-unowned","#5b9c97");
+  tile(stale.length,"Going quiet", stale.length?`longest gap ${Math.round(stale[0].gap/86400000)} days`:"", "dig|stale-people","#6d8bc4");
+  tile(blank.length,"Departments you know nothing about", blank.map(r=>r.d.name).slice(0,2).join(", "), "dig|depts-blank","#bf8a4f");
   if(!T.length) return "";
   return `<div class="section-head"><h3>Worth doing something about</h3><div class="line"></div></div>
     <div class="act-grid">${T.map(x=>`
@@ -4888,22 +5147,25 @@ function actionTiles(o){
 function workOverview(o){
   maybeAutoObjectives(o);                       // the page should already be a briefing when it opens
   const c=workCounts(o);
-  const tile=(n,l,d,tab,col)=>`<div class="w-tile" data-wtab="${tab}"><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></div>`;
+  const tile=(n,l,d,go,col)=>`<button class="w-tile" ${go.slice(0,4)==="dig|"?`data-dig="${esc(go.slice(4))}"`:`data-wtab="${esc(go)}"`}><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></button>`;
   // one line about today, then the dashboard, then what to do about it
   let h=briefingCard(o);
+  h+=recapCard(o);
+  h+=objectivesCard(o);
+  h+=circleCard(o);
+  h+=quietCard(o);
   h+=paceCard(o);
   h+=gaugesCard(o);
   h+=actionTiles(o);
-  h+=objectivesCard(o);
   h+=growthCard(o);
   h+=`<div class="section-head"><h3>What's in the map</h3><div class="line"></div></div>
     <div class="w-tiles">
     ${tile(c.people,"People","you've met","people")}
     ${tile(c.departments,"Departments","","org","var(--warn)")}
     ${tile(c.projects,"Projects","","projects")}
-    ${tile(c.problems,"Problems",c.openProblems+" open","problems",c.openProblems?"var(--hot)":"")}
+    ${tile(c.problems,"Problems",c.openProblems+" open","dig|problems-open",c.openProblems?"var(--hot)":"")}
     ${tile(c.systems,"Systems","","knowledge")}
-    ${tile(c.questions,"Questions",c.questions?"still open":"","knowledge",c.questions?"var(--warn)":"")}
+    ${tile(c.questions,"Questions",c.questions?"still open":"","dig|q-open",c.questions?"var(--warn)":"")}
   </div>`;
   h+=worthKnowingCard(o);
 
@@ -8993,7 +9255,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -9080,8 +9342,18 @@ document.addEventListener("click",e=>{
     o.nextActionLabel=it.do; o.nextActionDate=todayYMD(); o.updatedAt=Date.now();
     save(); render(); toast("On your list for today", null, "Undo"); return;
   }
+  if(t.dataset.dig){ const [k,arg]=t.dataset.dig.split("|"); openDig(k,arg); return; }
+  if(t.dataset.qtcap){ const [ty,id]=t.dataset.qtcap.split("|");
+    const rec=entGet(ty,id); const o=workOp(); if(!o) return;
+    // an update to a quiet thread starts as a note about that thread, so the capture agent files
+    // it back against the same record instead of creating a second one
+    openCapture(o.id);
+    setTimeout(()=>{ const ta=document.getElementById("capText");
+      if(ta&&rec){ ta.value=`Update on ${entName(ty,rec)}: `; ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); } },120);
+    return; }
   if(t.dataset.dash){
     const [kind,arg]=t.dataset.dash.split("|");
+    if(kind==="dig"){ openDig(arg); return; }     // the tile IS the size of a list — open the list
     if(kind==="wtab"){ workTab=arg; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
     if(kind==="open"){ openDetail(arg); return; }
     return;

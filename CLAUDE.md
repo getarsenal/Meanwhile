@@ -332,7 +332,9 @@ exports and migrates like everything else. Access via `W()` (lazily creates the 
 `null` throws before anything is drawn — and a null gets in from a half-written sync, an older
 build or a hand-edited backup. `migrate()` now filters non-objects out **on load**, which keeps the
 invariant the two hundred readers already assume; `wOf`/`wFind` and the handful of direct `W()[k]`
-walks guard as well, for one pushed at runtime.
+walks guard as well, for one pushed at runtime. **`W().links` needed the same treatment** — a null
+there took down `personManager`, and through it every render of the People tab, the org chart and
+the map.
 
 **The entity registry (`ENT`)** drives lists, detail modals, forms, search and graph nodes for all
 eleven types: `person, project, problem, department, team, system, process, decision, question,
@@ -684,7 +686,46 @@ home for the question you have while looking at something else. Different colour
 do opposite things. Both appear only once `employers().length > 0`.
 
 **Nav** is progressive: `VIEWS` entries can carry `when()`, and Work only appears once
-`employers().length > 0`, so a new user never sees an empty object.
+`employers().length > 0`, so a new user never sees an empty object. A `name` may also be a
+**function** (`viewName(v)` resolves it) — the pre-hire Insights page renames itself to *Job hunt*
+once you have an employer, because the post-hire map takes that name and two identical nav labels
+would be nonsense.
+
+## INSIGHTS: THE COMPANY AS A SPHERE (`view:"globe"`)
+Everything else post-hire is a list or a number. This is the one place you **see** the shape of what
+you know: every person, team, system, decision and open question as a point on a rotating globe,
+every relationship an arc across it. The graph had existed since day one of the post-hire work and
+had simply never been looked at. Hand-rolled like every other chart here — **no three.js, no CDN** —
+but on a `<canvas>` rather than SVG, because this one animates and 400 nodes at 60fps is not
+something the DOM should be asked to do.
+- **`globeGraph(o)`** assembles nodes and edges. Its point is that most of the real structure is
+  **not in `W().links`** — it is in the plain fields (`deptId`, `managerId`, `teamId`, `ownerId`,
+  `orgId`, `parentId`, `personId`), and a map that ignored them would show a company of strangers.
+  `MENTIONS` is deliberately excluded (a note is evidence, not structure) and so are captures as
+  nodes. Edges dedupe by unordered pair and can never be self-links.
+- **`globeLayout`** is Fibonacci seeding (ordered by cluster, so a department starts as a band) then
+  **Fruchterman–Reingold run on the sphere**: repulsion between *every* pair, attraction along
+  edges, renormalised to the surface each step, with a decaying temperature. **Repulsion must be
+  global** — the first two versions used a local push and an attraction toward zero distance, and
+  both collapsed the whole company into one bright clump on one side. `k=√(4π/N)` is the ideal
+  spacing. The suite asserts the fix directly: centroid magnitude < 0.3, all eight octants occupied,
+  max pairwise distance > 1.85.
+- **`globeInsights`** is computed in JS so every claim is a fact about the records: `hubs` (degree),
+  `bridges` (neighbours spanning the most clusters), `suggest` (≥3 shared neighbours and **no**
+  direct link — surfaced as *"this is a question, not a finding"* with the shared connections shown
+  as the reason) and `islands` (degree 0).
+- Rendering: `armGlobe` owns one rAF loop. Arcs are **slerped and lifted** off the surface
+  (`GLOBE_LIFT`) — a straight chord through the middle looks like nothing. Far hemisphere draws
+  first; hubs get a radial-gradient glow and a white-hot core. Labels are drawn nearest-first and
+  **any label overlapping one already placed is dropped** — a missing name beats two on top of each
+  other. `globeSel` dims everything that isn't the selection or its neighbours.
+- **`globeSignature(o)`** caches the layout; re-laying out on every render would be slow *and*
+  disorienting. **The bind flag lives on the element** (`stage.dataset.bound`), the same rule as
+  `armWorkGraph`. `render()` cancels the rAF when you leave the view.
+- The **arrival** (`globeDrawIntro`) is the Treasure Planet moment: a disc lying on a floor, rings
+  and spokes cut through it, that spins up, stands up and resolves into the sphere. Pure canvas — no
+  image to load, so it works offline and on first paint. It plays on **arrival, not on every
+  render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
 
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
@@ -759,8 +800,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,650 browser
-assertions** across forty-two Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,730 browser
+assertions** across forty-three Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

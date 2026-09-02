@@ -703,6 +703,67 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gg-lab{margin-top:2px;font-size:11.5px;font-weight:750;line-height:1.35;max-width:100%}
 .gg-sub{margin-top:4px;font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
 
+/* ---- INSIGHTS: the company as a sphere ---- */
+.gl-head{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
+.gl-title{flex:1 1 200px;min-width:0}
+.gl-title h2{margin:0;font-size:19px;font-weight:850;letter-spacing:-.02em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gl-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.5}
+.gl-acts{display:flex;gap:7px;flex-wrap:wrap;flex:0 0 auto}
+.gl-acts .btn.on{box-shadow:inset 0 0 0 1px var(--accent2);color:var(--accent2)}
+.gl-stage{position:relative;width:100%;height:min(62vh,560px);min-height:300px;border-radius:18px;
+  overflow:hidden;background:radial-gradient(120% 100% at 50% 0%,#171a2b 0%,#0c0e15 60%,#08090d 100%);
+  border:1px solid var(--line);touch-action:none;cursor:grab;contain:paint}
+.gl-stage:active{cursor:grabbing}
+#glCanvas{display:block;width:100%;height:100%}
+.gl-hint{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-size:10.5px;
+  color:rgba(255,255,255,.34);pointer-events:none;padding:0 12px}
+.gl-panel{position:absolute;top:12px;right:12px;width:min(268px,calc(100% - 24px));
+  background:rgba(14,16,22,.93);border:1px solid var(--line2);border-radius:14px;padding:13px;
+  backdrop-filter:blur(9px);max-height:calc(100% - 24px);overflow:auto}
+.gl-x{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:8px;border:0;
+  background:transparent;color:var(--faint);cursor:pointer;display:grid;place-items:center;padding:0}
+.gl-x svg{width:14px;height:14px}
+.gl-p-head{display:flex;gap:10px;align-items:center;padding-right:26px;min-width:0}
+.gl-p-name{font-size:13.5px;font-weight:800;line-height:1.35;overflow-wrap:break-word}
+.gl-p-type{font-size:11px;color:var(--faint);margin-top:2px}
+.gl-p-list{margin-top:11px;display:flex;flex-direction:column;gap:2px}
+.gl-p-row{display:flex;gap:8px;align-items:center;width:100%;padding:6px 7px;border-radius:8px;
+  background:transparent;border:0;color:var(--txt);font:inherit;cursor:pointer;text-align:left;min-width:0}
+.gl-p-row:hover{background:var(--panel2)}
+.gl-p-row i{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
+.gl-p-row span{flex:1 1 auto;min-width:0;font-size:12px;font-weight:650;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-p-row em{flex:0 0 auto;font-style:normal;font-size:10px;color:var(--faint)}
+.gl-p-none{margin-top:11px;font-size:11.5px;color:var(--faint);line-height:1.6}
+.gl-legend{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0 4px}
+.gl-chip{display:inline-flex;gap:6px;align-items:center;padding:5px 10px;border-radius:999px;
+  background:var(--panel);border:1px solid var(--line);color:var(--txt);font:inherit;font-size:11px;
+  font-weight:700;cursor:pointer;transition:.12s;max-width:100%}
+.gl-chip i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.gl-chip b{color:var(--faint);font-weight:800}
+.gl-chip.off{opacity:.36}
+.gl-chip:hover{border-color:var(--line2)}
+.gl-findings{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.gl-sec{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 15px;min-width:0}
+.gl-sec h3{margin:0 0 4px;font-size:13.5px;font-weight:850;display:flex;gap:7px;align-items:center}
+.gl-sec h3 svg{width:15px;height:15px;flex:0 0 15px;color:var(--accent2)}
+.gl-finds{display:flex;flex-direction:column;gap:2px}
+.gl-find{display:flex;gap:9px;align-items:center;width:100%;padding:7px;border-radius:10px;
+  background:transparent;border:0;color:var(--txt);font:inherit;cursor:pointer;text-align:left;min-width:0}
+.gl-find:hover{background:var(--panel2)}
+.gl-fb{flex:1 1 auto;min-width:0}
+.gl-fn{display:block;font-size:12.5px;font-weight:750;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-fm{display:block;font-size:10.5px;color:var(--faint);margin-top:1px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-more{font-size:10.5px;color:var(--faint);padding:6px 7px}
+@media(max-width:640px){
+  .gl-stage{height:min(52vh,420px)}
+  .gl-panel{top:auto;bottom:10px;left:10px;right:10px;width:auto;max-height:52%}
+  .gl-hint{display:none}
+}
+
 /* The four week numbers. Four items in an auto-fit grid can never exceed four columns, so this is
    4-up on a laptop and 2-up on a phone with no media query. */
 .wk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin-bottom:18px}
@@ -1492,7 +1553,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v62 · 2026-09-02";
+const BUILD = "v63 · 2026-09-02";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2366,6 +2427,7 @@ const I = {
   table:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16"/></svg>',
   cards:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  globe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>',
   spark:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>',
   bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
   briefcase:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
@@ -2407,10 +2469,14 @@ const VIEWS = [
   {id:"pipeline",  name:"Pipeline", icon:I.board},
   {id:"cards",     name:"Cards",    icon:I.cards},
   {id:"calendar",  name:"Upcoming", icon:I.cal},
-  {id:"insights",  name:"Insights", icon:I.spark},
+  // Two things called "Insights" would be nonsense, and this one is about the job HUNT — so once
+  // you're employed it says what it actually is and the post-hire map takes the name.
+  {id:"insights",  name:()=>employers().length?"Job hunt":"Insights", icon:I.spark},
   // Work only appears once you've actually got a job — nothing empty is ever shown to a new user
   {id:"work",      name:"Work",     icon:I.building, when:()=>employers().length>0},
+  {id:"globe",     name:"Insights", icon:I.globe,    when:()=>employers().length>0},
 ];
+function viewName(v){ return typeof v.name==="function"?v.name():v.name; }
 /* Meanwhile spans two different jobs — finding work, then understanding the place you landed.
    It used to infer which you were in from whether a role was marked hired, which is fragile:
    a device that hadn't synced the hire simply had no Work tab and no way to ask for one. Now
@@ -2429,8 +2495,8 @@ function setAppMode(m){
 }
 function navViews(){
   const m=appMode();
-  if(m==="hunting") return VIEWS.filter(v=>v.id!=="work");
-  if(m==="working") return VIEWS.filter(v=>["dashboard","work"].includes(v.id));
+  if(m==="hunting") return VIEWS.filter(v=>v.id!=="work"&&v.id!=="globe");
+  if(m==="working") return VIEWS.filter(v=>["dashboard","work","globe"].includes(v.id));
   return VIEWS.filter(v=>!v.when||v.when());
 }
 function renderNav(){
@@ -2441,9 +2507,9 @@ function renderNav(){
     let badge="";
     if(v.id==="calendar"&&upcoming) badge=`<span class="badge">${upcoming}</span>`;
     if(v.id==="dashboard"&&alerts) badge=`<span class="badge alert">${alerts}</span>`;
-    return `<button class="nav-btn ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${v.name}</span>${badge}</button>`;
+    return `<button class="nav-btn ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${esc(viewName(v))}</span>${badge}</button>`;
   }).join("");
-  $("#mnav").innerHTML = views.map(v=>`<button class="mnav ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${v.name.split(" ")[0]}</span></button>`).join("");
+  $("#mnav").innerHTML = views.map(v=>`<button class="mnav ${view===v.id?'active':''}" data-view="${v.id}">${v.icon}<span>${esc(viewName(v).split(" ")[0])}</span></button>`).join("");
 }
 
 /* ============================ RENDER ROUTER ============================ */
@@ -2453,7 +2519,7 @@ function render(){
   // Bounce off Work only when the app is guessing. If you've said you're employed, Work stays put
   // and shows its own empty state — silently redirecting is how the tab "disappeared" on a device
   // that simply hadn't synced the hire yet.
-  if(view==="work" && !employers().length && appMode()!=="working") view="dashboard";
+  if((view==="work"||view==="globe") && !employers().length && appMode()!=="working") view="dashboard";
   document.body.classList.toggle("no-data", !state.opportunities.length);
   renderNav();
   renderFab();
@@ -2463,11 +2529,12 @@ function render(){
   // On Home, lead with a personal greeting when a name is set
   // the name is already in the welcome heading, and a phone hasn't the width for both
   if(view==="dashboard" && name) $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span><span class="vt-txt">${greeting()}${isMobile()?"":", "+esc(name.split(" ")[0])}</span>`;
-  else $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span><span class="vt-txt">${esc(v.name)}</span>`;
+  else $("#viewTitle").innerHTML = `<span class="vt-ico">${v.icon}</span><span class="vt-txt">${esc(viewName(v))}</span>`;
   // No subtitle verbiage — the nav + content carry the context. Only the filter chip shows here.
   if(activeFilter && (view==="cards"||view==="pipeline"))
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
   else $("#viewSub").innerHTML = "";
+  if(view!=="globe"&&globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
   const c = $("#content");
   c.className = "content"+(view==="pipeline"?" pad0":"");
   if(view==="dashboard"){ c.innerHTML = renderDashboard(); armHeroCountdown(); }
@@ -2475,7 +2542,8 @@ function render(){
   else if(view==="cards") c.innerHTML = renderCards();
   else if(view==="calendar") c.innerHTML = renderCalendar();
   else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="org") setTimeout(armWorkGraph,0); }
-  else if(view==="insights") c.innerHTML = renderInsights(); }
+  else if(view==="insights") c.innerHTML = renderInsights();
+  else if(view==="globe"){ c.innerHTML = renderGlobe(); setTimeout(armGlobe,0); } }
   // stamped AFTER the overview is built, so the recap describes the gap you actually left
   if(view==="work"&&workTab==="overview"){ const n=Date.now();
     if(!devPrefs.lastSeen||n-devPrefs.lastSeen>60000){ devPrefs.lastSeen=n; saveDev(); } }
@@ -3595,7 +3663,7 @@ function addLink(opId,st,sid,rel,tt,tid,conf,via){
   if(ex){ ex.conf=Math.max(ex.conf||0,conf==null?0.9:conf); if(via&&!(ex.via||[]).includes(via)) ex.via=(ex.via||[]).concat(via); ex.seen=(ex.seen||1)+1; return ex; }
   return wAdd("links",{opId,st,sid,rel,tt,tid,conf:conf==null?0.9:conf,via:via?[via]:[],seen:1});
 }
-function linksOf(type,id){ return W().links.filter(l=>(l.st===type&&l.sid===id)||(l.tt===type&&l.tid===id)); }
+function linksOf(type,id){ return W().links.filter(l=>l&&((l.st===type&&l.sid===id)||(l.tt===type&&l.tid===id))); }
 // links as seen from one entity: {rel, dir, type, id, conf, via}
 function relatedTo(type,id,skipMentions){
   return linksOf(type,id).filter(l=>!(skipMentions&&l.rel==="MENTIONS")).map(l=>{
@@ -4419,6 +4487,513 @@ function mergeEnt(type,rec,f){
   if(f.madeBy&&!rec.madeBy) rec.madeBy=f.madeBy;
 }
 
+/* ========================= INSIGHTS: THE COMPANY AS A SPHERE =========================
+   Everything else in the post-hire half is a list or a number. This is the one place you SEE the
+   shape of what you know — every person, team, system, decision and open question as a point on a
+   globe, every relationship as an arc across it, and the clusters and bridges that no list can
+   show you. The graph has existed since the first day of the post-hire work; it had just never
+   been looked at.
+
+   Hand-rolled, like every other chart here: no three.js, no CDN, one <canvas> and the maths below.
+   Canvas rather than the SVG used elsewhere because this one animates — 400 nodes and 900 arcs at
+   60fps is not something the DOM should be asked to do. */
+
+/* --- the graph, assembled from what is already recorded ---------------------------------------
+   Most of the real structure is NOT in W().links: it's in the plain fields — deptId, managerId,
+   ownerId, teamId, orgId, parentId, personId. Those are edges too, and a map that ignored them
+   would show a company of strangers. */
+const GLOBE_SKIP_REL="MENTIONS";
+function globeGraph(o){
+  const nodes=[], byKey={}, edges=[], seenEdge={};
+  const K=(t,id)=>t+"|"+id;
+  const add=(t,rec)=>{
+    if(!rec||!rec.id||byKey[K(t,rec.id)]) return null;
+    const n={key:K(t,rec.id),t,id:rec.id,name:entName(t,rec)||"(untitled)",rec,deg:0,
+             cluster:t==="person"?("d:"+(rec.deptId||"none")):("t:"+t)};
+    byKey[n.key]=n; nodes.push(n); return n;
+  };
+  ENT_TYPES.filter(t=>t!=="capture").forEach(t=>entAll(t,o.id).forEach(r=>add(t,r)));
+  const link=(at,aid,bt,bid,rel,kind)=>{
+    const a=byKey[K(at,aid)], b=byKey[K(bt,bid)];
+    if(!a||!b||a===b) return;
+    const k=[a.key,b.key].sort().join("~");
+    if(seenEdge[k]){ seenEdge[k].n++; return; }
+    const e={a,b,rel:rel||"RELATES_TO",kind:kind||"field",n:1};
+    seenEdge[k]=e; edges.push(e); a.deg++; b.deg++;
+  };
+  // the recorded relationship graph
+  W().links.forEach(l=>{ if(l&&l.opId===o.id&&l.rel!==GLOBE_SKIP_REL) link(l.st,l.sid,l.tt,l.tid,l.rel,"link"); });
+  // ...and the structure that lives in ordinary fields
+  (o.people||[]).forEach(p=>{ if(!p||!p.id) return;
+    if(p.deptId) link("person",p.id,"department",p.deptId,"WORKS_IN");
+    if(p.teamId) link("person",p.id,"team",p.teamId,"WORKS_IN");
+    const m=personMgrId(p); if(m) link("person",p.id,"person",m,"REPORTS_TO");
+  });
+  wOf("teams",o.id).forEach(x=>{ if(x.deptId) link("team",x.id,"department",x.deptId,"PART_OF"); if(x.headId) link("person",x.headId,"team",x.id,"OWNS"); });
+  wOf("departments",o.id).forEach(x=>{ if(x.orgId) link("department",x.id,"org",x.orgId,"PART_OF");
+    if(x.parentId) link("department",x.id,"department",x.parentId,"PART_OF"); if(x.headId) link("person",x.headId,"department",x.id,"OWNS"); });
+  wOf("orgs",o.id).forEach(x=>{ if(x.parentId) link("org",x.id,"org",x.parentId,"PART_OF"); });
+  ["projects","systems"].forEach(k=>wOf(k,o.id).forEach(x=>{
+    const t=k==="projects"?"project":"system";
+    if(x.ownerId) link("person",x.ownerId,t,x.id,"OWNS");
+    if(x.deptId) link(t,x.id,"department",x.deptId,"WORKS_IN");
+  }));
+  wOf("bites",o.id).forEach(x=>{ if(x.personId) link("bite",x.id,"person",x.personId,"KNOWS"); });
+  // people who keep turning up on the same work — the thing an org chart never tells you
+  collabPairs(o).filter(x=>x.n>=2).forEach(x=>link("person",x.a,"person",x.b,"WORKS_WITH","collab"));
+  return {nodes,edges,byKey,me:(o.hired&&o.hired.meId)||""};
+}
+/* --- putting them on a sphere -----------------------------------------------------------------
+   Two steps. A Fibonacci spiral spreads the points evenly (that even scatter is what makes the
+   reference images read as a globe rather than a clump), ordered by cluster so a department starts
+   as a band. Then a short relaxation pulls linked nodes together and pushes crowded ones apart —
+   ON the sphere, by renormalising back to the surface after every nudge, which is what keeps it a
+   globe instead of collapsing into a ball of string. */
+const GLOBE_ITERS=90;
+function globeLayout(g){
+  const N=g.nodes.length; if(!N) return;
+  const order=g.nodes.slice().sort((a,b)=>a.cluster<b.cluster?-1:a.cluster>b.cluster?1:(a.name<b.name?-1:1));
+  const gold=Math.PI*(3-Math.sqrt(5));
+  order.forEach((n,i)=>{
+    const y=N===1?0:1-(i/(N-1))*2, r=Math.sqrt(Math.max(0,1-y*y)), th=gold*i;
+    n.x=Math.cos(th)*r; n.y=y; n.z=Math.sin(th)*r;
+  });
+  const norm=n=>{ const d=Math.hypot(n.x,n.y,n.z)||1; n.x/=d; n.y/=d; n.z/=d; };
+  /* Fruchterman–Reingold, run on the sphere: repulsion between EVERY pair, attraction along edges,
+     renormalised to the surface after each step. Repulsion has to be global — a version that only
+     pushed apart nodes already close together could not hold a connected graph open, and the whole
+     company collapsed into one bright clump on one side of the globe. `k` is the ideal spacing:
+     the sphere's area shared out between N points. */
+  const k=Math.sqrt(4*Math.PI/N), k2=k*k;
+  let temp=0.32;
+  for(let it=0;it<GLOBE_ITERS;it++){
+    g.nodes.forEach(n=>{ n.fx=0; n.fy=0; n.fz=0; });
+    for(let i=0;i<N;i++){ const a=g.nodes[i];
+      for(let j=i+1;j<N;j++){ const b=g.nodes[j];
+        let dx=b.x-a.x, dy=b.y-a.y, dz=b.z-a.z;
+        let d=Math.hypot(dx,dy,dz);
+        if(d<1e-4){ dx=(i%3-1)*1e-3; dy=(j%3-1)*1e-3; dz=1e-3; d=Math.hypot(dx,dy,dz); }
+        const f=k2/(d*d);                       // inverse-square, so crowding is what dominates
+        a.fx-=dx/d*f; a.fy-=dy/d*f; a.fz-=dz/d*f;
+        b.fx+=dx/d*f; b.fy+=dy/d*f; b.fz+=dz/d*f;
+      }
+    }
+    g.edges.forEach(e=>{
+      const a=e.a,b=e.b, dx=b.x-a.x, dy=b.y-a.y, dz=b.z-a.z;
+      const d=Math.hypot(dx,dy,dz)||1e-6;
+      const f=d*d/k;
+      a.fx+=dx/d*f; a.fy+=dy/d*f; a.fz+=dz/d*f;
+      b.fx-=dx/d*f; b.fy-=dy/d*f; b.fz-=dz/d*f;
+    });
+    g.nodes.forEach(n=>{
+      const m=Math.hypot(n.fx,n.fy,n.fz)||1e-9;
+      const s=Math.min(m,temp)/m;               // temperature caps the step, so it settles
+      n.x+=n.fx*s; n.y+=n.fy*s; n.z+=n.fz*s;
+      norm(n);
+    });
+    temp*=0.965;
+  }
+  g.nodes.forEach(n=>{ delete n.fx; delete n.fy; delete n.fz; });
+}
+/* --- what the picture is FOR ------------------------------------------------------------------
+   Computed in JS from the same graph, so every claim on the panel is a fact about your records
+   rather than something a model decided sounded good. */
+function globeInsights(g){
+  const nb={}; g.nodes.forEach(n=>nb[n.key]=new Set());
+  g.edges.forEach(e=>{ nb[e.a.key].add(e.b.key); nb[e.b.key].add(e.a.key); });
+  const hubs=g.nodes.filter(n=>n.deg>1).sort((a,b)=>b.deg-a.deg).slice(0,6);
+  // a bridge touches the most DIFFERENT clusters — the person everything has to pass through
+  const bridges=g.nodes.map(n=>({n,span:new Set([...nb[n.key]].map(k=>g.byKey[k].cluster)).size}))
+    .filter(x=>x.span>=3).sort((a,b)=>b.span-a.span||b.n.deg-a.n.deg).slice(0,5);
+  // two records with several connections in common and none to each other. NOT a claim that they
+  // are related — a question worth asking, and the shared neighbours are shown as the reason.
+  const sug=[], keys=g.nodes.map(n=>n.key);
+  for(let i=0;i<keys.length;i++) for(let j=i+1;j<keys.length;j++){
+    const a=g.byKey[keys[i]], b=g.byKey[keys[j]];
+    if(nb[a.key].has(b.key)) continue;
+    let shared=0; nb[a.key].forEach(k=>{ if(nb[b.key].has(k)) shared++; });
+    if(shared>=3) sug.push({a,b,shared,via:[...nb[a.key]].filter(k=>nb[b.key].has(k)).slice(0,4)});
+  }
+  sug.sort((x,y)=>y.shared-x.shared);
+  const islands=g.nodes.filter(n=>n.deg===0);
+  return {hubs,bridges,suggest:sug.slice(0,8),islands,nb};
+}
+/* --- the view -------------------------------------------------------------------------------- */
+let globeG=null, globeSig="", globeSel=null, globeHide=new Set(), globeSuggest=false;
+let globeRAF=0, globeCam={yaw:0.6,pitch:-0.22,zoom:1}, globeSpin=true, globeIntroAt=0;
+function globeSignature(o){
+  // cheap: the counts and the newest timestamp. Re-laying out on every render would be both slow
+  // and disorienting — the map should stay where you left it.
+  let n=0,newest=0;
+  ENT_TYPES.filter(t=>t!=="capture").forEach(t=>entAll(t,o.id).forEach(r=>{ n++; if(r.at>newest) newest=r.at; }));
+  return o.id+"|"+n+"|"+W().links.filter(l=>l&&l.opId===o.id).length+"|"+newest;
+}
+function globeBuild(o){
+  const sig=globeSignature(o);
+  if(globeG&&globeSig===sig) return globeG;
+  globeG=globeGraph(o); globeLayout(globeG); globeSig=sig;
+  globeG.ins=globeInsights(globeG);
+  return globeG;
+}
+function globeNodeColor(n){
+  if(n.t==="person") return n.rec.deptId?deptColor(n.rec.deptId):"#7fa8e8";
+  return (ENT[n.t]||{}).col||"#8a90a0";
+}
+const GLOBE_LEGEND=["person","department","team","project","problem","system","process","decision","question","info","bite","org"];
+function renderGlobe(){
+  const o=workOp();
+  if(!o) return `<div class="empty"><div class="big">${I.building}</div><h3>No company yet</h3>
+    <p>The map is built from what you record about the place you work. Mark a role as hired and start capturing.</p></div>`;
+  const g=globeBuild(o), ins=g.ins;
+  if(!g.nodes.length) return `<div class="empty"><div class="big">${I.spark}</div><h3>Nothing to map yet</h3>
+    <p>Every person, team, system and decision you record becomes a point on the map, and every connection an arc between them. Capture a few notes and come back.</p>
+    <div style="margin-top:14px"><button class="btn primary" data-act="capture">${I.plus} Capture something</button></div></div>`;
+  const counts={}; g.nodes.forEach(n=>counts[n.t]=(counts[n.t]||0)+1);
+  const chip=t=>{ const c=counts[t]; if(!c) return "";
+    const off=globeHide.has(t);
+    return `<button class="gl-chip${off?" off":""}" data-glhide="${esc(t)}">
+      <i style="background:${cssCol((ENT[t]||{}).col||"#888")}"></i>${esc(ENT[t].plural)} <b>${c}</b></button>`; };
+  const linked=g.nodes.filter(n=>n.deg>0).length;
+  return `<div class="gl-head">
+      <div class="gl-title"><h2>${esc(o.company)}</h2>
+        <div class="gl-sub">${g.nodes.length} things you know · ${g.edges.length} connections · ${linked} of them joined up</div></div>
+      <div class="gl-acts">
+        <button class="btn ghost sm" data-act="globe-reset">Recentre</button>
+        <button class="btn ghost sm${globeSpin?" on":""}" data-act="globe-spin">${globeSpin?"Pause":"Spin"}</button>
+        <button class="btn ghost sm${globeSuggest?" on":""}" data-act="globe-suggest">Possible links</button>
+      </div>
+    </div>
+    <div class="gl-stage" id="glStage">
+      <canvas id="glCanvas"></canvas>
+      <div class="gl-hint" id="glHint">Drag to turn it · pinch or scroll to zoom · tap a point to open it</div>
+      <div class="gl-panel" id="glPanel" hidden></div>
+    </div>
+    <div class="gl-legend">${GLOBE_LEGEND.map(chip).join("")}</div>
+    ${globeFindings(g,ins)}`;
+}
+function globeFindings(g,ins){
+  const row=(n,meta)=>`<button class="gl-find" data-glsel="${esc(n.key)}">
+      ${entIcoHTML(n.t,n.rec)}
+      <span class="gl-fb"><span class="gl-fn">${esc(clip(n.name,54))}</span>
+        <span class="gl-fm">${meta}</span></span></button>`;
+  let h="";
+  if(ins.hubs.length) h+=`<div class="gl-sec"><h3>${I.spark} Where everything meets</h3>
+    <div class="sect-note">The most connected things in your map. If one of these is a person, a lot passes through them.</div>
+    <div class="gl-finds">${ins.hubs.map(n=>row(n,`${n.deg} connection${n.deg===1?"":"s"} · ${esc(ENT[n.t].label)}`)).join("")}</div></div>`;
+  if(ins.bridges.length) h+=`<div class="gl-sec"><h3>${I.people} The bridges</h3>
+    <div class="sect-note">These reach into the most separate corners of your map — the joins a list of names can't show you.</div>
+    <div class="gl-finds">${ins.bridges.map(x=>row(x.n,`reaches ${x.span} different corners`)).join("")}</div></div>`;
+  if(ins.suggest.length) h+=`<div class="gl-sec"><h3>${I.question} Possibly connected</h3>
+    <div class="sect-note">Pairs with several connections in common but none to each other. <b>This is a question, not a finding</b> — the shared connections are listed so you can judge it.</div>
+    <div class="gl-finds">${ins.suggest.map(s=>`<button class="gl-find" data-glsel="${esc(s.a.key)}">
+      ${entIcoHTML(s.a.t,s.a.rec)}
+      <span class="gl-fb"><span class="gl-fn">${esc(clip(s.a.name,26))} &nbsp;·&nbsp; ${esc(clip(s.b.name,26))}</span>
+        <span class="gl-fm">${s.shared} in common: ${esc(s.via.map(k=>clip(g.byKey[k].name,20)).join(", "))}</span></span></button>`).join("")}</div></div>`;
+  if(ins.islands.length) h+=`<div class="gl-sec"><h3>${I.info} Floating on their own</h3>
+    <div class="sect-note">Recorded, but connected to nothing yet. Each one is a small gap in the map.</div>
+    <div class="gl-finds">${ins.islands.slice(0,10).map(n=>row(n,esc(ENT[n.t].label))).join("")}
+      ${ins.islands.length>10?`<div class="gl-more">and ${ins.islands.length-10} more</div>`:""}</div></div>`;
+  return h?`<div class="gl-findings">${h}</div>`:"";
+}
+/* --- drawing it ------------------------------------------------------------------------------
+   One canvas, one rAF loop. The camera is two angles and a zoom; nodes are rotated, projected with
+   a perspective divide, then painted back-to-front so the far hemisphere sits behind the near one.
+   Arcs are slerped along the surface and lifted slightly — that lift is what makes the reference
+   images read as a globe rather than a flat scatter. */
+const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9;
+function globeVisible(n){ return !globeHide.has(n.t); }
+function armGlobe(){
+  const cv=document.getElementById("glCanvas"), stage=document.getElementById("glStage");
+  if(!cv||!stage) return;
+  const o=workOp(); if(!o) return;
+  const g=globeBuild(o);
+  const ctx=cv.getContext("2d");
+  const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W0=0,H0=0,DPR=1;
+  const fit=()=>{
+    const r=stage.getBoundingClientRect();
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W0=Math.max(120,r.width); H0=Math.max(160,r.height);
+    cv.width=Math.round(W0*DPR); cv.height=Math.round(H0*DPR);
+    cv.style.width=W0+"px"; cv.style.height=H0+"px";
+  };
+  fit();
+  if(globeRAF) cancelAnimationFrame(globeRAF);
+  // The intro plays when you ARRIVE, not on every re-render — replaying a 1.4s animation each time
+  // you tap a node would be unbearable.
+  const introDur=reduce?0:1500;
+  let t0=performance.now();
+  if(!globeIntroAt||performance.now()-globeIntroAt>60000) globeIntroAt=t0; else t0=globeIntroAt;
+  const proj=[];
+  const rot=(n,cy,sy,cp,sp)=>{
+    const x=n.x*cy - n.z*sy, z=n.x*sy + n.z*cy;
+    const y=n.y*cp - z*sp,   z2=n.y*sp + z*cp;
+    return {x,y,z:z2};
+  };
+  const draw=now=>{
+    const dt=now-t0;
+    const intro=introDur?Math.min(1,dt/introDur):1;
+    if(globeSpin&&!reduce&&intro>=1) globeCam.yaw+=0.0016;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W0,H0);
+    // the ground the disk sits on, and the glow the sphere throws
+    const cx=W0/2, cy0=H0/2, R=Math.min(W0,H0)*0.42*globeCam.zoom;
+    const bg=ctx.createRadialGradient(cx,cy0,R*0.1,cx,cy0,R*1.9);
+    bg.addColorStop(0,"rgba(94,106,210,.16)"); bg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W0,H0);
+    if(intro<1){ globeDrawIntro(ctx,W0,H0,R,intro); globeRAF=requestAnimationFrame(draw); return; }
+    const cy=Math.cos(globeCam.yaw), sy=Math.sin(globeCam.yaw);
+    const cp=Math.cos(globeCam.pitch), sp=Math.sin(globeCam.pitch);
+    const P=p=>{ const s=GLOBE_FOV/(GLOBE_FOV+p.z); return {sx:cx+p.x*R*s, sy:cy0+p.y*R*s, s, z:p.z}; };
+    proj.length=0;
+    g.nodes.forEach(n=>{ if(!globeVisible(n)) return;
+      const r=rot(n,cy,sy,cp,sp); const q=P(r);
+      proj.push({n,r,sx:q.sx,sy:q.sy,s:q.s,z:r.z});
+      n._sx=q.sx; n._sy=q.sy; n._z=r.z;
+    });
+    const near=globeSel?new Set([globeSel].concat([...(g.ins.nb[globeSel]||[])])):null;
+    const lit=k=>!near||near.has(k);
+    // the wireframe cage — faint meridians, so the sphere reads as a sphere even when sparse
+    globeDrawCage(ctx,cx,cy0,R,cy,sy,cp,sp);
+    // arcs, far ones first
+    const arcs=[];
+    g.edges.forEach(e=>{
+      if(!globeVisible(e.a)||!globeVisible(e.b)) return;
+      arcs.push({e,z:(e.a._z+e.b._z)/2});
+    });
+    if(globeSuggest) g.ins.suggest.forEach(s=>{
+      if(!globeVisible(s.a)||!globeVisible(s.b)) return;
+      arcs.push({e:{a:s.a,b:s.b,kind:"suggest",n:1},z:(s.a._z+s.b._z)/2});
+    });
+    arcs.sort((a,b)=>b.z-a.z);
+    arcs.forEach(({e})=>{
+      const on=lit(e.a.key)&&lit(e.b.key);
+      globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near);
+    });
+    // nodes, far first so near ones sit on top
+    proj.sort((a,b)=>b.z-a.z);
+    proj.forEach(p=>{
+      const n=p.n, on=lit(n.key);
+      const depth=(1-(p.z+1)/2);                      // 0 = far, 1 = near
+      const base=2.1+Math.min(5.4,Math.sqrt(n.deg)*1.9);
+      const r=base*p.s*(0.55+0.45*depth)*Math.max(.75,globeCam.zoom*.85);
+      const col=globeNodeColor(n);
+      const a=(on?1:0.13)*(0.35+0.65*depth);
+      if(n.deg>2&&on){                                 // hubs glow
+        const gr=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,r*5);
+        gr.addColorStop(0,globeRGBA(col,0.5*a)); gr.addColorStop(1,globeRGBA(col,0));
+        ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(p.sx,p.sy,r*5,0,7); ctx.fill();
+      }
+      ctx.fillStyle=globeRGBA(col,Math.min(1,a+0.15));
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,7); ctx.fill();
+      // a hot centre: the colour says what it is, the white says it is a point of light
+      if(on&&r>2.2){ ctx.fillStyle=`rgba(255,255,255,${0.25+0.5*depth})`;
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,r*0.42,0,7); ctx.fill(); }
+      if(n.key===globeSel||n.id===g.me){
+        ctx.strokeStyle=n.id===g.me?"#ffd479":"#fff"; ctx.lineWidth=1.6;
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,r+3.5,0,7); ctx.stroke();
+      }
+    });
+    // labels: only what you can actually read — the selected node, its neighbours, and the hubs
+    ctx.font="600 11px -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
+    ctx.textAlign="center";
+    const label=[];
+    proj.forEach(p=>{ const n=p.n;
+      if(p.z<-0.15) return;
+      const want=globeSel?lit(n.key):(n.deg>=Math.max(3,g.edges.length/Math.max(1,g.nodes.length)*2.2));
+      if(want) label.push(p);
+    });
+    // nearest first, and a label that would land on one already drawn is simply dropped — two
+    // names on top of each other is worse than one name missing
+    const taken=[];
+    label.sort((a,b)=>a.z-b.z).slice(0,globeSel?18:14).forEach(p=>{
+      const txt=clip(p.n.name,22);
+      const w=ctx.measureText(txt).width+10, h=15;
+      const x=p.sx-w/2, y=p.sy+9;
+      if(taken.some(r=>x<r.x+r.w+3&&x+w+3>r.x&&y<r.y+r.h+2&&y+h+2>r.y)) return;
+      taken.push({x,y,w,h});
+      ctx.fillStyle="rgba(10,11,14,.78)";
+      ctx.fillRect(x,y,w,h);
+      ctx.fillStyle="rgba(255,255,255,.92)";
+      ctx.fillText(txt,p.sx,p.sy+20);
+    });
+    globeRAF=requestAnimationFrame(draw);
+  };
+  globeRAF=requestAnimationFrame(draw);
+  // one resize observer per canvas, cleaned up when the element goes
+  if(window.ResizeObserver&&!stage.dataset.ro){ stage.dataset.ro="1";
+    new window.ResizeObserver(()=>fit()).observe(stage); }
+  if(stage.dataset.bound) return; stage.dataset.bound="1";   // the flag lives on the element
+  let drag=false, moved=false, lx=0, ly=0, pts=new Map(), pinch=0, z0=1;
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  stage.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".gl-panel")) return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){ const v=[...pts.values()]; pinch=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y); z0=globeCam.zoom; return; }
+    drag=true; moved=false; lx=e.clientX; ly=e.clientY;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener("pointermove",e=>{
+    if(pts.has(e.pointerId)) pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){ const v=[...pts.values()]; const d=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);
+      if(pinch) globeCam.zoom=Math.max(.6,Math.min(3,z0*(d/pinch))); return; }
+    if(!drag) return;
+    const dx=e.clientX-lx, dy=e.clientY-ly;
+    if(Math.abs(dx)+Math.abs(dy)>4) moved=true;
+    globeCam.yaw+=dx*0.006;
+    globeCam.pitch=Math.max(-1.3,Math.min(1.3,globeCam.pitch+dy*0.006));
+    lx=e.clientX; ly=e.clientY;
+  });
+  const end=e=>{
+    pts.delete(e.pointerId); if(pts.size<2) pinch=0;
+    if(drag&&!moved) globeHit(pos(e));
+    drag=false;
+  };
+  stage.addEventListener("pointerup",end);
+  stage.addEventListener("pointercancel",end);
+  stage.addEventListener("wheel",e=>{ e.preventDefault();
+    globeCam.zoom=Math.max(.6,Math.min(3,globeCam.zoom*(e.deltaY>0?0.92:1.08))); },{passive:false});
+}
+function globeRGBA(hex,a){
+  const h=String(hex||"").replace("#","");
+  const v=h.length===3?h.split("").map(c=>c+c).join(""):h.slice(0,6);
+  const n=parseInt(v,16);
+  if(!isFinite(n)) return `rgba(140,150,170,${a})`;
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+/* The cage: a few meridians and parallels, barely there. Without it a sparse map is just dots in
+   space; with it you can tell you are looking at a rotating sphere. */
+function globeDrawCage(ctx,cx,cy0,R,cy,sy,cp,sp){
+  ctx.lineWidth=0.6;
+  const P=(x,y,z)=>{ const X=x*cy-z*sy, Z=x*sy+z*cy, Y=y*cp-Z*sp, Z2=y*sp+Z*cp;
+    const s=GLOBE_FOV/(GLOBE_FOV+Z2); return {x:cx+X*R*s,y:cy0+Y*R*s,z:Z2}; };
+  for(let m=0;m<6;m++){ const a=m*Math.PI/6;
+    ctx.beginPath();
+    for(let i=0;i<=48;i++){ const t=i/48*Math.PI*2;
+      const p=P(Math.cos(t)*Math.cos(a),Math.sin(t),Math.cos(t)*Math.sin(a));
+      ctx.strokeStyle=`rgba(130,160,235,${0.07+0.10*(1-(p.z+1)/2)})`;
+      if(i===0) ctx.moveTo(p.x,p.y); else { ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    }
+  }
+  for(let k=1;k<4;k++){ const y=-1+k*0.5, r=Math.sqrt(Math.max(0,1-y*y));
+    ctx.beginPath();
+    for(let i=0;i<=48;i++){ const t=i/48*Math.PI*2;
+      const p=P(Math.cos(t)*r,y,Math.sin(t)*r);
+      ctx.strokeStyle=`rgba(130,160,235,${0.055+0.085*(1-(p.z+1)/2)})`;
+      if(i===0) ctx.moveTo(p.x,p.y); else { ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+    }
+  }
+}
+/* An arc is slerped between the two points and lifted off the surface, so it curves the way the
+   reference images do instead of cutting a dull straight chord through the middle. */
+function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
+  const a=e.a,b=e.b;
+  const dot=Math.max(-1,Math.min(1,a.x*b.x+a.y*b.y+a.z*b.z));
+  const om=Math.acos(dot);
+  const steps=om<0.35?6:om<1.2?14:22;
+  const col=e.kind==="suggest"?"#c6a45c":e.kind==="collab"?"#9b8ec4":globeNodeColor(a);
+  const base=e.kind==="suggest"?0.5:e.kind==="collab"?0.4:0.34;
+  ctx.beginPath();
+  if(e.kind==="suggest") ctx.setLineDash([3,4]); else ctx.setLineDash([]);
+  let lastZ=0;
+  for(let i=0;i<=steps;i++){
+    const t=i/steps;
+    let x,y,z;
+    if(om<1e-4){ x=a.x; y=a.y; z=a.z; }
+    else { const s=Math.sin(om), w1=Math.sin((1-t)*om)/s, w2=Math.sin(t*om)/s;
+           x=a.x*w1+b.x*w2; y=a.y*w1+b.y*w2; z=a.z*w1+b.z*w2; }
+    const lift=1+GLOBE_LIFT*Math.sin(Math.PI*t)*Math.min(1,om);
+    const d=Math.hypot(x,y,z)||1;
+    const r=rot({x:x/d*lift,y:y/d*lift,z:z/d*lift},cy,sy,cp,sp);
+    const q=P(r); lastZ=r.z;
+    if(i===0) ctx.moveTo(q.sx,q.sy); else ctx.lineTo(q.sx,q.sy);
+  }
+  const depth=1-(lastZ+1)/2;
+  ctx.strokeStyle=globeRGBA(col,(on?base:0.04)*(0.3+0.7*depth));
+  ctx.lineWidth=(e.kind==="suggest"?1:Math.min(2.2,0.7+e.n*0.35))*(on?1:0.6);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+/* THE ARRIVAL. A disk lying on a floor, the app's mark cut out of it, that spins up and lifts into
+   the sphere. Pure canvas — no image to load, so it works offline and on the first paint. */
+function globeDrawIntro(ctx,W0,H0,R,t){
+  const cx=W0/2, cy=H0/2;
+  const ease=1-Math.pow(1-t,3);
+  const spin=ease*Math.PI*7;
+  const lie=Math.pow(1-ease,1.4);                 // 1 = flat on the floor, 0 = facing you
+  const ry=cy+lie*H0*0.16;
+  const sq=0.12+0.88*(1-lie);                     // the ellipse standing up
+  ctx.save();
+  ctx.translate(cx,ry); ctx.scale(1,Math.max(0.06,sq));
+  // the floor it sits on
+  if(lie>0.02){
+    const fl=ctx.createRadialGradient(0,0,R*0.2,0,0,R*2.2);
+    fl.addColorStop(0,`rgba(94,106,210,${0.20*lie})`); fl.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=fl; ctx.beginPath(); ctx.arc(0,0,R*2.2,0,7); ctx.fill();
+  }
+  ctx.rotate(spin);
+  const rr=R*(0.55+0.45*ease);
+  const rim=ctx.createLinearGradient(-rr,-rr,rr,rr);
+  rim.addColorStop(0,"#6d72c4"); rim.addColorStop(0.5,"#9aa6ff"); rim.addColorStop(1,"#4ea3a0");
+  ctx.strokeStyle=rim; ctx.lineWidth=Math.max(1.5,rr*0.055);
+  ctx.beginPath(); ctx.arc(0,0,rr,0,7); ctx.stroke();
+  ctx.strokeStyle=globeRGBA("#9aa6ff",0.45); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(0,0,rr*0.78,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,rr*0.34,0,7); ctx.stroke();
+  // the cut-out: spokes through the plate, so the light reads through it
+  for(let i=0;i<12;i++){ const a=i*Math.PI/6;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a)*rr*0.36,Math.sin(a)*rr*0.36);
+    ctx.lineTo(Math.cos(a)*rr*0.76,Math.sin(a)*rr*0.76);
+    ctx.strokeStyle=globeRGBA("#9aa6ff",0.16+0.5*Math.abs(Math.sin(a*2+spin)));
+    ctx.lineWidth=Math.max(1,rr*0.02); ctx.stroke();
+  }
+  const core=ctx.createRadialGradient(0,0,0,0,0,rr*0.34);
+  core.addColorStop(0,`rgba(230,235,255,${0.5+0.4*ease})`); core.addColorStop(1,"rgba(109,114,196,0)");
+  ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,rr*0.34,0,7); ctx.fill();
+  ctx.restore();
+  // the sphere resolving out of it
+  if(ease>0.55){
+    const k=(ease-0.55)/0.45;
+    ctx.strokeStyle=globeRGBA("#9aa6ff",0.30*k);
+    ctx.lineWidth=1;
+    for(let m=0;m<6;m++){ const a=m*Math.PI/6+spin*0.1;
+      ctx.beginPath(); ctx.ellipse(cx,cy,R*Math.abs(Math.cos(a)),R,0,0,7); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+  }
+}
+/* Hit-testing is done against the projected positions the last frame wrote, so what you tap is
+   exactly what you saw — no second projection that could disagree with the picture. */
+function globeHit(pt){
+  const o=workOp(); if(!o||!globeG) return;
+  let best=null, bd=1e9;
+  globeG.nodes.forEach(n=>{
+    if(!globeVisible(n)||n._sx==null) return;
+    if(n._z<-0.35) return;                     // don't grab something on the far side
+    const d=Math.hypot(n._sx-pt.x,n._sy-pt.y);
+    if(d<bd){ bd=d; best=n; }
+  });
+  if(best&&bd<=22) globeSelect(best.key); else globeSelect(null);
+}
+function globeSelect(key){
+  globeSel=key||null;
+  const panel=document.getElementById("glPanel"); if(!panel) return;
+  const g=globeG, n=key&&g.byKey[key];
+  if(!n){ panel.hidden=true; panel.innerHTML=""; return; }
+  const nb=[...(g.ins.nb[key]||[])].map(k=>g.byKey[k]).filter(Boolean)
+    .sort((a,b)=>b.deg-a.deg).slice(0,10);
+  panel.hidden=false;
+  panel.innerHTML=`<button class="gl-x" data-act="globe-clear">${I.x}</button>
+    <div class="gl-p-head">${entIcoHTML(n.t,n.rec,true)}
+      <div style="min-width:0"><div class="gl-p-name">${esc(clip(n.name,60))}</div>
+        <div class="gl-p-type">${esc(ENT[n.t].label)}${n.deg?` · ${n.deg} connection${n.deg===1?"":"s"}`:" · not connected to anything yet"}</div></div></div>
+    ${nb.length?`<div class="gl-p-list">${nb.map(x=>`<button class="gl-p-row" data-glsel="${esc(x.key)}">
+        <i style="background:${cssCol(globeNodeColor(x))}"></i>
+        <span>${esc(clip(x.name,34))}</span><em>${esc(ENT[x.t].label)}</em></button>`).join("")}</div>`
+      :`<div class="gl-p-none">Nothing links to this yet. Mention it in a note and the map will join it up.</div>`}
+    <button class="btn primary sm" style="width:100%;margin-top:10px" data-ent="${esc(n.t)}|${esc(n.id)}">Open ${esc(ENT[n.t].label.toLowerCase())}</button>`;
+}
 /* ============================ WORK VIEW (90-day mode / My Company) ============================ */
 const WORK_TABS=[["overview","Overview"],["people","People"],["org","Departments"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
 function renderWork(){
@@ -4841,7 +5416,7 @@ function growthCard(o){
   const last=pts[pts.length-1];
   const c=workCounts(o);
   const legend=[[c.people,"people"],[c.notes,"notes"],[c.projects,"projects"],[c.systems,"systems"],
-    [W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS").length,"connections"]]
+    [W().links.filter(l=>l&&l.opId===o.id&&l.rel!=="MENTIONS").length,"connections"]]
     .filter(p=>p[0]).map(p=>`<span><b>${p[0]}</b> ${esc(p[1])}</span>`).join("");
   return `<div class="ai-box wov-grow">
     <div class="wov-gtop">
@@ -5886,13 +6461,13 @@ function deptColor(deptId){ return deptId?colorFor("dept:"+entLabel("department"
 function teamColor(teamId){ return teamId?colorFor("team:"+entLabel("team",teamId)):"#6b7078"; }
 function personManager(p){
   if(p.managerId&&entGet("person",p.managerId)) return p.managerId;
-  const l=W().links.find(x=>x.st==="person"&&x.sid===p.id&&x.rel==="REPORTS_TO"&&entGet("person",x.tid));
+  const l=W().links.find(x=>x&&x.st==="person"&&x.sid===p.id&&x.rel==="REPORTS_TO"&&entGet("person",x.tid));
   return l?l.tid:"";
 }
 // people who keep showing up on the same projects/problems — the informal org
 function collabPairs(o){
   const byThing={};
-  W().links.filter(l=>l.opId===o.id&&l.st==="person"&&["INVOLVED_IN","OWNS","HELPED_SOLVE","USES"].includes(l.rel)&&(l.tt==="project"||l.tt==="problem"))
+  W().links.filter(l=>l&&l.opId===o.id&&l.st==="person"&&["INVOLVED_IN","OWNS","HELPED_SOLVE","USES"].includes(l.rel)&&(l.tt==="project"||l.tt==="problem"))
     .forEach(l=>{ const k=l.tt+"|"+l.tid; (byThing[k]=byThing[k]||[]).push(l.sid); });
   const seen={}, out=[];
   Object.values(byThing).forEach(ids=>{
@@ -5905,7 +6480,7 @@ function collabPairs(o){
   });
   const inferred=out.sort((x,y)=>y.n-x.n).slice(0,16);
   // links you drew yourself always show, and are never crowded out by inferred ones
-  const manual=W().links.filter(l=>l.opId===o.id&&l.rel==="WORKS_WITH"&&l.st==="person"&&l.tt==="person"
+  const manual=W().links.filter(l=>l&&l.opId===o.id&&l.rel==="WORKS_WITH"&&l.st==="person"&&l.tt==="person"
       &&entGet("person",l.sid)&&entGet("person",l.tid))
     .map(l=>({a:l.sid,b:l.tid,n:2,manual:true,linkId:l.id}));
   const has={}; manual.forEach(m=>has[[m.a,m.b].sort().join("|")]=1);
@@ -7100,7 +7675,7 @@ function changesSince(o,days){
   d.talked=(o.people||[]).filter(p=>{ const i=personInteractions(p); return i.length&&i[0].at>=since; });
   d.status=wOf("projects",o.id).concat(wOf("problems",o.id)).filter(r=>(r.statusAt||0)>=since&&r.prevStatus);
   d.answered=wOf("questions",o.id).filter(q=>(q.answeredAt||0)>=since);
-  d.links=W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS"&&(l.at||0)>=since);
+  d.links=W().links.filter(l=>l&&l.opId===o.id&&l.rel!=="MENTIONS"&&(l.at||0)>=since);
   d.total=d.notes.length+d.people.length+d.status.length+d.answered.length+d.project.length+d.problem.length+d.system.length+d.decision.length;
   return d;
 }
@@ -7179,7 +7754,7 @@ function workRefs(o,q){
     L.push("","MY NOTES (newest first):");
     caps.forEach(c=>{ const id=reg("capture",c); const t=(c.text||"").replace(/\s+/g," "); L.push(`[${id}] ${fmtDate(ymdOf(c.at))}: ${t.length>420?t.slice(0,420)+"…":t}`); });
   }
-  const links=W().links.filter(l=>l.opId===o.id&&l.rel!=="MENTIONS");
+  const links=W().links.filter(l=>l&&l.opId===o.id&&l.rel!=="MENTIONS");
   if(links.length){
     L.push("","WHAT I'VE RECORDED ABOUT HOW THINGS CONNECT:");
     links.slice(0,120).forEach(l=>{
@@ -7409,7 +7984,7 @@ function knowledgeGaps(o){
   // departments your work depends on but you barely talk to
   wOf("departments",o.id).forEach(d=>{
     const people=ppl.filter(p=>p.deptId===d.id).length;
-    const deps=W().links.filter(l=>l.opId===o.id&&((l.st==="department"&&l.sid===d.id)||(l.tt==="department"&&l.tid===d.id))&&l.rel!=="MENTIONS"&&l.rel!=="WORKS_IN").length;
+    const deps=W().links.filter(l=>l&&l.opId===o.id&&((l.st==="department"&&l.sid===d.id)||(l.tt==="department"&&l.tid===d.id))&&l.rel!=="MENTIONS"&&l.rel!=="WORKS_IN").length;
     if(deps>=2&&people===0) add(I.people,ENT.department.col,`You don't know anyone in ${entName("department",d)}`,`${deps} things you've recorded touch ${entName("department",d)}, but you haven't met anyone there.`,{t:"who",q:entName("department",d)});
   });
   const openQ=wOf("questions",o.id).filter(q=>q.status==="Open"&&daysSince(q.at)>=7);
@@ -9653,7 +10228,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glhide]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -9703,6 +10278,10 @@ document.addEventListener("click",e=>{
   if(act==="risk-snooze"){ devPrefs.riskSnoozed=Date.now(); saveDev(); render(); toast("I'll remind you in a week"); return; }
   if(act==="storage-help"){ openStorageHelp(); return; }
   if(act==="ring-help"){ openRingHelp(); return; }
+  if(act==="globe-reset"){ globeCam={yaw:0.6,pitch:-0.22,zoom:1}; globeSelect(null); return; }
+  if(act==="globe-spin"){ globeSpin=!globeSpin; t.textContent=globeSpin?"Pause":"Spin"; t.classList.toggle("on",globeSpin); return; }
+  if(act==="globe-suggest"){ globeSuggest=!globeSuggest; t.classList.toggle("on",globeSuggest); return; }
+  if(act==="globe-clear"){ globeSelect(null); return; }
   if(act==="force-update"){ forceUpdate(); return; }
   if(act==="lock-off"){ disableLock(); return; }
   if(act==="lock-import"){ const f=$("#fileInput"); if(f) f.click(); return; }
@@ -10073,6 +10652,12 @@ document.addEventListener("click",e=>{
   if(t.dataset.mgpick){ const [i,ch]=t.dataset.mgpick.split("|");
     if(mergePlan&&mergePlan.conf[+i]){ mergePlan.conf[+i].choose=ch; renderMergeReview(); } return; }
   if(act==="meeting-prep"){ openMeetingPrep(); return; }
+  if(t.dataset.glsel){ globeSelect(t.dataset.glsel); globeSpin=false;
+    const st=document.getElementById("glStage"); if(st) st.scrollIntoView({block:"center",behavior:"smooth"});
+    const b=document.querySelector('[data-act="globe-spin"]'); if(b) b.textContent="Spin"; return; }
+  if(t.dataset.glhide!==undefined){ const ty=t.dataset.glhide;
+    if(globeHide.has(ty)) globeHide.delete(ty); else globeHide.add(ty);
+    t.classList.toggle("off",globeHide.has(ty)); return; }
   if(t.dataset.mpprep){ closeEditor(); openMeetingPrep(t.dataset.mpprep); return; }
   if(t.dataset.mp){ const id=t.dataset.mp; mpSel=mpSel.includes(id)?mpSel.filter(x=>x!==id):mpSel.concat(id);
     const topic=(document.getElementById("mpTopic")||{}).value||"";

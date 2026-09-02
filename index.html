@@ -738,6 +738,36 @@ tbody td{padding:12px 14px;vertical-align:middle}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-p-row em{flex:0 0 auto;font-style:normal;font-size:10px;color:var(--faint)}
 .gl-p-none{margin-top:11px;font-size:11.5px;color:var(--faint);line-height:1.6}
+/* ---- duplicate review ---- */
+.dup-list{display:flex;flex-direction:column;gap:16px;max-height:min(62vh,520px);overflow:auto;padding-right:2px}
+.dup-group{display:flex;flex-direction:column;gap:10px}
+.dup-head{font-size:10.5px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.dup-head b{color:var(--txt)}
+.dup-pair{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:12px;min-width:0}
+.dup-pair.cross{border-color:#c9a22740}
+.dup-sides{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}
+.dup-side{min-width:0;display:flex;flex-direction:column;gap:5px}
+.dup-tag{font-size:9.5px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.dup-card{display:block;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:10px;color:var(--txt);font:inherit;cursor:pointer;min-width:0;transition:.12s}
+.dup-card:hover{border-color:var(--line2)}
+.dup-top{display:flex;gap:8px;align-items:center;min-width:0}
+.dup-name{flex:1 1 auto;min-width:0;font-size:12.5px;font-weight:800;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dup-meta{margin-top:6px;font-size:11px;color:var(--muted);line-height:1.45}
+.dup-body{margin-top:5px;font-size:11px;color:var(--faint);line-height:1.5}
+.dup-stat{margin-top:7px;font-size:10px;color:var(--faint)}
+.dup-why{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0 2px}
+.dup-tagline{font-size:10.5px;font-weight:650;color:var(--muted);background:var(--panel2);
+  border-radius:999px;padding:4px 9px;max-width:100%;overflow-wrap:break-word}
+.dup-tagline.warn{color:var(--warn);background:rgba(198,164,92,.13)}
+.dup-acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.dup-acts .dup-no{margin-left:auto}
+@media(max-width:560px){
+  .dup-sides{grid-template-columns:1fr}
+  .dup-acts .dup-no{margin-left:0}
+}
+
 .gl-time{display:flex;gap:11px;align-items:center;margin:11px 0 2px;min-width:0}
 .gl-play{flex:0 0 auto;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
   background:var(--panel);color:var(--txt);cursor:pointer;font-size:11px;line-height:1;padding:0}
@@ -1563,8 +1593,8 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v63 · 2026-09-02";
-const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
+const BUILD = "v64 · 2026-09-02";
+const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
@@ -4782,6 +4812,19 @@ function globeFindings(g,ins){
       ${entIcoHTML(s.a.t,s.a.rec)}
       <span class="gl-fb"><span class="gl-fn">${esc(clip(s.a.name,26))} &nbsp;·&nbsp; ${esc(clip(s.b.name,26))}</span>
         <span class="gl-fm">${s.shared} in common: ${esc(s.via.map(k=>clip(g.byKey[k].name,20)).join(", "))}</span></span></button>`).join("")}</div></div>`;
+  const dups=dupList(workOp()||{id:""});
+  const strong=dups.filter(d=>d.tier==="same"||d.tier==="likely");
+  if(dups.length) h+=`<div class="gl-sec"><h3>${I.people} Possibly the same thing</h3>
+    <div class="sect-note">Two records that look like one. Checked for acronyms, nicknames, aliases, one name inside another and typos — not just identical spelling.</div>
+    <div class="gl-finds">${dups.slice(0,4).map(d=>{
+      const a=d.cross?d.a.r:d.keep, b=d.cross?d.b.r:d.drop;
+      const ta=d.cross?d.a.type:d.type, tb=d.cross?d.b.type:d.type;
+      return `<button class="gl-find" data-act="dupes">
+        ${entIcoHTML(ta,a)}
+        <span class="gl-fb"><span class="gl-fn">${esc(clip(entName(ta,a)||"?",24))} &nbsp;·&nbsp; ${esc(clip(entName(tb,b)||"?",24))}</span>
+          <span class="gl-fm">${esc((d.why[0]||"").replace(/^⚠\s*/,""))}</span></span></button>`;
+    }).join("")}</div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" data-act="dupes">Review all ${dups.length}${strong.length?` · ${strong.length} look certain`:""}</button></div>`;
   if(ins.islands.length) h+=`<div class="gl-sec"><h3>${I.info} Floating on their own</h3>
     <div class="sect-note">Recorded, but connected to nothing yet. Each one is a small gap in the map.</div>
     <div class="gl-finds">${ins.islands.slice(0,10).map(n=>row(n,esc(ENT[n.t].label))).join("")}
@@ -6160,6 +6203,9 @@ function actionTiles(o){
   tile(sys.length+projs.length,"Nobody owns these", "systems and projects with no owner", "dig|owners-unowned","#5b9c97");
   tile(stale.length,"Going quiet", stale.length?`longest gap ${Math.round(stale[0].gap/86400000)} days`:"", "dig|stale-people","#6d8bc4");
   tile(blank.length,"Departments you know nothing about", blank.map(r=>r.d.name).slice(0,2).join(", "), "dig|depts-blank","#bf8a4f");
+  // only the near-certain ones nag from here; the rest live in Insights where you go to browse
+  const dup=dupCount(o);
+  tile(dup,"Look like duplicates","one record written down twice","act|dupes","#a874a0",dup>3);
   if(!T.length) return "";
   return `<div class="section-head"><h3>Worth doing something about</h3><div class="line"></div></div>
     <div class="act-grid">${T.map(x=>`
@@ -7389,6 +7435,259 @@ function mePrompt(o){ const t=myPlaceText(o); return t?`\nWHERE I SIT: ${t}\n`:"
    last week. So nothing is thrown away any more — you review every field where the two disagree,
    the AI recommends which is right and says why, and whatever you don't pick is written into the
    notes rather than deleted. */
+/* ============================== THE DUPLICATE CHECKER ==============================
+   Records arrive from three directions — typed by hand, extracted from a note, pulled off a
+   photo — and each has its own way of spelling the same thing. `resolveEnt` catches what it can at
+   the moment of writing, but it only ever sees one item at a time and it is deliberately shy: two
+   plausible matches means it creates nothing and asks. So duplicates accumulate quietly.
+
+   This is the sweep that finds them afterwards. It has to catch what a string comparison cannot:
+   an acronym against its expansion, a nickname, an alias, a name that contains another, a typo.
+   And every pair carries the reasons it was flagged, because a merge is destructive and "trust me"
+   is not good enough. */
+const DUP_TIERS={same:{label:"Almost certainly the same",min:0.95},likely:{label:"Probably the same",min:0.72},possible:{label:"Worth a look",min:0.52}};
+const DUP_MAX=60;                       // a review screen, not a database report
+function dupTier(s){ return s>=DUP_TIERS.same.min?"same":s>=DUP_TIERS.likely.min?"likely":s>=DUP_TIERS.possible.min?"possible":""; }
+// edit distance, capped — only ever asked about short names, and bails as soon as it's hopeless
+function editDist(a,b,cap){
+  if(a===b) return 0;
+  if(Math.abs(a.length-b.length)>cap) return cap+1;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const cur=[i]; let best=i;
+    for(let j=1;j<=b.length;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+      if(cur[j]<best) best=cur[j];
+    }
+    if(best>cap) return cap+1;
+    prev=cur;
+  }
+  return prev[b.length];
+}
+function initialsOf(s){ return norm(s).split(" ").filter(w=>w.length>1).map(w=>w[0]).join(""); }
+/* How alike are two names, and WHY. Returns {s, why:[]} — the reasons are the whole point. */
+function nameLike(an,bn){
+  const a=canonThing(an), b=canonThing(bn);
+  if(!a||!b) return {s:0,why:[]};
+  if(a===b) return {s:1,why:["identical once you ignore case and punctuation"]};
+  /* Names that differ ONLY in their numbers are enumerations, never duplicates: Q1 and Q2 forecast,
+     v1 and v2, Phase 1 and Phase 2, Region 3. This has to come before everything below, because a
+     single differing digit otherwise reads as a one-character typo and scores 0.8. */
+  if(a.replace(/\d+/g,"#")===b.replace(/\d+/g,"#")) return {s:0,why:[]};
+  const at=a.split(" ").filter(Boolean), bt=b.split(" ").filter(Boolean);
+  // an acronym against its expansion — QBR / quarterly business review
+  const ai=initialsOf(an), bi=initialsOf(bn);
+  if(at.length===1&&bt.length>1&&at[0]===bi) return {s:0.88,why:[`"${an}" is the initials of "${bn}"`]};
+  if(bt.length===1&&at.length>1&&bt[0]===ai) return {s:0.88,why:[`"${bn}" is the initials of "${an}"`]};
+  // one name inside the other — Salesforce / Salesforce CRM
+  const setA=new Set(at), setB=new Set(bt);
+  const shared=at.filter(w=>setB.has(w));
+  if(shared.length&&(shared.length===at.length||shared.length===bt.length)){
+    const extra=(at.length>bt.length?at.filter(w=>!setB.has(w)):bt.filter(w=>!setA.has(w))).join(" ");
+    return {s:at.length===bt.length?0.9:0.78,why:[`one name is the other plus "${extra}"`]};
+  }
+  // mostly the same words in a different order
+  const jac=shared.length/(new Set(at.concat(bt)).size||1);
+  if(jac>=0.6) return {s:0.55+jac*0.3,why:[`${Math.round(jac*100)}% of the words are the same`]};
+  // a typo, but only on names long enough for that to mean something
+  if(a.length>=5&&b.length>=5){
+    const cap=a.length<=7?1:2, d=editDist(a,b,cap);
+    if(d<=cap) return {s:d===1?0.8:0.7,why:[`${d} character${d===1?"":"s"} apart — probably a typo`]};
+  }
+  return {s:0,why:[]};
+}
+/* The sweep. Same-type pairs only for merging; a cross-type name clash is a different question and
+   gets a different answer (convert), because merging a project into a system would be a lie. */
+function dupScan(o){
+  if(!o) return [];
+  const g={}, out=[];
+  const skipped=new Set(wOf("dupskips",o.id).map(x=>x.pair));
+  const nbOf={};                       // one hop of the graph, for corroboration
+  const near=(t,id)=>{
+    const k=t+"|"+id;
+    if(!nbOf[k]) nbOf[k]=new Set(relatedTo(t,id,true).map(r=>r.type+"|"+r.id));
+    return nbOf[k];
+  };
+  const notesOf={};
+  const notes=(t,id)=>{
+    const k=t+"|"+id;
+    if(!notesOf[k]) notesOf[k]=new Set(evidenceFor(t,id).map(c=>c.id));
+    return notesOf[k];
+  };
+  ENT_TYPES.filter(t=>t!=="capture").forEach(type=>{
+    const pool=entAll(type,o.id).filter(r=>r&&r.id);
+    for(let i=0;i<pool.length;i++) for(let j=i+1;j<pool.length;j++){
+      const a=pool[i], b=pool[j];
+      const key=type+":"+[a.id,b.id].sort().join("~");
+      if(skipped.has(key)) continue;
+      const an=entName(type,a)||"", bn=entName(type,b)||"";
+      let s=0, why=[];
+      if(type==="person"){
+        const pm=personMatch(an,bn);
+        if(pm>=1){ s=0.95; why=["the same name"]; }
+        else if(pm>=0.7){ s=0.74; why=[`"${an}" and "${bn}" could be one person`]; }
+        else { const nl=nameLike(an,bn); s=nl.s*0.85; why=nl.why; }   // typos still count, less
+      } else {
+        const nl=nameLike(an,bn); s=nl.s; why=nl.why.slice();
+      }
+      if(!s) continue;
+      // --- corroboration: things that would be true if they really were one record
+      const sameDept=a.deptId&&b.deptId&&a.deptId===b.deptId;
+      const sameOwner=a.ownerId&&b.ownerId&&a.ownerId===b.ownerId;
+      const sameKind=a.kind&&b.kind&&a.kind===b.kind;
+      if(sameDept){ s+=0.06; why.push("both in "+(entLabel("department",a.deptId)||"the same department")); }
+      if(sameOwner){ s+=0.05; why.push("the same owner"); }
+      if(sameKind&&type!=="person"){ s+=0.03; why.push("both filed as "+a.kind); }
+      const na=near(type,a.id), nb=near(type,b.id);
+      let sharedN=0; na.forEach(k=>{ if(nb.has(k)) sharedN++; });
+      if(sharedN){ s+=Math.min(0.12,0.05*sharedN); why.push(`${sharedN} connection${sharedN===1?"":"s"} in common`); }
+      // --- and the one thing that argues against: a note that names BOTH of them
+      const ca=notes(type,a.id), cb=notes(type,b.id);
+      let together=0; ca.forEach(k=>{ if(cb.has(k)) together++; });
+      if(together){ s-=0.22; why.push(`⚠ ${together} note${together===1?"":"s"} mention${together===1?"s":""} both, so they may well be different`); }
+      // people in openly different departments are usually not one person
+      if(type==="person"&&a.deptId&&b.deptId&&a.deptId!==b.deptId){ s-=0.1; why.push("⚠ different departments"); }
+      const tier=dupTier(Math.min(1,s));
+      if(!tier) continue;
+      // keep the one you'd rather survive: richer first, then older
+      const rich=r=>Object.keys(r).filter(k=>r[k]!==""&&r[k]!=null&&!(Array.isArray(r[k])&&!r[k].length)).length;
+      const keepFirst = rich(a)!==rich(b) ? rich(a)>rich(b) : (a.at||0)<=(b.at||0);
+      out.push({key,type,tier,score:Math.min(1,s),why,
+        keep:keepFirst?a:b, drop:keepFirst?b:a});
+    }
+  });
+  // a name that means one thing in two different drawers — convert, never merge
+  const byName={};
+  ENT_TYPES.filter(t=>t!=="capture"&&t!=="person").forEach(type=>
+    entAll(type,o.id).forEach(r=>{ if(!r||!r.id) return;
+      const k=canonThing(entName(type,r)||""); if(!k) return;
+      (byName[k]=byName[k]||[]).push({type,r}); }));
+  Object.values(byName).forEach(list=>{
+    const types=[...new Set(list.map(x=>x.type))];
+    if(types.length<2) return;
+    for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++){
+      if(list[i].type===list[j].type) continue;
+      const key="x:"+[list[i].type+"|"+list[i].r.id,list[j].type+"|"+list[j].r.id].sort().join("~");
+      if(skipped.has(key)) continue;
+      out.push({key,cross:true,tier:"cross",score:1,
+        why:[`the same name filed as a ${ENT[list[i].type].label.toLowerCase()} and a ${ENT[list[j].type].label.toLowerCase()}`],
+        a:list[i], b:list[j]});
+    }
+  });
+  const rank={same:0,likely:1,cross:2,possible:3};
+  return out.sort((x,y)=>(rank[x.tier]-rank[y.tier])||(y.score-x.score)).slice(0,DUP_MAX);
+}
+/* Merging anything that isn't a person. Everything that pointed at the record going away has to be
+   repointed, or the merge quietly creates the dangling references the resilience work exists to
+   survive. */
+const DUP_POINTERS=["ownerId","deptId","teamId","headId","parentId","orgId","personId","managerId"];
+/* NOT `mergeEnt` — that name already belongs to the fill-in-the-blanks helper capApply uses, and a
+   second declaration hoists straight over it. Third time this file has nearly been bitten by it. */
+function foldEnt(type,keepId,dropId){
+  if(type==="person") return mergePeople(keepId,dropId);
+  const keep=entGet(type,keepId), drop=entGet(type,dropId);
+  if(!keep||!drop||keepId===dropId) return false;
+  const opId=entOpId(type,keepId); if(!opId) return false;
+  // take anything the survivor is missing; never overwrite what you already curated
+  Object.keys(drop).forEach(k=>{
+    if(["id","opId","at"].includes(k)) return;
+    if(Array.isArray(drop[k])){ keep[k]=[...new Set((keep[k]||[]).concat(drop[k]))]; return; }
+    if((keep[k]===""||keep[k]==null)&&drop[k]!==""&&drop[k]!=null) keep[k]=drop[k];
+  });
+  const bodyF=ENT_BODYF[type];
+  if(bodyF&&drop[bodyF]&&keep[bodyF]!==drop[bodyF]&&!String(keep[bodyF]||"").includes(drop[bodyF]))
+    keep[bodyF]=(keep[bodyF]?keep[bodyF]+"\n":"")+drop[bodyF];
+  if(drop.at&&(!keep.at||drop.at<keep.at)) keep.at=drop.at;
+  const w=W();
+  w.links.forEach(l=>{ if(!l) return;
+    if(l.st===type&&l.sid===dropId) l.sid=keepId;
+    if(l.tt===type&&l.tid===dropId) l.tid=keepId; });
+  dedupeLinks();
+  w.captures.forEach(c=>{ if(!c||!c.entities) return;
+    c.entities.forEach(e=>{ if(e.t===type&&e.id===dropId) e.id=keepId; });
+    const seen={}; c.entities=c.entities.filter(e=>{ const k=e.t+"|"+e.id; if(seen[k]) return false; seen[k]=1; return true; });
+  });
+  WORK_LISTS.forEach(k=>(w[k]||[]).forEach(r=>{ if(!r) return;
+    DUP_POINTERS.forEach(f=>{ if(r[f]===dropId) r[f]=keepId; }); }));
+  const o=opById(opId);
+  if(o) (o.people||[]).forEach(p=>{ if(!p) return; DUP_POINTERS.forEach(f=>{ if(p[f]===dropId) p[f]=keepId; }); });
+  entDelete(type,dropId);
+  return true;
+}
+/* --- the review screen -------------------------------------------------------------------------
+   Two records side by side, the reasons underneath, and three answers: merge, swap which one
+   survives, or "not the same" — which is remembered, because a checker that keeps asking about a
+   pair you have already judged is a checker you stop opening. */
+let dupCache=null, dupCacheSig="";
+function dupList(o,force){
+  const sig=globeSignature(o)+"|"+wOf("dupskips",o.id).length;
+  if(!force&&dupCache&&dupCacheSig===sig) return dupCache;
+  dupCache=dupScan(o); dupCacheSig=sig; return dupCache;
+}
+function dupCount(o){ return o?dupList(o).filter(d=>d.tier==="same"||d.tier==="likely").length:0; }
+function dupSide(type,rec,tag){
+  const opId=entOpId(type,rec.id);
+  const bits=[];
+  if(rec.title) bits.push(rec.title);
+  if(rec.deptId) bits.push(entLabel("department",rec.deptId));
+  if(rec.kind) bits.push(rec.kind);
+  if(rec.status) bits.push(rec.status);
+  if(rec.ownerId) bits.push("owner: "+(entLabel("person",rec.ownerId)||"?"));
+  const body=String(rec[ENT_BODYF[type]]||"").trim();
+  const n=relatedTo(type,rec.id,true).length, ev=evidenceFor(type,rec.id).length;
+  return `<div class="dup-side">
+    <div class="dup-tag">${esc(tag)}</div>
+    <button class="dup-card" data-ent="${esc(type)}|${esc(rec.id)}">
+      <div class="dup-top">${entIcoHTML(type,rec)}
+        <span class="dup-name">${esc(clip(entName(type,rec)||"(untitled)",44))}</span></div>
+      ${bits.length?`<div class="dup-meta">${esc(bits.filter(Boolean).join(" · "))}</div>`:""}
+      ${body?`<div class="dup-body">${esc(clip(body,110))}</div>`:""}
+      <div class="dup-stat">${n} connection${n===1?"":"s"} · ${ev} note${ev===1?"":"s"} · added ${esc(fmtDate(ymdOf(rec.at||Date.now())))}</div>
+    </button></div>`;
+}
+function dupRow(d){
+  if(d.cross){
+    return `<div class="dup-pair cross">
+      <div class="dup-sides">${dupSide(d.a.type,d.a.r,ENT[d.a.type].label)}${dupSide(d.b.type,d.b.r,ENT[d.b.type].label)}</div>
+      <div class="dup-why">${d.why.map(w=>`<span class="dup-tagline">${esc(w)}</span>`).join("")}</div>
+      <div class="dup-acts">
+        <button class="btn ghost sm" data-dupconv="${esc(d.a.type)}|${esc(d.a.r.id)}">Re-file the ${esc(ENT[d.a.type].label.toLowerCase())}</button>
+        <button class="btn ghost sm" data-dupconv="${esc(d.b.type)}|${esc(d.b.r.id)}">Re-file the ${esc(ENT[d.b.type].label.toLowerCase())}</button>
+        <button class="btn ghost sm dup-no" data-dupskip="${esc(d.key)}">They're different</button>
+      </div></div>`;
+  }
+  const warn=d.why.some(w=>w.indexOf("⚠")===0);
+  return `<div class="dup-pair">
+    <div class="dup-sides">${dupSide(d.type,d.keep,"Keep this one")}${dupSide(d.type,d.drop,"Fold in and delete")}</div>
+    <div class="dup-why">${d.why.map(w=>`<span class="dup-tagline${w.indexOf("⚠")===0?" warn":""}">${esc(w)}</span>`).join("")}</div>
+    <div class="dup-acts">
+      <button class="btn primary sm" data-dupmerge="${esc(d.type)}|${esc(d.keep.id)}|${esc(d.drop.id)}">${I.check} Merge${warn?" anyway":""}</button>
+      <button class="btn ghost sm" data-dupswap="${esc(d.key)}">Swap which one stays</button>
+      <button class="btn ghost sm dup-no" data-dupskip="${esc(d.key)}">Not the same</button>
+    </div></div>`;
+}
+let dupSwapped={};
+function openDupes(){
+  const o=workOp(); if(!o) return;
+  const all=dupList(o,true).map(d=>{
+    if(!d.cross&&dupSwapped[d.key]) return Object.assign({},d,{keep:d.drop,drop:d.keep});
+    return d;
+  });
+  const groups=[["same",DUP_TIERS.same.label],["likely",DUP_TIERS.likely.label],
+                ["cross","Filed in two different places"],["possible",DUP_TIERS.possible.label]];
+  const body=all.length
+    ? groups.map(([k,label])=>{ const rows=all.filter(d=>d.tier===k); if(!rows.length) return "";
+        return `<div class="dup-group"><div class="dup-head">${esc(label)} <b>${rows.length}</b></div>
+          ${rows.map(dupRow).join("")}</div>`; }).join("")
+    : `<div class="card panel"><div class="ent-empty">Nothing looks duplicated. Acronyms, nicknames, typos and one name inside another were all checked.</div></div>`;
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.people}</div>
+      <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Possible duplicates</h2>
+        <div style="font-size:12.5px;color:var(--faint)">${all.length} pair${all.length===1?"":"s"} to look at</div></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    <div class="sect-note">Checked across every kind of record: acronyms against their expansion, nicknames, aliases, one name inside another, and typos. <b>Merging cannot be undone from here — but ⌘Z will.</b></div>
+    <div class="dup-list">${body}</div>`);
+}
 const MERGE_FIELDS=[["name","Name"],["title","Title"],["email","Email"],["linkedin","LinkedIn"],
   ["deptId","Department"],["teamId","Team"],["standing","Standing"],["photo","Photo"]];
 function mergeConflicts(keep,drop){
@@ -10354,7 +10653,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glhide]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glhide],[data-dupmerge],[data-dupswap],[data-dupskip],[data-dupconv]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -10408,6 +10707,7 @@ document.addEventListener("click",e=>{
   if(act==="globe-spin"){ globeSpin=!globeSpin; t.textContent=globeSpin?"Pause":"Spin"; t.classList.toggle("on",globeSpin); return; }
   if(act==="globe-suggest"){ globeSuggest=!globeSuggest; t.classList.toggle("on",globeSuggest); return; }
   if(act==="globe-clear"){ globeSelect(null); return; }
+  if(act==="dupes"){ openDupes(); return; }
   if(act==="globe-color"){ globeColor=globeColor==="dept"?"type":"dept"; render(); return; }
   if(act==="globe-mine"){ globeMine=!globeMine; globeSelect(null); render(); return; }
   if(act==="globe-play"){ globePlayToggle(); return; }
@@ -10459,7 +10759,8 @@ document.addEventListener("click",e=>{
     return; }
   if(t.dataset.dash){
     const [kind,arg]=t.dataset.dash.split("|");
-    if(kind==="dig"){ openDig(arg); return; }     // the tile IS the size of a list — open the list
+    if(kind==="dig"){ openDig(arg); return; }
+  if(kind==="act"&&arg==="dupes"){ openDupes(); return; }     // the tile IS the size of a list — open the list
     if(kind==="wtab"){ workTab=arg; render(); window.scrollTo({top:0,behavior:"smooth"}); return; }
     if(kind==="open"){ openDetail(arg); return; }
     return;
@@ -10781,6 +11082,19 @@ document.addEventListener("click",e=>{
   if(t.dataset.mgpick){ const [i,ch]=t.dataset.mgpick.split("|");
     if(mergePlan&&mergePlan.conf[+i]){ mergePlan.conf[+i].choose=ch; renderMergeReview(); } return; }
   if(act==="meeting-prep"){ openMeetingPrep(); return; }
+  if(t.dataset.dupmerge){
+    const [ty,keep,drop]=t.dataset.dupmerge.split("|");
+    const a=entName(ty,entGet(ty,keep))||"it", b=entName(ty,entGet(ty,drop))||"the other";
+    if(ty==="person"){ closeEditor(); openMergeReview(keep,drop); return; }   // people get the conflict review
+    withUndo("that merge",()=>{ foldEnt(ty,keep,drop); },`Merged "${clip(b,28)}" into "${clip(a,28)}"`);
+    dupCache=null; openDupes(); return;
+  }
+  if(t.dataset.dupswap){ dupSwapped[t.dataset.dupswap]=!dupSwapped[t.dataset.dupswap]; openDupes(); return; }
+  if(t.dataset.dupskip){
+    const o=workOp(); if(o){ wAdd("dupskips",{opId:o.id,pair:t.dataset.dupskip}); save(); }
+    dupCache=null; openDupes(); return;
+  }
+  if(t.dataset.dupconv){ const [ty,id]=t.dataset.dupconv.split("|"); closeEditor(); openConvertPicker(ty,id); return; }
   if(t.dataset.glsel){ globeSelect(t.dataset.glsel); globeSpin=false;
     const st=document.getElementById("glStage"); if(st) st.scrollIntoView({block:"center",behavior:"smooth"});
     const b=document.querySelector('[data-act="globe-spin"]'); if(b) b.textContent="Spin"; return; }

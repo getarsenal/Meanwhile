@@ -727,6 +727,41 @@ something the DOM should be asked to do.
   image to load, so it works offline and on first paint. It plays on **arrival, not on every
   render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
 
+## THE DUPLICATE CHECKER (`dupScan` / `openDupes`)
+Records arrive typed by hand, extracted from a note and read off a photo, and each route spells the
+same thing differently. `resolveEnt` catches what it can at the moment of writing, but it only ever
+sees one item and is deliberately shy — two plausible matches means it creates nothing and asks. So
+duplicates accumulate quietly, and this is the sweep that finds them afterwards.
+**`nameLike(a,b)` returns `{s, why}` and the `why` is the point** — a merge is destructive, so every
+pair carries the reasons it was flagged. It catches an **acronym against its expansion** (QBR /
+Quarterly Business Review, via `initialsOf`), **one name inside another** (Salesforce / Salesforce
+CRM, naming the extra words), a **known alias** (`canonThing` + `SYS_ALIAS`), the **same words in a
+different order** (Jaccard), and a **typo** (`editDist`, capped and early-exiting). People go through
+the existing nickname-aware `personMatch` first.
+**Names differing only in their digits are rejected before any of that** — Q1/Q2 forecast, phase 1 /
+phase 2, v1/v2 are enumerations, and a single differing digit otherwise reads as a one-character typo
+and scores 0.8. That was a real false positive a test caught.
+Then the score is **corroborated against the graph**, which is what makes it more than string
+matching: same department, same owner, same kind, shared neighbours all add confidence and add a
+reason. And one signal argues the other way — **a note that names both records** is evidence someone
+wrote them as two different things, so it subtracts and says so (`⚠`). Different departments demote
+a person pair the same way.
+Tiers in `DUP_TIERS` (`same`/`likely`/`possible`), capped at `DUP_MAX`. A **cross-type** name clash
+is a different question and gets a different answer — `convertEnt`, never a merge, because folding a
+project into a system would be a lie.
+**`foldEnt(type,keep,drop)` is the generic merge** and is deliberately **not** called `mergeEnt` —
+that name already belongs to the fill-in-the-blanks helper `capApply` uses, and a second declaration
+hoists straight over it (the third near-miss of this kind in this file; the AST audit's
+duplicate-def check caught it). It repoints links, capture entity references and every field in
+`DUP_POINTERS` on every record in every list, so a merge cannot leave the dangling references the
+resilience work exists to survive. People route to `openMergeReview` instead, which already resolves
+conflicting field values properly. Both paths snapshot for undo.
+**"Not the same" is remembered** (`dupskips`, a `WORK_LISTS` array, so it syncs and exports) — a
+checker that keeps asking about a pair you already judged is one you stop opening.
+Surfaced in two places: a card in **Insights** (`globeFindings`) and an action tile on the **Work
+overview** once there are `same`/`likely` ones. That tile encodes `act|dupes`, a **fourth prefix**
+the `data-dash` handler has to know — see the note above about forgetting one.
+
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
 - `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], orgs[], departments[], systems[],
@@ -800,8 +835,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,730 browser
-assertions** across forty-three Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,890 browser
+assertions** across forty-five Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

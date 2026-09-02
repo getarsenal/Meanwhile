@@ -703,6 +703,37 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gg-lab{margin-top:2px;font-size:11.5px;font-weight:750;line-height:1.35;max-width:100%}
 .gg-sub{margin-top:4px;font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
 
+/* The four week numbers. Four items in an auto-fit grid can never exceed four columns, so this is
+   4-up on a laptop and 2-up on a phone with no media query. */
+.wk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin-bottom:18px}
+.wk{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px 13px 13px;
+  text-align:left;cursor:pointer;transition:.14s;color:var(--txt);font:inherit;
+  display:flex;flex-direction:column;gap:3px;min-width:0}
+.wk:hover{border-color:var(--line2);transform:translateY(-2px)}
+.wk.hot{border-color:#cf727355;background:linear-gradient(180deg,#cf72730f,transparent)}
+.wk-n{font-size:29px;font-weight:850;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.wk-l{font-size:12px;font-weight:800;line-height:1.35;max-width:100%}
+.wk-s{font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
+
+/* A report row shows the evidence, so it is taller and wordier than an entRow on purpose. */
+.rep-list{display:flex;flex-direction:column}
+.rep-row{display:flex;gap:10px;align-items:flex-start;padding:11px 10px;border-radius:12px;
+  cursor:pointer;transition:.12s;min-width:0}
+.rep-row:hover{background:var(--panel2)}
+.rep-b{flex:1 1 auto;min-width:0}
+.rep-t{font-size:13px;font-weight:750;line-height:1.45}
+.rep-m{margin-top:4px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.rep-q{font-size:11.5px;color:var(--muted);line-height:1.5;max-width:100%}
+.rep-q b{color:var(--txt);font-weight:800}
+/* citations sit shoulder to shoulder in one line, so they need to look like separate things */
+.rep-q .cite{display:inline-block;max-width:100%;margin:2px 4px 2px 0;padding:3px 9px;border-radius:999px;
+  background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line);font-size:11px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.rep-w{font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
+.rep-sec{font-size:10.5px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--faint);padding:12px 10px 4px}
+.rep-row .btn{flex:0 0 auto;align-self:center}
+
 .act-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:11px;margin-bottom:18px}
 .act{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 14px;text-align:left;
   cursor:pointer;transition:.14s;color:var(--txt);font:inherit;display:block;min-width:0}
@@ -1456,7 +1487,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v60 · 2026-09-01";
+const BUILD = "v61 · 2026-09-02";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -3819,6 +3850,8 @@ const CAPTURE_SCHEMA=`{
  "decisions":   [{"title":"","madeBy":"","date":"","reason":""}],
  "teams":       [{"name":"","department":"","lead":""}],
  "info":        [{"title":"","kind":"","summary":""}],   // a product, a recurring meeting, an acronym
+ "bites":       [{"fact":"","kind":"","tags":[""],"source":""}],  // one small TRUE thing worth remembering
+ "met":         [""],        // names of people this note says I actually SPOKE WITH — not merely mentioned
  "questions":   [""],        // NEW open questions the note raises but doesn't answer
  "relationships":[{"from":"","fromType":"person","rel":"KNOWS","to":"","toType":"system","confidence":0.9}],
  "ask_me":   [{"ask":"","why":"","options":[""]}],                     // what you need me to clarify
@@ -3827,6 +3860,20 @@ const CAPTURE_SCHEMA=`{
  "tasks":    [{"label":"","date":"YYYY-MM-DD","why":""}],              // a next step for me
  "advice":   [""]            // 0-2 short suggestions that aren't records
 }`;
+/* Two fields the schema gained late, because both were quietly missing and both matter:
+   - bites were never extracted at all, so the knowledge layer only ever filled up by hand
+   - "met" separates the people you SPOKE WITH from the people a note merely talks about, which
+     is the difference between "I engaged 6 people this week" and "6 names came up" */
+const CAPTURE_EXTRA=`
+KNOWLEDGE BITES ("bites") — the small true things a new starter keeps re-learning. One sentence
+each, standing on its own without the note around it: what a name used to mean, an unwritten rule,
+a number that matters, a gotcha, who a nickname refers to. Extract them whenever the note contains
+one; two or three from a rich note is normal, none from a thin one is fine. Never invent one, and
+never restate something already recorded above. "kind" is one of: ${BITE_KINDS.join(", ")}.
+
+WHO I ACTUALLY SPOKE WITH ("met") — list ONLY people this note says I had a real exchange with:
+a meeting, a call, a 1:1, a standup, a hallway conversation, a message thread. Someone the note
+merely talks ABOUT does not belong here. If it isn't clear, leave them out.`;
 function knownEntitiesText(opId){
   const L=[];
   ENT_TYPES.filter(t=>t!=="capture"&&t!=="question").forEach(t=>{
@@ -4017,6 +4064,13 @@ function buildPlan(o,text,d,shots){
   L(d.teams).forEach(x=>add("team",x.name||x,{department:x.department||"",lead:x.lead||""}));
   L(d.info).forEach(x=>add("info",x.title||x.name||x,{kind:INFO_KINDS.includes(x.kind)?x.kind:"Other",summary:x.summary||""}));
   L(d.questions).forEach(q=>{ const t=typeof q==="string"?q:(q.q||""); if(t.trim()) add("question",t.trim(),{status:"Open"}); });
+  // bites were missing from the schema entirely, so the knowledge layer only ever filled by hand
+  L(d.bites).forEach(x=>{
+    const fact=typeof x==="string"?x:(x&&x.fact)||"";
+    if(!String(fact).trim()) return;
+    add("bite",String(fact).trim(),{kind:BITE_KINDS.includes(x&&x.kind)?x.kind:"Fact",
+      tags:L(x&&x.tags).map(String).filter(Boolean).slice(0,5), source:String((x&&x.source)||"").slice(0,80)});
+  });
   // people mentioned only inside a relationship still deserve a record
   const rels=L(d.relationships).filter(r=>r&&r.from&&r.to&&ENT[r.fromType]&&ENT[r.toType]&&REL_LABEL[r.rel]).map(r=>{
     add(r.fromType,r.from,{}); add(r.toType,r.to,{});
@@ -4054,10 +4108,12 @@ function buildPlan(o,text,d,shots){
   }));
   // what it read off the picture, kept separate from what you typed until you approve it
   const transcript=String(d.transcript||"").trim().slice(0,20000);
+  // who this note says I actually spoke with, matched to the people the plan is creating/merging
+  const met=L(d.met).map(x=>String(typeof x==="string"?x:(x&&x.name)||"").trim()).filter(Boolean).slice(0,12);
   return {opId:o.id,captureId:capEditId||null,text,summary:String(d.summary||"").trim(),
     understood:L(d.understood).filter(Boolean).map(String).slice(0,5),
     advice:L(d.advice).filter(Boolean).map(String).slice(0,2),
-    shots:(shots||[]).slice(), transcript,
+    shots:(shots||[]).slice(), transcript, met,
     items,rels,ops,asks};
 }
 /* The note's final wording: what you typed, then what the picture said. Kept as one block of
@@ -4200,6 +4256,7 @@ function capReview(){
   hydrateShots(editorEl);
 }
 function capApply(){
+  const L=v=>(Array.isArray(v)?v:(v==null||v===""?[]:[v])).filter(x=>x!=null);
   const p=capPlan; if(!p) return;
   const o=opById(p.opId); if(!o) return;
   snapshotUndo("that note and everything it added");
@@ -4234,6 +4291,15 @@ function capApply(){
     const a=resolved[r.fromType+"|"+canonThing(r.from)], b=resolved[r.toType+"|"+canonThing(r.to)];
     if(a&&b) addLink(o.id,a.t,a.id,r.rel,b.t,b.id,r.conf,cap.id);
   });
+  /* Who this note says I actually SPOKE WITH, stored on the note itself. It is the difference
+     between "I engaged six people this week" and "six names came up", and no amount of reading
+     the text afterwards recovers it reliably. */
+  cap.met=[...new Set(L(p.met).map(n=>{
+    const r=resolved["person|"+canonThing(n)];
+    if(r) return r.id;
+    const again=resolveEnt("person",n,o.id);
+    return (again.rec&&again.conf>=1)?again.rec.id:null;
+  }).filter(Boolean))];
   attachTeams(o,p.items,cap.id);
   const opN=applyOps(o,p,cap.id);
   o.updatedAt=Date.now();
@@ -4875,9 +4941,79 @@ function sinceRows(o,since,onlyYesterday){
   }
   return rows.sort((a,b)=>b.rec.at-a.rec.at);
 }
+/* The four week tiles open REPORTS, not lists: each row carries the evidence that put it there,
+   because a name with no reason next to it is exactly the ambiguity these were meant to remove. */
+function reportSpec(o,key){
+  const row=(icoType,rec,title,meta,tail)=>`<div class="rep-row" ${rec?`data-ent="${esc(icoType)}|${esc(rec.id)}"`:""}>
+      ${rec?entIcoHTML(icoType,rec):""}
+      <div class="rep-b"><div class="rep-t">${esc(title)}</div>${meta?`<div class="rep-m">${meta}</div>`:""}</div>
+      ${tail||""}</div>`;
+  if(key==="met-week"){
+    const list=engagedThisWeek(o);
+    return {title:"People you met with this week", n:list.length,
+      note:"Only notes that describe an actual conversation — not people a note merely talks about.",
+      empty:"No note this week describes a conversation with anyone. Capture one after your next call and this fills itself.",
+      html:list.map(x=>row("person",x.p,x.p.name,
+        `<span class="rep-q">${esc(x.why)}</span><span class="rep-w">${esc(relDays(daysUntil(ymdOf(x.cap.at))))}${x.sure?" · recorded as a conversation":""}</span>`,
+        `<button class="btn ghost sm" data-mpprep="${esc(x.p.id)}">Prep</button>`)).join("")};
+  }
+  if(key==="bites-week"){
+    const list=bitesThisWeek(o);
+    return {title:"Knowledge bites filed this week", n:list.length,
+      note:"The small true things — a term, an unwritten rule, a number. Captures now extract these automatically.",
+      empty:"None this week. Every note you capture from here will offer any it finds.",
+      html:list.map(b=>row("bite",b,b.fact,
+        `<span class="rep-w">${esc([b.kind,b.source?"via "+b.source:"",fmtDate(ymdOf(b.at))].filter(Boolean).join(" · "))}</span>`)).join("")};
+  }
+  if(key==="jd-gaps"){
+    const g=jdGaps(o), all=jdCommitments(o);
+    const covered=all.filter(x=>x.covered);
+    return {title:"Open against the job", n:g.jd.length+g.openObj.length,
+      note:jdText(o)?"Each line of your job description, checked against everything in your map."
+                    :"No job description on file — add it in the role's Overview and this gets a lot sharper.",
+      empty:"Nothing outstanding: every line of the JD has something behind it and your objectives are ticked.",
+      html:
+        (g.openObj.length?`<div class="rep-sec">Objectives you haven't ticked off</div>`+
+          g.openObj.map(it=>row("question",null,it.do,`<span class="rep-q">${esc(it.why||"")}</span>`,
+            `<span class="rep-w">${esc((OBJ_WHEN[it.when]||OBJ_WHEN.today).label)}</span>`)).join(""):"")+
+        (g.jd.length?`<div class="rep-sec">Job description lines with nothing behind them</div>`+
+          g.jd.map(x=>row("problem",null,x.line,`<span class="rep-q">Nothing in your map mentions ${esc(x.terms.slice(0,4).join(", "))}</span>`)).join(""):"")+
+        (covered.length?`<div class="rep-sec">Covered — what your map has against each line</div>`+
+          covered.map(x=>row("info",null,x.line,
+            `<span class="rep-q">${x.hits.slice(0,4).map(h=>`<span class="cite" data-ent="${esc(h.type)}|${esc(h.rec.id)}">${esc(entName(h.type,h.rec)).slice(0,40)}</span>`).join(" ")}</span>`)).join(""):"")};
+  }
+  if(key==="connect"){
+    const list=connectToday(o);
+    return {title:"People to connect with today", n:list.length,
+      note:"Every one of these comes from something you already wrote down. The reason is shown.",
+      empty:"Nothing outstanding with anyone — nothing in your notes says you owe someone a reply.",
+      html:list.map(x=>row("person",x.p,x.p.name,
+        x.reasons.slice(0,3).map(r=>`<span class="rep-q"><b>${esc(r.kind)}:</b> ${esc(r.why)}</span>`).join(""),
+        `<button class="btn ghost sm" data-mpprep="${esc(x.p.id)}">Prep</button>`)).join("")};
+  }
+  return null;
+}
+/* NOT `openReport` — that name already belongs to the 30/60/90 review further down, and a second
+   declaration would hoist straight over it. */
+function openWeekReport(key){
+  const o=workOp(); if(!o) return;
+  const r=reportSpec(o,key); if(!r) return;
+  lfState["dig"]={q:"",sort:""};
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.board}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">${esc(r.title)}</h2>
+      <div style="font-size:12.5px;color:var(--faint)">${r.n} ${r.n===1?"item":"items"}</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  ${r.note?`<div class="sect-note">${esc(r.note)}</div>`:""}
+  ${listFilter("dig",{count:r.n,noun:"items"})}
+  ${r.html
+    ? `<div class="card panel rep-list" data-lfz="dig" style="padding:5px;max-height:min(58vh,480px);overflow:auto">${r.html}</div>`
+    : `<div class="card panel"><div class="ent-empty">${esc(r.empty||"Nothing here.")}</div></div>`}`);
+}
 let digKey="";
 function openDig(key,arg){
   const o=workOp(); if(!o) return;
+  if(reportSpec(o,key)) return openWeekReport(key);   // the four week tiles have their own report
   const spec=digSpec(o,key,arg); if(!spec) return;
   digKey=key; lfState["dig"]={q:"",sort:""};
   const rows=spec.rows||[];
@@ -4893,6 +5029,138 @@ function openDig(key,arg){
         rows.map(x=>entRow(x.type,x.rec,{pill:x.type==="project"?projPill(x.rec.status):x.type==="problem"?probPill(x.rec.status):"",
           tail:`<span style="font-size:10.5px;color:var(--faint);white-space:nowrap">${esc(relDays(daysUntil(ymdOf(x.rec.at))))}</span>`})).join("")}</div>`
     : `<div class="card panel"><div class="ent-empty">Nothing here — which is the good outcome for this one.</div></div>`}`);
+}
+
+/* ======================= THE FOUR NUMBERS THAT MATTER THIS WEEK =======================
+   Not counts of what is in the map — four questions with a right answer, each opening a report
+   you can act on rather than a list you have to interpret. */
+const WEEK=7*86400000;
+
+/* 1. WHO I ACTUALLY MET. A note that says "Andrew flagged the data issue" is about Andrew; a note
+   that says "call with Andrew" is a conversation WITH him. Only the second one counts. The precise
+   source is `capture.met`, which the capture agent now fills in; for notes taken before that (and
+   for notes typed with no AI) a conservative phrase test stands in — and the report shows the
+   sentence that earned each person their place, so the judgement is auditable rather than magic. */
+const MET_RX=/\b(met|meeting|meet|call|called|spoke|speak|talked|talk|1:1|1-1|one[- ]on[- ]one|sync|synced|standup|stand-up|caught up|catch up|chatted|chat|interview|coffee|lunch|walked through|debrief|reviewed with|sat down)\b/i;
+function metEvidence(cap,personId){
+  const txt=String(cap.text||"");
+  const parts=txt.split(/(?<=[.!?\n])\s+/);
+  // even when the agent told us outright, show the note's own words — "recorded as a conversation"
+  // explains how we know, but it is the sentence you wrote that lets you disagree with it
+  if(Array.isArray(cap.met)&&cap.met.includes(personId))
+    return {sure:true,why:(parts[0]||txt).trim().slice(0,160)||"this note records a conversation"};
+  if(!(cap.entities||[]).some(e=>e.t==="person"&&e.id===personId)) return null;
+  if(!MET_RX.test(txt)) return null;
+  // the sentence the verb sits in, so you can see exactly why it counted
+  const sent=parts.find(x=>MET_RX.test(x))||txt;
+  return {sure:false,why:sent.trim().slice(0,160)};
+}
+function engagedThisWeek(o){
+  const since=Date.now()-WEEK, out=[];
+  const caps=wOf("captures",o.id).filter(c=>(c.at||0)>=since).sort((a,b)=>b.at-a.at);
+  (o.people||[]).filter(p=>personHere(p)&&!isMe(o,p)).forEach(p=>{
+    for(const c of caps){ const ev=metEvidence(c,p.id); if(ev){ out.push({p,cap:c,why:ev.why,sure:ev.sure}); return; } }
+  });
+  return out.sort((a,b)=>b.cap.at-a.cap.at);
+}
+
+/* 2. NEW KNOWLEDGE BITES. The atomic layer — one small true thing. These were never extracted from
+   captures at all until now, which is why the count sat at zero however much you wrote. */
+function bitesThisWeek(o){
+  const since=Date.now()-WEEK;
+  return entAll("bite",o.id).filter(b=>(b.at||0)>=since).sort((a,b)=>b.at-a.at);
+}
+
+/* 3. WHAT YOU WERE HIRED TO DO, AGAINST WHAT YOU'VE ACTUALLY TOUCHED. The job description is the
+   only written statement of the job; each of its responsibilities is checked against the map by
+   its own words. A responsibility with nothing behind it is a real gap, and the report shows what
+   it matched on so you can disagree with it. */
+const JD_STOP=new Set("the a an and or of to for with in on at by as is are be will you your our their this that from into across including etc via using ensure own lead drive manage support help work team teams role responsibilities responsibility".split(" "));
+function jdTerms(line){
+  return [...new Set(norm(line).split(" ").filter(w=>w.length>3&&!JD_STOP.has(w)))];
+}
+function jdCommitments(o){
+  const jd=jdText(o);
+  if(!jd) return [];
+  const lines=jd.split(/\n+|(?<=[.;])\s+/).map(x=>x.replace(/^[\s•\-*–—\d.)]+/,"").trim())
+    .filter(x=>x.length>=22&&/[a-z]/i.test(x)).slice(0,14);
+  // everything in the map, as one searchable haystack per record
+  const hay=[];
+  ["projects","problems","systems","processes","decisions","questions","infos","bites","captures"]
+    .forEach(k=>(W()[k]||[]).filter(r=>r.opId===o.id).forEach(r=>{
+      const type={projects:"project",problems:"problem",systems:"system",processes:"process",
+        decisions:"decision",questions:"question",infos:"info",bites:"bite",captures:"capture"}[k];
+      hay.push({type,rec:r,text:norm([entName(type,r),r.description,r.note,r.summary,r.reason,r.text,r.fact].filter(Boolean).join(" "))});
+    }));
+  return lines.map(line=>{
+    const terms=jdTerms(line);
+    if(!terms.length) return {line,terms,hits:[],covered:true};   // nothing to match on — don't cry gap
+    const hits=hay.filter(h=>terms.some(t=>h.text.includes(t)))
+      .sort((a,b)=>terms.filter(t=>b.text.includes(t)).length-terms.filter(t=>a.text.includes(t)).length)
+      .slice(0,6);
+    return {line,terms,hits,covered:hits.length>0};
+  });
+}
+function jdGaps(o){
+  const rec=objRecord(o);
+  const openObj=((rec&&rec.items)||[]).filter(x=>!x.done);
+  return {jd:jdCommitments(o).filter(x=>!x.covered), openObj};
+}
+
+/* 4. WHO TO CONNECT WITH TODAY — literally, from something already written down. Never a vibe:
+   every name here carries the sentence or the record that put it there. */
+const OWE_RX=/\b(follow up|follow-up|circle back|get back to|come back to|owe|send (?:them|him|her)?|will ask|need to ask|check with|confirm with|loop in|chase|ping|reach out|set up (?:a )?time|schedule)\b/i;
+function connectToday(o){
+  const out=new Map();
+  const push=(p,why,kind,rec,type)=>{
+    if(!p||!personHere(p)||isMe(o,p)) return;
+    if(!out.has(p.id)) out.set(p.id,{p,reasons:[]});
+    out.get(p.id).reasons.push({why,kind,rec,type});
+  };
+  // (a) something you wrote says you owe them something
+  wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,60).forEach(c=>{
+    const txt=String(c.text||""); if(!OWE_RX.test(txt)) return;
+    const parts=txt.split(/(?<=[.!?\n])\s+/);
+    (c.entities||[]).filter(e=>e.t==="person").forEach(e=>{
+      const p=entGet("person",e.id); if(!p) return;
+      const first=norm((p.name||"").split(/\s+/)[0]);
+      const sent=parts.find(x=>OWE_RX.test(x)&&(first?norm(x).includes(first):true));
+      if(sent) push(p,sent.trim().slice(0,150),"You said you'd follow up",c,"capture");
+    });
+  });
+  // (b) an open question the graph says they're the one to answer
+  wOf("questions",o.id).filter(q=>q.status==="Open").forEach(q=>{
+    relatedOfType("question",q.id,"person").forEach(r=>{
+      const p=entGet("person",r.id); if(p) push(p,q.q,"Open question for them",q,"question");
+    });
+  });
+  // (c) your manager or a direct report with something open and a real silence
+  const m=myPlace(o);
+  if(m){ [m.mgr].concat(m.reports).filter(Boolean).forEach(p=>{
+    const open=circleOpen(o,p);
+    const last=(personInteractions(p)[0]||{}).at;
+    const gap=last?ageDays(last):null;
+    if(open.length&&(gap==null||gap>=7))
+      push(p,`${open.length} open ${open.length===1?"item":"items"} and ${gap==null?"no note yet":gap+" days since you spoke"}`,
+        p===m.mgr?"Your manager":"Reports to you",open[0].rec,open[0].type);
+  }); }
+  return [...out.values()].sort((a,b)=>b.reasons.length-a.reasons.length);
+}
+function weekTiles(o){
+  const met=engagedThisWeek(o), bites=bitesThisWeek(o), gaps=jdGaps(o), conn=connectToday(o);
+  const nGaps=gaps.jd.length+gaps.openObj.length;
+  const T=[
+    {n:met.length,   label:"People you met with", sub:"in the last 7 days", key:"met-week",  col:"#6d8bc4"},
+    {n:bites.length, label:"New knowledge bites", sub:"filed this week",    key:"bites-week",col:"#5b9c97"},
+    {n:nGaps,        label:"Open against the job", sub:jdText(o)?"from your JD and objectives":"add your JD to sharpen this", key:"jd-gaps", col:"#c6a45c", hot:nGaps>0},
+    {n:conn.length,  label:"Connect with today",  sub:"you said you would", key:"connect",   col:"#cf7273", hot:conn.length>0}
+  ];
+  return `<div class="wk-grid">${T.map(x=>`
+    <button class="wk${x.hot&&x.n?" hot":""}" data-dig="${esc(x.key)}">
+      <span class="wk-n" style="color:${cssCol(x.col)}">${x.n}</span>
+      <span class="wk-l">${esc(x.label)}</span>
+      <span class="wk-s">${esc(x.sub)}</span>
+    </button>`).join("")}</div>`;
 }
 
 /* ======================= WHAT A NEW STARTER ACTUALLY OPENS THIS FOR =======================
@@ -5150,6 +5418,7 @@ function workOverview(o){
   const tile=(n,l,d,go,col)=>`<button class="w-tile" ${go.slice(0,4)==="dig|"?`data-dig="${esc(go.slice(4))}"`:`data-wtab="${esc(go)}"`}><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></button>`;
   // one line about today, then the dashboard, then what to do about it
   let h=briefingCard(o);
+  h+=weekTiles(o);
   h+=recapCard(o);
   h+=objectivesCard(o);
   h+=circleCard(o);

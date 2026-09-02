@@ -446,7 +446,32 @@ there isn't, because the missing half is the point of a gauge. The `data-dash` h
 understands `dig|<key>` — the action tiles encode it that way, and forgetting that made every tile
 silently do nothing until a test caught it.
 
-**The three questions a new starter opens this for**, above the numbers:
+**The four week numbers** (`weekTiles`, straight under the briefing) are not a census of the map —
+they are four questions with a right answer, each opening its own **report** (`reportSpec`/
+`openWeekReport`, keys `met-week`/`bites-week`/`jd-gaps`/`connect`) rather than a list of rows. The
+report is the point: **every row carries the evidence that put it there**, because a name with no
+reason beside it is exactly the ambiguity these were built to remove. `openDig` delegates to
+`openWeekReport` when `reportSpec` matches, and the function is **not** called `openReport` — that
+name already belongs to the 30/60/90 review further down the file, and a second declaration hoists
+straight over it.
+- `engagedThisWeek` — *who you actually met*, not who a note talks about. "Cara owns the launch
+  messaging" is **about** Cara; "call with Ben" is a conversation **with** him. The precise source is
+  `capture.met`, which the capture agent now fills; `MET_RX` is the conservative phrase test standing
+  in for notes taken before that (and for notes typed with no AI). Either way `metEvidence` returns
+  the note's own sentence, so the judgement is auditable rather than magic.
+- `bitesThisWeek` — knowledge bites filed in seven days. **These were never extracted from captures
+  at all** until now, which is why the count sat at zero however much you wrote: `CAPTURE_SCHEMA` had
+  no `bites` field. It does now (plus `met`), `CAPTURE_EXTRA` explains both to the model, `buildPlan`
+  turns them into ordinary tickable items and `capApply` resolves `met` names to person ids.
+- `jdCommitments`/`jdGaps` — *what you were hired to do, against what you've touched*. The JD is split
+  into its separate responsibilities and each is matched by its own words (`jdTerms`, `JD_STOP`)
+  against every record in the map; a line with nothing behind it is a real gap, and the report shows
+  what each covered line matched on so you can disagree with it. Unticked objectives count too.
+- `connectToday` — *who to talk to today, literally*. Three sources, never a vibe: a note that says
+  you owe them (`OWE_RX`, and the sentence is the reason), an open question the graph points at them,
+  or your manager/a report with something open and a real silence. Never you, never someone who left.
+
+**The three questions a new starter opens this for**, below those:
 - `recapCard`/`recapWindow` — *where you left off*. Since your last visit if that was more than six
   hours ago, otherwise yesterday. **`lastSeenAtBoot` is read ONCE at load**: `render()` stamps
   `devPrefs.lastSeen` while you sit there, so reading it live would collapse the window to nothing
@@ -461,8 +486,8 @@ silently do nothing until a test caught it.
   dropped beats a one-line note. Each row offers **Update**, which opens a capture pre-seeded with
   "Update on X: " so the agent files it back against the same record.
 
-**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `recapCard` →
-objectives → `circleCard` → `quietCard` → `paceCard` →
+**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `weekTiles` →
+`recapCard` → objectives → `circleCard` → `quietCard` → `paceCard` →
 `gaugesCard` → `actionTiles` → `growthCard` → count tiles → `worthKnowingCard` →
 `reconnectCard` → `changedCard` → `coverageCard` → open questions → recent notes → gaps → timeline.
 - **`readiness(o)` / `gaugesCard` — five speedometers, every one a real ratio with a real
@@ -616,7 +641,9 @@ small true thing — what a name used to mean, an unwritten rule, a number — w
 an optional person. **They are deliberately kept out of the general AI context.** A pile of trivia
 in every prompt drags the model toward whatever it contains, so `bitesFor(o,q)` matches them
 against the question and `workRefs(o,q)` appends only those, cited like everything else. No
-question means no bites.
+question means no bites. **They are also extracted from captures now** — the layer existed for a
+year and only ever filled by hand, because `CAPTURE_SCHEMA` never asked for one. It does (see the
+four week numbers above); a bite arrives as an ordinary tickable plan item like any other record.
 **`BUILD`** is shown in Settings with a *Check for update* button (`forceUpdate()` unregisters the
 service worker and clears caches). "I don't see the change" has twice been a stale cached file.
 
@@ -701,8 +728,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,530 browser
-assertions** across forty Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,600 browser
+assertions** across forty-one Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

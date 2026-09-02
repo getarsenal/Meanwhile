@@ -119,6 +119,19 @@ you paste into a new AI chat to prep for interviews.
   Several zones can share one scope (Knowledge searches all seven kinds); wrap a heading+zone in
   `data-lfsec` and the whole section leaves when it has no hits, and `data-lfskip` exempts a row.
   Below `LF_MIN` (7) rows the bar doesn't render — a search box over five things is clutter.
+- **`pickSelect` / `pickFilter` — the same rule for `<select>`, which `listFilter` cannot reach.**
+  A dropdown is not a rendered list: it has no search and its options arrive in record-creation
+  order, which is unusable at twenty colleagues. The native `<select>` **stays** the control (on a
+  phone it gets the OS picker, better than anything hand-rolled); what changes is that options are
+  **sorted** (`pickSort`) and anything at or above `PICK_MIN` (8) gets a filter box above it.
+  Options are **removed and re-added, never marked `[hidden]`** — iOS Safari ignores `hidden` on an
+  `<option>`, the same class of bug as the `[hidden]{display:none!important}` one above.
+  `pickFull` (a WeakMap) holds the complete list so filtering is lossless. Three rules that took a
+  test each: **what matched and what is shown differ** — the current choice is always shown but
+  never counted, or "nothing matches" reads "1 of 21"; **one match auto-selects**, but never over an
+  answer already given; and anything that mutates the options calls **`pickRestore` first**
+  (`addEntInline` did not, so creating a record while a filter was active ate every option that
+  didn't match). Used by every `ent:` field in `openEntForm` and by the convert picker's `convRel`.
   **`[hidden]{display:none!important}` is load-bearing**: rows are `display:flex`, which beats the
   UA's `[hidden]` rule, so without it the filter marks every row hidden and nothing moves. A test
   that asserts `el.hidden` rather than computed `display` will not catch that.
@@ -315,6 +328,11 @@ modal rather than silently setting a status.
 **Storage.** All of it lives on `state.work` — plain arrays listed in `WORK_LISTS`, so it syncs,
 exports and migrates like everything else. Access via `W()` (lazily creates the arrays),
 `wOf(list,opId)`, `wFind`, `wAdd`. **Never hand-init `state.work`.**
+**A hole in one of these arrays used to blank the app.** Every render walks them and `x.opId` on a
+`null` throws before anything is drawn — and a null gets in from a half-written sync, an older
+build or a hand-edited backup. `migrate()` now filters non-objects out **on load**, which keeps the
+invariant the two hundred readers already assume; `wOf`/`wFind` and the handful of direct `W()[k]`
+walks guard as well, for one pushed at runtime.
 
 **The entity registry (`ENT`)** drives lists, detail modals, forms, search and graph nodes for all
 eleven types: `person, project, problem, department, team, system, process, decision, question,
@@ -644,6 +662,19 @@ against the question and `workRefs(o,q)` appends only those, cited like everythi
 question means no bites. **They are also extracted from captures now** — the layer existed for a
 year and only ever filled by hand, because `CAPTURE_SCHEMA` never asked for one. It does (see the
 four week numbers above); a bite arrives as an ordinary tickable plan item like any other record.
+**And this is where the app visibly learns** (`glossaryText`). Write down once that AMS means
+Americas and every note after it should be read that way — which needs the definitions in the
+prompt *and* an instruction saying what to do with them. Both halves were missing: bites reached
+the model through `knownEntitiesText`, under "use these EXACT names", which is nonsense for a fact
+and dragged a pile of trivia into every extraction. So bites came **out** of `knownEntitiesText`
+(it now skips `bite`, and caps each type at 120 names) and into their own block: every
+term/acronym/naming/unwritten-rule bite (`GLOSS_KINDS` — those are what let it read the note at
+all, and there are never many) plus any bite the note's own words touch, capped at `GLOSS_MAX`.
+Matching uses **`GLOSS_STOP`, not `STOP`** — partly because `STOP` is declared far below this and a
+`const` does not hoist (the TDZ trap, four times now), partly because it must be stricter: a bite
+sharing the word "the" with a note would put every bite in every prompt. `buildPlan` then **drops a
+bite already on record** (`canonThing` match) — the prompt asks, but the guard is in the code, or
+an acronym defined in week one comes back as "new" every time you use it.
 **`BUILD`** is shown in Settings with a *Check for update* button (`forceUpdate()` unregisters the
 service worker and clears caches). "I don't see the change" has twice been a stale cached file.
 
@@ -728,8 +759,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,600 browser
-assertions** across forty-one Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,650 browser
+assertions** across forty-two Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

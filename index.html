@@ -709,7 +709,9 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gl-title h2{margin:0;font-size:19px;font-weight:850;letter-spacing:-.02em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .gl-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.5}
-.gl-acts{display:flex;gap:7px;flex-wrap:wrap;flex:0 0 auto}
+/* flex:1 1 auto + min-width:0, NOT 0 0 auto — a row that cannot shrink never lets its own
+   flex-wrap kick in, so five buttons walked straight off a 320px screen. */
+.gl-acts{display:flex;gap:7px;flex-wrap:wrap;flex:1 1 auto;min-width:0;justify-content:flex-end}
 .gl-acts .btn.on{box-shadow:inset 0 0 0 1px var(--accent2);color:var(--accent2)}
 .gl-stage{position:relative;width:100%;height:min(62vh,560px);min-height:300px;border-radius:18px;
   overflow:hidden;background:radial-gradient(120% 100% at 50% 0%,#171a2b 0%,#0c0e15 60%,#08090d 100%);
@@ -736,6 +738,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gl-p-row em{flex:0 0 auto;font-style:normal;font-size:10px;color:var(--faint)}
 .gl-p-none{margin-top:11px;font-size:11.5px;color:var(--faint);line-height:1.6}
+.gl-time{display:flex;gap:11px;align-items:center;margin:11px 0 2px;min-width:0}
+.gl-play{flex:0 0 auto;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--txt);cursor:pointer;font-size:11px;line-height:1;padding:0}
+.gl-play:hover{border-color:var(--line2)}
+#glTime{flex:1 1 auto;min-width:0;accent-color:var(--accent2);height:22px}
+.gl-tlab{flex:0 0 auto;font-size:11px;color:var(--faint);font-weight:700;
+  min-width:74px;text-align:right;font-variant-numeric:tabular-nums}
+.gl-acts .btn[disabled]{opacity:.4;cursor:not-allowed}
 .gl-legend{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0 4px}
 .gl-chip{display:inline-flex;gap:6px;align-items:center;padding:5px 10px;border-radius:999px;
   background:var(--panel);border:1px solid var(--line);color:var(--txt);font:inherit;font-size:11px;
@@ -2534,7 +2544,8 @@ function render(){
   if(activeFilter && (view==="cards"||view==="pipeline"))
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
   else $("#viewSub").innerHTML = "";
-  if(view!=="globe"&&globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
+  if(view!=="globe"){ if(globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
+    if(globePlay){ clearInterval(globePlay); globePlay=0; } }
   const c = $("#content");
   c.className = "content"+(view==="pipeline"?" pad0":"");
   if(view==="dashboard"){ c.innerHTML = renderDashboard(); armHeroCountdown(); }
@@ -4541,7 +4552,34 @@ function globeGraph(o){
   wOf("bites",o.id).forEach(x=>{ if(x.personId) link("bite",x.id,"person",x.personId,"KNOWS"); });
   // people who keep turning up on the same work — the thing an org chart never tells you
   collabPairs(o).filter(x=>x.n>=2).forEach(x=>link("person",x.a,"person",x.b,"WORKS_WITH","collab"));
-  return {nodes,edges,byKey,me:(o.hired&&o.hired.meId)||""};
+  const g={nodes,edges,byKey,me:(o.hired&&o.hired.meId)||""};
+  globeAssignDepts(g);
+  return g;
+}
+/* Which part of the org each point belongs to, so the whole globe can be coloured by the company
+   rather than by record type. Most records never name a department — but a system owned by someone
+   in Finance is, in every way that matters, a Finance system. So: the field if there is one, then
+   the owner's, then whatever the neighbours mostly say. Two passes, because an inherited answer
+   should be able to feed the next one. */
+function globeAssignDepts(g){
+  g.nodes.forEach(n=>{
+    n.dept = n.t==="department" ? n.id
+           : (n.rec.deptId||"");
+    if(!n.dept&&n.rec.ownerId){ const ow=g.byKey["person|"+n.rec.ownerId]; if(ow) n.dept=ow.rec.deptId||""; }
+    if(!n.dept&&n.t==="bite"&&n.rec.personId){ const pp=g.byKey["person|"+n.rec.personId]; if(pp) n.dept=pp.rec.deptId||""; }
+  });
+  const nb={}; g.nodes.forEach(n=>nb[n.key]=[]);
+  g.edges.forEach(e=>{ nb[e.a.key].push(e.b); nb[e.b.key].push(e.a); });
+  for(let pass=0;pass<2;pass++){
+    g.nodes.forEach(n=>{
+      if(n.dept) return;
+      const tally={};
+      nb[n.key].forEach(m=>{ if(m.dept) tally[m.dept]=(tally[m.dept]||0)+1; });
+      const best=Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];
+      if(best) n.deptSoft=best;
+    });
+    g.nodes.forEach(n=>{ if(!n.dept&&n.deptSoft){ n.dept=n.deptSoft; n.inherited=true; } });
+  }
 }
 /* --- putting them on a sphere -----------------------------------------------------------------
    Two steps. A Fibonacci spiral spreads the points evenly (that even scatter is what makes the
@@ -4621,6 +4659,12 @@ function globeInsights(g){
 /* --- the view -------------------------------------------------------------------------------- */
 let globeG=null, globeSig="", globeSel=null, globeHide=new Set(), globeSuggest=false;
 let globeRAF=0, globeCam={yaw:0.6,pitch:-0.22,zoom:1}, globeSpin=true, globeIntroAt=0;
+/* Three lenses onto the same sphere. None of them re-lays it out: things fade in and out of a map
+   that stays where you left it, which reads as the rest going quiet rather than the world moving. */
+let globeColor="type";        // "type" | "dept" — is a point a KIND of thing, or a PART of the org?
+let globeMine=false;          // just my corner: me, my chain, my reports, and what they touch
+let globeTime=0;              // 0 = everything; otherwise only what you knew by this timestamp
+let globePlay=0;
 function globeSignature(o){
   // cheap: the counts and the newest timestamp. Re-laying out on every render would be both slow
   // and disorienting — the map should stay where you left it.
@@ -4636,8 +4680,27 @@ function globeBuild(o){
   return globeG;
 }
 function globeNodeColor(n){
+  if(globeColor==="dept") return n.dept?deptColor(n.dept):"#4a5060";
   if(n.t==="person") return n.rec.deptId?deptColor(n.rec.deptId):"#7fa8e8";
   return (ENT[n.t]||{}).col||"#8a90a0";
+}
+/* MY CORNER. Computed from the same graph everyone else uses: me, the chain above me, my reports,
+   my department and team — then one hop out from all of those, because the point of your corner is
+   the work it touches, not just the names in it. */
+function globeMyScope(g,o){
+  if(!g.me||!g.byKey["person|"+g.me]) return null;
+  const seed=new Set(["person|"+g.me]);
+  const me=entGet("person",g.me);
+  if(me){
+    let cur=me, guard=0;
+    while(cur&&guard++<12){ const m=personMgrId(cur); if(!m||seed.has("person|"+m)) break; seed.add("person|"+m); cur=entGet("person",m); }
+    (o.people||[]).forEach(p=>{ if(p&&personMgrId(p)===g.me) seed.add("person|"+p.id); });
+    if(me.deptId) seed.add("department|"+me.deptId);
+    if(me.teamId) seed.add("team|"+me.teamId);
+  }
+  const out=new Set(seed);
+  g.edges.forEach(e=>{ if(seed.has(e.a.key)) out.add(e.b.key); if(seed.has(e.b.key)) out.add(e.a.key); });
+  return out;
 }
 const GLOBE_LEGEND=["person","department","team","project","problem","system","process","decision","question","info","bite","org"];
 function renderGlobe(){
@@ -4648,18 +4711,30 @@ function renderGlobe(){
   if(!g.nodes.length) return `<div class="empty"><div class="big">${I.spark}</div><h3>Nothing to map yet</h3>
     <p>Every person, team, system and decision you record becomes a point on the map, and every connection an arc between them. Capture a few notes and come back.</p>
     <div style="margin-top:14px"><button class="btn primary" data-act="capture">${I.plus} Capture something</button></div></div>`;
-  const counts={}; g.nodes.forEach(n=>counts[n.t]=(counts[n.t]||0)+1);
+  g.scope=globeMyScope(g,o);
+  const shown=g.nodes.filter(globeVisible).length;
+  // the legend is the key to whatever the colours currently MEAN, so it changes with them
+  const counts={}, dcounts={};
+  g.nodes.forEach(n=>{ counts[n.t]=(counts[n.t]||0)+1; if(n.dept) dcounts[n.dept]=(dcounts[n.dept]||0)+1; });
   const chip=t=>{ const c=counts[t]; if(!c) return "";
-    const off=globeHide.has(t);
-    return `<button class="gl-chip${off?" off":""}" data-glhide="${esc(t)}">
+    return `<button class="gl-chip${globeHide.has(t)?" off":""}" data-glhide="${esc(t)}">
       <i style="background:${cssCol((ENT[t]||{}).col||"#888")}"></i>${esc(ENT[t].plural)} <b>${c}</b></button>`; };
+  const dchip=id=>`<button class="gl-chip" data-glsel="${esc("department|"+id)}">
+      <i style="background:${cssCol(deptColor(id))}"></i>${esc(clip(entLabel("department",id)||"—",22))} <b>${dcounts[id]}</b></button>`;
+  const legend = globeColor==="dept"
+    ? Object.keys(dcounts).sort((a,b)=>dcounts[b]-dcounts[a]).map(dchip).join("")
+      + (g.nodes.some(n=>!n.dept)?`<span class="gl-chip off" style="cursor:default"><i style="background:#4a5060"></i>No department <b>${g.nodes.filter(n=>!n.dept).length}</b></span>`:"")
+    : GLOBE_LEGEND.map(chip).join("");
   const linked=g.nodes.filter(n=>n.deg>0).length;
+  const span=globeSpan(g);
   return `<div class="gl-head">
       <div class="gl-title"><h2>${esc(o.company)}</h2>
-        <div class="gl-sub">${g.nodes.length} things you know · ${g.edges.length} connections · ${linked} of them joined up</div></div>
+        <div class="gl-sub">${globeMine||globeTime?`showing ${shown} of ${g.nodes.length}`:`${g.nodes.length} things you know`} · ${g.edges.length} connections · ${linked} of them joined up</div></div>
       <div class="gl-acts">
         <button class="btn ghost sm" data-act="globe-reset">Recentre</button>
         <button class="btn ghost sm${globeSpin?" on":""}" data-act="globe-spin">${globeSpin?"Pause":"Spin"}</button>
+        <button class="btn ghost sm${globeColor==="dept"?" on":""}" data-act="globe-color">${globeColor==="dept"?"By department":"By type"}</button>
+        <button class="btn ghost sm${globeMine?" on":""}" data-act="globe-mine"${g.scope?"":" disabled title=\"Put yourself on the map first — People tab\""}>My corner</button>
         <button class="btn ghost sm${globeSuggest?" on":""}" data-act="globe-suggest">Possible links</button>
       </div>
     </div>
@@ -4668,8 +4743,26 @@ function renderGlobe(){
       <div class="gl-hint" id="glHint">Drag to turn it · pinch or scroll to zoom · tap a point to open it</div>
       <div class="gl-panel" id="glPanel" hidden></div>
     </div>
-    <div class="gl-legend">${GLOBE_LEGEND.map(chip).join("")}</div>
+    ${span?`<div class="gl-time">
+      <button class="gl-play" data-act="globe-play" aria-label="Play the map filling in">${globePlay?"❚❚":"▶"}</button>
+      <input type="range" id="glTime" min="${span.min}" max="${span.max}" step="${span.step}"
+        value="${globeTime||span.max}" data-gltime="1" aria-label="Show the map as it was on this date"/>
+      <span class="gl-tlab" id="glTLab">${globeTime?esc(fmtDate(ymdOf(globeTime))):"today"}</span>
+    </div>`:""}
+    <div class="gl-legend">${legend}</div>
     ${globeFindings(g,ins)}`;
+}
+/* The window the scrubber runs over: from the first thing you recorded to now. Below a handful of
+   records there is nothing to watch fill in, so it doesn't render. */
+function globeSpan(g){
+  if(g.span!==undefined) return g.span;
+  const ts=g.nodes.map(n=>n.rec.at||0).filter(Boolean).sort((a,b)=>a-b);
+  const min=ts[0], max=Date.now();
+  // Cached on the graph on purpose. Recomputing `max` as Date.now() on every call meant the end of
+  // the slider drifted away from it by however long you had the page open, so dragging fully right
+  // no longer counted as "today" and the newest records stayed hidden.
+  g.span=(ts.length<6||max-min<3*86400000)?null:{min,max,step:Math.max(1,Math.round((max-min)/240))};
+  return g.span;
 }
 function globeFindings(g,ins){
   const row=(n,meta)=>`<button class="gl-find" data-glsel="${esc(n.key)}">
@@ -4701,7 +4794,12 @@ function globeFindings(g,ins){
    Arcs are slerped along the surface and lifted slightly — that lift is what makes the reference
    images read as a globe rather than a flat scatter. */
 const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9;
-function globeVisible(n){ return !globeHide.has(n.t); }
+function globeVisible(n){
+  if(globeHide.has(n.t)) return false;
+  if(globeTime&&(n.rec.at||0)>globeTime) return false;
+  if(globeMine&&globeG&&globeG.scope&&!globeG.scope.has(n.key)) return false;
+  return true;
+}
 function armGlobe(){
   const cv=document.getElementById("glCanvas"), stage=document.getElementById("glStage");
   if(!cv||!stage) return;
@@ -4962,6 +5060,34 @@ function globeDrawIntro(ctx,W0,H0,R,t){
     }
     ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
   }
+}
+/* Watching the map fill in. The slider is the truth; Play just drives it. Everything it does is
+   hide and show — the sphere never re-lays out, so what you are watching really is your own
+   first weeks arriving in the order you learned them. */
+function globeSetTime(v,fromUser){
+  const span=globeG&&globeSpan(globeG); if(!span) return;
+  // the last notch means TODAY. The range step quantises the value a few ms below max, so an exact
+  // comparison never fires and the header sat on "showing 54 of 54" forever.
+  globeTime=(v>=span.max-span.step)?0:Math.max(span.min,v);
+  const lab=document.getElementById("glTLab");
+  if(lab) lab.textContent=globeTime?fmtDate(ymdOf(globeTime)):"today";
+  if(!fromUser){ const sl=document.getElementById("glTime"); if(sl) sl.value=globeTime||span.max; }
+  const sub=document.querySelector(".gl-sub");
+  if(sub&&globeG) sub.textContent=`${globeMine||globeTime?`showing ${globeG.nodes.filter(globeVisible).length} of ${globeG.nodes.length}`:`${globeG.nodes.length} things you know`} · ${globeG.edges.length} connections · ${globeG.nodes.filter(n=>n.deg>0).length} of them joined up`;
+}
+function globePlayToggle(){
+  const btn=document.querySelector('[data-act="globe-play"]');
+  if(globePlay){ clearInterval(globePlay); globePlay=0; if(btn) btn.textContent="▶"; return; }
+  const span=globeG&&globeSpan(globeG); if(!span) return;
+  let t=span.min, step=(span.max-span.min)/90;          // about six seconds end to end
+  globeSetTime(t,false);
+  if(btn) btn.textContent="❚❚";
+  globePlay=setInterval(()=>{
+    t+=step;
+    if(t>=span.max){ globeSetTime(span.max,false); clearInterval(globePlay); globePlay=0;
+      const b=document.querySelector('[data-act="globe-play"]'); if(b) b.textContent="▶"; return; }
+    globeSetTime(t,false);
+  },66);
 }
 /* Hit-testing is done against the projected positions the last frame wrote, so what you tap is
    exactly what you saw — no second projection that could disagree with the picture. */
@@ -10282,6 +10408,9 @@ document.addEventListener("click",e=>{
   if(act==="globe-spin"){ globeSpin=!globeSpin; t.textContent=globeSpin?"Pause":"Spin"; t.classList.toggle("on",globeSpin); return; }
   if(act==="globe-suggest"){ globeSuggest=!globeSuggest; t.classList.toggle("on",globeSuggest); return; }
   if(act==="globe-clear"){ globeSelect(null); return; }
+  if(act==="globe-color"){ globeColor=globeColor==="dept"?"type":"dept"; render(); return; }
+  if(act==="globe-mine"){ globeMine=!globeMine; globeSelect(null); render(); return; }
+  if(act==="globe-play"){ globePlayToggle(); return; }
   if(act==="force-update"){ forceUpdate(); return; }
   if(act==="lock-off"){ disableLock(); return; }
   if(act==="lock-import"){ const f=$("#fileInput"); if(f) f.click(); return; }
@@ -10693,6 +10822,7 @@ document.addEventListener("input",e=>{
   const t=e.target;
   if(!t||!t.dataset) return;
   if(t.dataset.pickq){ pickFilter(t); return; }      // searching a dropdown
+  if(t.dataset.gltime){ globeSetTime(+t.value,true); return; }
   if(!t.dataset.lfin) return;
   lfGet(t.dataset.lfin).q=t.value;
   lfApply(t.dataset.lfin);

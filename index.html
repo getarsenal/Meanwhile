@@ -1593,7 +1593,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v64 · 2026-09-02";
+const BUILD = "v65 · 2026-09-03";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2044,6 +2044,7 @@ async function authSignOut(wipeLocal){
     try{ (await idbKeys()||[]).forEach(k=>idbDel(k)); }catch(e){}
     state={opportunities:[],meta:{created:Date.now()},rev:0};
     persist();
+    setLocalOwner("");
   }
   updateSyncUI();
 }
@@ -2127,6 +2128,14 @@ function askChoice(o){
 /* Signing in on a device that already has notes is the one moment sync can destroy something.
    Last-write-wins is right for the same person's two devices; it is NOT right the first time two
    real datasets meet. So when both sides have something, ask — and name what each side is. */
+/* A blank document — what a genuinely new account starts from. */
+function emptyDoc(){ return migrate({opportunities:[],meta:{created:Date.now()},rev:0}); }
+/* WHOSE notes are sitting in this browser. Device-local, never synced. Without it the app cannot
+   tell "I used this app on my own and now I'm making an account" (adopt what's here) from "someone
+   else was signed in on this browser" (absolutely do not). Getting that wrong pushed one account's
+   whole company into a brand-new account that had never recorded anything. */
+function localOwner(){ return devPrefs.ownerUid||""; }
+function setLocalOwner(uid){ devPrefs.ownerUid=uid||""; saveDev(); }
 async function afterSignIn(){
   let remote=null;
   try{ remote=await vaultGet(); }catch(e){ setSyncState("error",e.message); throw e; }
@@ -2135,6 +2144,35 @@ async function afterSignIn(){
   const remoteN=doc?((doc.opportunities||[]).length):0;
   if(doc && isSealed(doc)){                     // a legacy encrypted vault: unlock it, then retire it
     lockedBlob=doc; remoteLocked=true; renderLockGate(); return "locked";
+  }
+  const uid=session.uid||"", owner=localOwner();
+  const foreign = !!owner && !!uid && owner!==uid;
+  if(foreign){
+    /* This browser's copy belongs to a DIFFERENT account. Signing in here must never offer to push
+       it into this one — that is the leak. A new account starts at zero, full stop. The only
+       question is whether to warn first, and the answer is yes whenever there's something to lose. */
+    if(localN){
+      const pick=await askChoice({
+        title:"Notes from another account",
+        body:`This browser still has ${localN} ${localN===1?"role":"roles"} on it from a different account. They belong to that account, not this one, so they can't come with you.`,
+        options:[
+          {id:"fresh",kind:"primary",label:"Continue — start clean in this account",
+           note:"This browser is cleared and loads only what this account has. The other account keeps everything."}
+        ],
+        backup:true,
+        cancelLabel:"Cancel — don't sign in",
+        cancelNote:"Nothing changes on either side."
+      });
+      if(pick!=="fresh"){ clearSession(); setSyncState("idle"); return "cancelled"; }
+    }
+    state = (doc&&remoteN) ? migrate(doc) : emptyDoc();
+    persist(); setLocalOwner(uid); adoptSyncedAI();
+    if(doc&&remoteN){ markPushed(remote.rev||0); lastPushSig=docSig(state); }
+    // ...otherwise create this account's own (empty) vault row. lastPushSig must NOT be primed
+    // first, or pushNow sees nothing to send and the new account never gets a row at all.
+    else await pushNow();
+    setSyncState("idle");
+    return "ok";
   }
   if(doc && remoteN && localN){
     const r=(n,w)=>`${n} ${n===1?w:w+"s"}`;
@@ -2165,6 +2203,7 @@ async function afterSignIn(){
   } else {
     await pushNow();                            // the account is empty — seed it from here
   }
+  setLocalOwner(session.uid||"");
   setSyncState("idle");
   return "ok";
 }
@@ -4836,7 +4875,21 @@ function globeFindings(g,ins){
    a perspective divide, then painted back-to-front so the far hemisphere sits behind the near one.
    Arcs are slerped along the surface and lifted slightly — that lift is what makes the reference
    images read as a globe rather than a flat scatter. */
-const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9;
+const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9, GLOBE_ARC_MAX=520;
+/* One 64px glow per colour, reused for the life of the page. The palette is small (department and
+   record-type colours), so this cache never grows. */
+const globeGlowCache=new Map();
+function globeGlow(col){
+  let c=globeGlowCache.get(col);
+  if(c) return c;
+  c=document.createElement("canvas"); c.width=c.height=64;
+  const g=c.getContext("2d");
+  const gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,globeRGBA(col,1)); gr.addColorStop(1,globeRGBA(col,0));
+  g.fillStyle=gr; g.fillRect(0,0,64,64);
+  globeGlowCache.set(col,c);
+  return c;
+}
 function globeVisible(n){
   if(globeHide.has(n.t)) return false;
   if(globeTime&&(n.rec.at||0)>globeTime) return false;
@@ -4907,8 +4960,14 @@ function armGlobe(){
       arcs.push({e:{a:s.a,b:s.b,kind:"suggest",n:1},z:(s.a._z+s.b._z)/2});
     });
     arcs.sort((a,b)=>b.z-a.z);
-    arcs.forEach(({e})=>{
+    // On a very large map the far hemisphere's arcs are all but invisible; drawing every one costs
+    // more than it shows. Keep the nearest, which is what you are actually looking at.
+    const drawArcs=arcs.length>GLOBE_ARC_MAX?arcs.slice(arcs.length-GLOBE_ARC_MAX):arcs;
+    drawArcs.forEach(({e})=>{
       const on=lit(e.a.key)&&lit(e.b.key);
+      // with something selected the rest drop to 4% alpha — at that point they cost more than they
+      // show, so on a big map they simply aren't drawn
+      if(!on&&near&&drawArcs.length>200) return;
       globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near);
     });
     // nodes, far first so near ones sit on top
@@ -4921,9 +4980,12 @@ function armGlobe(){
       const col=globeNodeColor(n);
       const a=(on?1:0.13)*(0.35+0.65*depth);
       if(n.deg>2&&on){                                 // hubs glow
-        const gr=ctx.createRadialGradient(p.sx,p.sy,0,p.sx,p.sy,r*5);
-        gr.addColorStop(0,globeRGBA(col,0.5*a)); gr.addColorStop(1,globeRGBA(col,0));
-        ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(p.sx,p.sy,r*5,0,7); ctx.fill();
+        // A pre-rendered sprite, not a fresh createRadialGradient every hub every frame — building
+        // a hundred gradients per frame is what dragged a big map down to ~20fps.
+        const sp=globeGlow(col), R2=r*5;
+        ctx.globalAlpha=Math.min(1,0.5*a);
+        ctx.drawImage(sp,p.sx-R2,p.sy-R2,R2*2,R2*2);
+        ctx.globalAlpha=1;
       }
       ctx.fillStyle=globeRGBA(col,Math.min(1,a+0.15));
       ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,7); ctx.fill();
@@ -5031,7 +5093,7 @@ function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
   const a=e.a,b=e.b;
   const dot=Math.max(-1,Math.min(1,a.x*b.x+a.y*b.y+a.z*b.z));
   const om=Math.acos(dot);
-  const steps=om<0.35?6:om<1.2?14:22;
+  const steps=om<0.35?4:om<1.2?9:14;   // enough to read as a curve; more is invisible and costs a lot
   const col=e.kind==="suggest"?"#c6a45c":e.kind==="collab"?"#9b8ec4":globeNodeColor(a);
   const base=e.kind==="suggest"?0.5:e.kind==="collab"?0.4:0.34;
   ctx.beginPath();
@@ -5890,14 +5952,19 @@ function jdCommitments(o){
     .forEach(k=>(W()[k]||[]).filter(r=>r&&r.opId===o.id).forEach(r=>{
       const type={projects:"project",problems:"problem",systems:"system",processes:"process",
         decisions:"decision",questions:"question",infos:"info",bites:"bite",captures:"capture"}[k];
-      hay.push({type,rec:r,text:norm([entName(type,r),r.description,r.note,r.summary,r.reason,r.text,r.fact].filter(Boolean).join(" "))});
+      hay.push({type,rec:r,words:new Set(norm([entName(type,r),r.description,r.note,r.summary,r.reason,r.text,r.fact].filter(Boolean).join(" ")).split(" ").filter(Boolean))});
     }));
+  /* Whole words, not substrings. `includes` had "stand up a programme" covered by the word
+     "non-standard", which is exactly the kind of false comfort this report exists to avoid. A
+     couple of trailing characters are still allowed, so analyst matches analysts. */
+  const hit=(h,t)=>{ if(h.words.has(t)) return true;
+    for(const w of h.words) if(w.length>t.length&&w.length-t.length<=2&&w.startsWith(t)) return true;
+    return false; };
   return lines.map(line=>{
     const terms=jdTerms(line);
     if(!terms.length) return {line,terms,hits:[],covered:true};   // nothing to match on — don't cry gap
-    const hits=hay.filter(h=>terms.some(t=>h.text.includes(t)))
-      .sort((a,b)=>terms.filter(t=>b.text.includes(t)).length-terms.filter(t=>a.text.includes(t)).length)
-      .slice(0,6);
+    const score=h=>terms.filter(t=>hit(h,t)).length;
+    const hits=hay.filter(h=>score(h)>0).sort((a,b)=>score(b)-score(a)).slice(0,6);
     return {line,terms,hits,covered:hits.length>0};
   });
 }
@@ -6629,7 +6696,33 @@ function workKnowledge(o){
    built from who reports to whom. Solid lines are reporting; dashed lines are people who keep
    turning up on the same work — the thing an org chart never tells you. ---- */
 function wLayout(){ const w=W(); w.layout=w.layout||{}; return w.layout; }
-function deptColor(deptId){ return deptId?colorFor("dept:"+entLabel("department",deptId)):"#5a6070"; }
+/* Departments get a hue off a 360° wheel rather than one of ten fixed colours: eight departments
+   against a ten-colour palette collide nearly every time, and on the globe two departments sharing
+   a colour makes the legend a lie. Still a pure function of the name, so the card accent, the dot,
+   the legend chip and the band all agree — and still hex, because cssCol() only trusts hex. */
+function hslHex(h,s,l){
+  s/=100; l/=100;
+  const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+  const f=n=>Math.round(255*(l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)))));
+  return "#"+[f(0),f(8),f(4)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+/* Hues are handed out by POSITION in the department list, not by hashing the name. Hashing put four
+   of eight departments on the same green, which makes the globe's legend a lie — and the whole
+   point of colouring by department is telling them apart. Golden-angle steps keep even twenty
+   departments visibly distinct. Cached, because this is called once per node per frame. */
+let deptHues={key:"",map:{}};
+function deptColor(deptId){
+  if(!deptId) return "#5a6070";
+  const opId=entOpId("department",deptId)||(workOp()||{}).id||"";
+  const list=entAll("department",opId);
+  const key=opId+"|"+list.length;
+  if(deptHues.key!==key){
+    deptHues={key,map:{}};
+    list.slice().sort((a,b)=>String(a.id)<String(b.id)?-1:1)
+      .forEach((d,i)=>{ deptHues.map[d.id]=hslHex((i*137.508+18)%360,46,62); });
+  }
+  return deptHues.map[deptId]||"#5a6070";
+}
 function teamColor(teamId){ return teamId?colorFor("team:"+entLabel("team",teamId)):"#6b7078"; }
 function personManager(p){
   if(p.managerId&&entGet("person",p.managerId)) return p.managerId;
@@ -11318,8 +11411,24 @@ function toast(msg,kind,action){
 }
 
 /* ============================ DEMO DATA ============================ */
-function loadSample(){
-  if(state.opportunities.length && !confirm("Add demo data on top of what you have?")) return;
+async function loadSample(){
+  // A destructive choice never goes in confirm(): "Cancel" there has to carry one of the outcomes.
+  if(state.opportunities.length){
+    const n=state.opportunities.length;
+    const pick=await askChoice({
+      title:"Load the demo company?",
+      body:`You already have ${n} ${n===1?"role":"roles"} here. The demo adds a full worked example — a company you've joined, its people, projects and notes — so you can see what everything does.`,
+      options:[
+        {id:"add",kind:"primary",label:"Add it alongside mine",note:"Nothing you have is touched. You can delete the demo roles afterwards."},
+        {id:"replace",kind:"danger",label:"Replace everything with the demo",note:`Your ${n} ${n===1?"role":"roles"} and all their notes are deleted from this device.`}
+      ],
+      backup:true,
+      cancelLabel:"Cancel",
+      cancelNote:"Nothing is added or removed."
+    });
+    if(!pick) return;
+    if(pick==="replace"){ snapshotUndo("loading the demo"); state={opportunities:[],meta:{created:Date.now()},rev:state.rev||0}; migrate(state); }
+  }
   const today=new Date(); const iso=d=>{ const x=new Date(today); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
   const demo=[
     {company:"Aperture Labs",role:"Senior Product Manager",status:"onsite",source:"Referral",referrer:"Jordan Kim",workMode:"Hybrid",location:"San Francisco",excitement:5,compMin:"180000",compMax:"220000",compNotes:"+0.1% equity",appliedDate:iso(-24),jobUrl:"https://aperturelabs.com/careers/pm",tags:["dream","ai","startup"],
@@ -11353,83 +11462,291 @@ function loadSample(){
   loadSampleWork(iso);
   save(); view="dashboard"; render(); toast("Demo data loaded — explore away!");
 }
-/* A company you already joined, so 90-day mode has something to show on first run */
+/* A company you already joined, fleshed out enough that every post-hire feature has something real
+   to show on a first run: a reporting tree several levels deep, departments inside a division,
+   people who have left, systems with and without owners, a job description to measure against,
+   notes spread over two months, knowledge bites the glossary can use — and, because real maps
+   always have them, a couple of genuine duplicates for the checker to find. */
 function loadSampleWork(iso){
-  const o={id:uid(),createdAt:Date.now()-86400000*150,updatedAt:Date.now()-86400000*2,offer:{},rounds:[],people:[],
+  const D=86400000, ago=d=>Date.now()-D*d;
+  const o={id:uid(),createdAt:ago(150),updatedAt:ago(2),offer:{},rounds:[],people:[],
     company:"Halden Systems",role:"Head of GTM Operations",status:"hired",source:"Referral",workMode:"Hybrid",location:"Chicago",
     excitement:4,compMin:"195000",compMax:"195000",appliedDate:iso(-138),tags:["revops"],
     product:"Industrial software company, ~2,000 people. I run GTM operations for the North America business.",
-    hired:{startDate:iso(-42),title:"Head of GTM Operations",manager:"Dana Reyes",acceptedAt:Date.now()-86400000*55},
+    jd:"Own the weekly and quarterly revenue forecast end to end.\n"
+      +"Lead the FY26 territory realignment with Sales leadership.\n"
+      +"Bring Salesforce and NetSuite bookings into agreement.\n"
+      +"Build a partner attribution model for indirect revenue.\n"
+      +"Run the quarterly business review operating rhythm.\n"
+      +"Develop the two analysts on the GTM Americas team.\n"
+      +"Stand up a competitive intelligence programme for the field.",
+    hired:{startDate:iso(-58),title:"Head of GTM Operations",manager:"Dana Reyes",acceptedAt:ago(71)},
     rounds:[{id:uid(),name:"Recruiter screen",type:"Recruiter screen",date:iso(-130),status:"done",rating:4},
             {id:uid(),name:"Panel w/ Sarah + Dana",type:"Panel",date:iso(-118),status:"done",rating:5,interviewers:"Sarah Johnson, Dana Reyes",debrief:"Talked forecasting and territory design the whole time."}]};
   state.opportunities.push(o);
-  wAdd("milestones",{opId:o.id,at:Date.now()-86400000*55,kind:"accepted",label:"Accepted the offer"});
-  wAdd("milestones",{opId:o.id,at:Date.now()-86400000*42,kind:"started",label:"Started as Head of GTM Operations",date:iso(-42)});
-  const mk=(t,n,f)=>createEnt(t,o.id,n,f||{},"");
-  const sales=mk("department","Sales"), fin=mk("department","Finance"), it=mk("department","IT"), rev=mk("department","RevOps");
-  const sf=mk("system","Salesforce",{note:"Source of truth for pipeline. Reporting is a mess."});
-  const ns=mk("system","NetSuite"), clari=mk("system","Clari");
-  const fc=mk("process","Forecasting"), lr=mk("process","Lead Routing");
-  const proj=mk("project","Forecast Redesign",{status:"Active",note:"Rebuilding how the weekly forecast is produced."});
-  const proj2=mk("project","Territory Realignment FY26",{status:"Blocked",note:"Waiting on clean account hierarchy."});
-  const prob=mk("problem","Salesforce and NetSuite report different bookings",{status:"Investigating",description:"Revenue recognition rules differ, so the two systems never agree."});
-  const prob2=mk("problem","Nobody owns the territory hierarchy",{status:"Discovered"});
-  mk("decision","Forecast methodology changed to conservative recognition",{madeBy:"Finance leadership",date:"Last year",reason:"The board wanted bookings recognized only after contract countersign."});
-  mk("question","Why do Salesforce and NetSuite recognize bookings differently?");
-  mk("question","Who administers CPQ?");
-  const sarah=createEnt("person",o.id,"Sarah Johnson",{title:"VP Sales",department:"Sales",expertise:["forecasting","territory management"]},"");
-  const mike=createEnt("person",o.id,"Mike Okafor",{title:"Salesforce admin",department:"IT",expertise:["Salesforce","reporting"]},"");
-  const john=createEnt("person",o.id,"John Alvarez",{title:"Controller",department:"Finance"},"");
-  const dana=createEnt("person",o.id,"Dana Reyes",{title:"My manager · VP RevOps",department:"RevOps"},"");
-  o.hired.managerId=dana.id;
-  mike.managerId=dana.id; addLink(o.id,"person",mike.id,"REPORTS_TO","person",dana.id,1,"");
-  john.managerId=sarah.id; addLink(o.id,"person",john.id,"REPORTS_TO","person",sarah.id,.7,"");
-  sales.headId=sarah.id; fin.headId=john.id; rev.headId=dana.id; it.headId=mike.id;
-  const gtm=createEnt("team",o.id,"GTM Americas",{},"");
-  gtm.deptId=rev.id; gtm.headId=dana.id; gtm.note="Go-to-market operations for the Americas region.";
-  dana.teamId=gtm.id; mike.teamId=gtm.id;
-  const icx=createEnt("info",o.id,"ICX",{kind:"Product or offering",summary:"The umbrella name for the customer-experience product family — not a single product."},"");
-  createEnt("info",o.id,"QBR",{kind:"Meeting or ritual",summary:"Quarterly business review. Leadership looks at Clari numbers, not Salesforce."},"");
-  addLink(o.id,"info",icx.id,"RELATES_TO","department",sales.id,.8,"");
-  const c1=wAdd("captures",{opId:o.id,at:Date.now()-86400000*30,summary:"Met Mike; found the bookings discrepancy",
-    text:"Met Mike today. He's apparently the Salesforce guy — built most of the reporting. He said Finance doesn't trust the forecast because Salesforce and NetSuite recognize bookings differently. Sarah owns forecasting on the business side, but John in Finance has been fighting this for months.",
-    entities:[{t:"person",id:mike.id},{t:"person",id:sarah.id},{t:"person",id:john.id},{t:"system",id:sf.id},{t:"system",id:ns.id},{t:"problem",id:prob.id}]});
-  const c2=wAdd("captures",{opId:o.id,at:Date.now()-86400000*11,summary:"Forecast review with Sarah",
-    text:"Forecast review. Sarah walked me through the new methodology. Leadership actually looks at Clari, not Salesforce — which explains why the numbers in the QBR never matched what I was pulling.",
-    entities:[{t:"person",id:sarah.id},{t:"system",id:clari.id},{t:"process",id:fc.id}]});
-  const c3=wAdd("captures",{opId:o.id,at:Date.now()-86400000*3,summary:"Territory work is blocked",
-    text:"Tried to kick off territory realignment. Blocked — no one can tell me who owns the account hierarchy in Salesforce. Mike thinks it used to be a Finance thing.",
-    entities:[{t:"project",id:proj2.id},{t:"problem",id:prob2.id},{t:"person",id:mike.id}]});
-  [[c1,[[mike,"person"],[sarah,"person"],[john,"person"],[sf,"system"],[ns,"system"],[prob,"problem"]]],
-   [c2,[[sarah,"person"],[clari,"system"],[fc,"process"]]],
-   [c3,[[proj2,"project"],[prob2,"problem"],[mike,"person"]]]]
-    .forEach(([c,list])=>list.forEach(([r,t])=>addLink(o.id,"capture",c.id,"MENTIONS",t,r.id,1,c.id)));
-  addLink(o.id,"person",mike.id,"KNOWS","system",sf.id,.96,c1.id);
-  addLink(o.id,"person",mike.id,"KNOWS","system",ns.id,.7,c1.id);
-  addLink(o.id,"person",sarah.id,"OWNS","process",fc.id,.85,c1.id);
-  addLink(o.id,"person",john.id,"INVOLVED_IN","problem",prob.id,.9,c1.id);
-  addLink(o.id,"person",mike.id,"INVOLVED_IN","problem",prob.id,.8,c1.id);
-  addLink(o.id,"problem",prob.id,"AFFECTS","project",proj.id,.8,c1.id);
-  addLink(o.id,"problem",prob2.id,"AFFECTS","project",proj2.id,1,c3.id);
-  addLink(o.id,"project",proj.id,"USES","system",sf.id,1,c1.id);
-  addLink(o.id,"project",proj.id,"USES","system",clari.id,.8,c2.id);
-  addLink(o.id,"department",fin.id,"OWNS","system",ns.id,.9,c1.id);
-  addLink(o.id,"department",fin.id,"DEPENDS_ON","project",proj.id,.8,c1.id);
-  addLink(o.id,"department",sales.id,"DEPENDS_ON","project",proj2.id,.9,c3.id);
-  addLink(o.id,"system",clari.id,"PART_OF","department",rev.id,.8,c2.id);
-  addLink(o.id,"process",fc.id,"USES","system",sf.id,.9,c2.id);
-  addLink(o.id,"process",lr.id,"USES","system",sf.id,.8,c1.id);
-  // backdate the records to when they'd actually have been learned, so the timeline and the
-  // weekly briefing read like a real 6 weeks rather than everything landing today
-  const age=(d,list)=>list.forEach(r=>{ r.at=Date.now()-86400000*d; });
-  age(38,[sales,fin,it,rev,sarah,dana]);
-  age(30,[sf,ns,mike,john,prob,fc,lr]);
-  age(24,[proj]);
-  age(11,[clari]);
-  age(3,[proj2,prob2]);
-  wOf("questions",o.id).forEach((q,i)=>{ q.at=Date.now()-86400000*(i?9:29); });
-  wOf("decisions",o.id).forEach(d=>{ d.at=Date.now()-86400000*20; });
+  wAdd("milestones",{opId:o.id,at:ago(71),kind:"accepted",label:"Accepted the offer"});
+  wAdd("milestones",{opId:o.id,at:ago(58),kind:"started",label:"Started as Head of GTM Operations",date:iso(-58)});
+  wAdd("milestones",{opId:o.id,at:ago(30),kind:"note",label:"First forecast I ran end to end"});
+
+  // ---- the corporate stack: a brand inside a division inside the group ----
+  const org=(n,f)=>{ const r=wAdd("orgs",Object.assign({opId:o.id,name:n},f||{})); return r; };
+  const group=org("Halden Group",{kind:"Parent company",note:"The listed group. Four divisions."});
+  const div=org("Halden Industrial Software",{kind:"Division",parentId:group.id});
+  const brand=org("Vantage",{kind:"Brand",parentId:div.id,note:"The product brand everything GTM is sold under."});
+  o.hired.orgId=div.id;
+
+  // ---- departments, some inside others ----
+  const dep=(n,f)=>wAdd("departments",Object.assign({opId:o.id,name:n,orgId:div.id},f||{}));
+  const rev=dep("Revenue Operations"), sales=dep("Sales"), fin=dep("Finance"), it=dep("IT"),
+        pmm=dep("Product Marketing"), cs=dep("Customer Success"), legal=dep("Legal"),
+        data=dep("Data Platform",{parentId:it.id});
+  const team=(n,d,f)=>wAdd("teams",Object.assign({opId:o.id,name:n,deptId:d.id},f||{}));
+  const tGTM=team("GTM Americas",rev,{note:"Go-to-market operations for the Americas region."}),
+        tDeal=team("Deal Desk",rev), tFcst=team("Forecasting",fin),
+        tEnable=team("Enablement",sales), tBI=team("Analytics",data);
+
+  // ---- people: a real tree, with two who are no longer in it ----
+  const P=[];
+  const per=(name,title,d,tm,extra)=>{
+    const p=Object.assign({id:uid(),name,title,at:ago(50),deptId:d?d.id:"",teamId:tm?tm.id:""},extra||{});
+    o.people.push(p); P.push(p); return p;
+  };
+  const me   = per((getProfile().name||"You").trim()||"You","Head of GTM Operations",rev,tGTM,{at:ago(58)});
+  const dana = per("Dana Reyes","VP Revenue Operations",rev,tGTM,{expertise:["territory design","comp plans"]});
+  const cfo  = per("Marguerite Boone","CFO",fin,null,{expertise:["revenue recognition"]});
+  const sarah= per("Sarah Johnson","VP Sales",sales,null,{expertise:["forecasting","territory management"]});
+  const john = per("John Alvarez","Controller",fin,tFcst,{expertise:["revenue recognition","NetSuite"]});
+  const mike = per("Mike Okafor","Salesforce Administrator",it,null,{expertise:["Salesforce","reporting","CPQ"]});
+  const priya= per("Priya Raman","Director, Data Platform",data,tBI,{expertise:["Snowflake","dbt"]});
+  const ada  = per("Ada Whitfield","Revenue Analyst",rev,tGTM,{expertise:["forecast modelling"]});
+  const luis = per("Luis Ferreira","Revenue Analyst",rev,tGTM,{expertise:["Salesforce reporting"]});
+  const nina = per("Nina Castellanos","Deal Desk Manager",rev,tDeal,{expertise:["CPQ","pricing approvals"]});
+  const tom  = per("Tom Liolios","Director, Product Marketing",pmm,null,{expertise:["positioning","launch"]});
+  const kate = per("Katherine Osei","Director, Customer Success",cs,null,{expertise:["renewals","churn"]});
+  const raj  = per("Raj Bhatt","Senior Counsel",legal,null,{expertise:["contracts","data protection"]});
+  const erin = per("Erin Novak","Sales Director, East",sales,tEnable);
+  const carl = per("Carl Mensah","Sales Director, West",sales,tEnable);
+  const bea  = per("Beatrice Lund","FP&A Manager",fin,tFcst,{expertise:["planning","board reporting"]});
+  const sam  = per("Sam Whitcombe","Data Engineer",data,tBI,{expertise:["Snowflake","pipelines"]});
+  const jo   = per("Jo Park","Enablement Manager",sales,tEnable);
+  const hana = per("Hana Suzuki","Renewals Manager",cs,null,{expertise:["renewals"]});
+  const omar = per("Omar Haddad","Partner Manager",sales,null,{expertise:["channel","partners"]});
+  const gus  = per("Gus Lindqvist","IT Systems Manager",it,null,{expertise:["integrations","NetSuite"]});
+  const pia  = per("Pia Lindgren","Product Marketing Manager",pmm,null);
+  const quinn= per("Quinn Doyle","Sales Operations Analyst",sales,null,{at:ago(12)});
+  const prev = per("Wendell Cross","Head of GTM Operations (before me)",rev,tGTM,
+    {standing:"Predecessor — had my role",notes:"Left in March. Most of the forecast tooling is his. Nobody has picked up his open threads."});
+  const gone = per("Marcy Del Rio","Renewals Analyst",cs,null,{standing:"No longer here",notes:"Left for a competitor in June."});
+  // a genuine duplicate of the kind that really accumulates — the checker should find these
+  const mikeDup = per("Michael Okafor","",it,null,{at:ago(9),notes:"Added from a business card at the QBR."});
+  o.hired.meId=me.id; o.hired.managerId=dana.id;
+  const reports={};
+  [[dana,null],[cfo,null],[sarah,null],[me,dana],[ada,me],[luis,me],[nina,dana],[john,cfo],[bea,john],
+   [mike,gus],[gus,null],[priya,null],[sam,priya],[tom,null],[pia,tom],[kate,null],[hana,kate],
+   [raj,null],[erin,sarah],[carl,sarah],[jo,sarah],[omar,sarah],[quinn,sarah],[prev,dana],[gone,kate],[mikeDup,gus]]
+    .forEach(([p,m])=>{ if(m){ p.managerId=m.id; addLink(o.id,"person",p.id,"REPORTS_TO","person",m.id,1,""); reports[m.id]=(reports[m.id]||0)+1; } });
+  rev.headId=dana.id; sales.headId=sarah.id; fin.headId=cfo.id; it.headId=gus.id;
+  pmm.headId=tom.id; cs.headId=kate.id; legal.headId=raj.id; data.headId=priya.id;
+  tGTM.headId=me.id; tDeal.headId=nina.id; tFcst.headId=john.id; tEnable.headId=jo.id; tBI.headId=priya.id;
+
+  // ---- the estate ----
+  const sysOf=(n,owner,f)=>wAdd("systems",Object.assign({opId:o.id,name:n,ownerId:owner?owner.id:""},f||{}));
+  const sf=sysOf("Salesforce",mike,{note:"Source of truth for pipeline. Reporting is a mess."});
+  const ns=sysOf("NetSuite",gus,{note:"Finance system of record for booked revenue."});
+  const clari=sysOf("Clari",dana,{note:"What leadership actually looks at in the QBR."});
+  const snow=sysOf("Snowflake",priya), tab=sysOf("Tableau",sam), gong=sysOf("Gong",jo);
+  const cpq=sysOf("CPQ",nina,{note:"Bolted onto Salesforce. Nina approves everything non-standard."});
+  const zuora=sysOf("Zuora");                                    // deliberately unowned
+  const sfdcDup=sysOf("Salesforce CRM",null,{note:"Added before I realised we already had it recorded."});
+  const proc=(n,owner,f)=>{ const r=wAdd("processes",Object.assign({opId:o.id,name:n},f||{}));
+    if(owner) addLink(o.id,"person",owner.id,"OWNS","process",r.id,.9,""); return r; };
+  const pFcst=proc("Weekly forecast call",sarah,{steps:"Reps update Salesforce Monday. Ada rebuilds the roll-up Tuesday. Sarah presents Wednesday."});
+  const pClose=proc("Monthly close",john,{steps:"Finance locks the third working day."});
+  const pQBR=proc("QBR",dana,{steps:"Quarterly. Leadership reviews Clari, not Salesforce."});
+  const pDeal=proc("Deal desk review",nina), pOnb=proc("Rep onboarding",jo);
+
+  const prj=(n,st,owner,d,f)=>wAdd("projects",Object.assign({opId:o.id,name:n,status:st,
+    ownerId:owner?owner.id:"",deptId:d?d.id:""},f||{}));
+  const jFcst=prj("Forecast redesign","Active",me,rev,{description:"Rebuilding how the weekly forecast is produced so Finance can trust it."});
+  const jTerr=prj("FY26 territory realignment","Blocked",dana,sales,{description:"Waiting on a clean account hierarchy."});
+  const jBook=prj("Bookings reconciliation","Active",john,fin,{description:"Getting Salesforce and NetSuite to agree."});
+  const jCPQ=prj("CPQ migration","Active",nina,rev);
+  const jRen=prj("Renewal automation","Active",kate,cs);
+  const jWare=prj("Warehouse migration to Snowflake","Complete",priya,data);
+  const jPart=prj("Partner attribution model","Not started",omar,sales,{description:"Indirect revenue is not attributed anywhere today."});
+  const jHyg=prj("Pipeline hygiene review","Active",luis,rev);
+  const jHygDup=prj("Review of pipeline hygiene","Active",null,rev);   // the same project, twice
+
+  const prob=(t,st,f)=>wAdd("problems",Object.assign({opId:o.id,title:t,status:st},f||{}));
+  const bBook=prob("Salesforce and NetSuite report different bookings","Investigating",
+    {description:"Revenue recognition rules differ, so the two systems never agree."});
+  const bTerr=prob("Nobody owns the territory hierarchy","Discovered");
+  const bLag=prob("Forecast is a week stale by the time it is presented","Investigating");
+  const bAttr=prob("Partner-sourced deals are double-counted","Discovered");
+  const bChurn=prob("Renewal dates in Salesforce do not match the contracts","Solved",
+    {solution:"Raj's team supplied the signed dates; Sam loaded them in March."});
+
+  const dec=(t,f)=>wAdd("decisions",Object.assign({opId:o.id,title:t},f||{}));
+  dec("Forecast recognises bookings only after countersign",{madeBy:"Finance leadership",date:"Last year",
+    reason:"The board wanted conservative recognition after a restatement."});
+  dec("Clari is the number leadership reviews",{madeBy:"Dana Reyes",reason:"Salesforce roll-ups were never reconciled in time for the QBR."});
+  dec("Territory changes freeze after Q1",{madeBy:"Sarah Johnson",reason:"Mid-year changes destroyed quota credibility two years running."});
+  dec("Warehouse moved to Snowflake",{madeBy:"Priya Raman",date:"February",reason:"Redshift could not keep up with the nightly load."});
+
+  const q=(t,f)=>wAdd("questions",Object.assign({opId:o.id,q:t,status:"Open"},f||{}));
+  const q1=q("Why do Salesforce and NetSuite recognise bookings differently?");
+  const q2=q("Who administers CPQ once Nina goes on leave?");
+  const q3=q("Who signs off partner attribution?");
+  const q4=q("What happened to Wendell's forecast rebuild — is any of it reusable?");
+  q("Is the Zuora instance still in use, or can it be retired?");
+  q("How is the Q1 territory freeze enforced in practice?",{status:"Answered",answer:"Sarah's team locks the hierarchy in Salesforce; changes go through Dana."});
+
+  const inf=(t,k,sum)=>wAdd("infos",{opId:o.id,title:t,kind:k,summary:sum});
+  const iICX=inf("ICX","Product or offering","The umbrella name for the customer-experience product family — not a single product.");
+  inf("QBR","Meeting or ritual","Quarterly business review. Leadership looks at Clari numbers, not Salesforce.");
+  inf("Countersign","Policy or rule","A deal is only booked once both parties have signed. This is why forecast and bookings diverge.");
+  inf("The March restatement","Company history","The event that made Finance conservative about recognition. Everyone refers to it obliquely.");
+  inf("Deal Desk","Team or group","Approves any non-standard pricing. Nina runs it.");   // also a team — filed twice
+  inf("Reading the room in the QBR","Other","Leadership wants the number and the risk, not the methodology.");
+
+  const bite=(fact,kind,src,who)=>wAdd("bites",{opId:o.id,fact,kind,source:src||"",personId:who?who.id:""});
+  bite("AMS means Americas here, not application managed services.","Term or acronym","Dana",dana);
+  bite("The forecast locks on the third working day of the month.","Unwritten rule","John",john);
+  bite("Renewals book against the original close date, not the renewal date.","Unwritten rule","Hana",hana);
+  bite("Vantage is the brand; Halden is the company. Customers only ever say Vantage.","Naming or branding","Tom",tom);
+  bite("Nobody schedules anything in close week — the first week of the month.","Unwritten rule","Ada",ada);
+  bite("CPQ approvals over 20% discount go to Nina personally, not the queue.","Gotcha","Nina",nina);
+  bite("The warehouse holds about 400 million rows; full rebuilds take four hours.","Number","Sam",sam);
+  bite("Sarah reads the risk column first. Put it on the left.","Preference","Dana",dana);
+  bite("\"The restatement\" always means March two years ago.","Term or acronym","Marguerite",cfo);
+  bite("Legal will not review anything with under five working days' notice.","Unwritten rule","Raj",raj);
+
+  // ---- the notes that established all of it, spread over two months ----
+  const cap=(days,summary,text,ents,met)=>{
+    const c=wAdd("captures",{opId:o.id,at:ago(days),summary,text,
+      entities:ents.map(([t,r])=>({t,id:r.id})), met:(met||[]).map(x=>x.id)});
+    ents.forEach(([t,r])=>addLink(o.id,"capture",c.id,"MENTIONS",t,r.id,1,c.id));
+    return c;
+  };
+  const c1=cap(52,"First week — met the team",
+    "First proper week. Dana walked me through the org. Ada and Luis are my two analysts; Ada has been holding the forecast roll-up together on her own since Wendell left.",
+    [["person",dana],["person",ada],["person",luis],["person",prev]],[dana,ada,luis]);
+  const c2=cap(45,"Met Mike; found the bookings discrepancy",
+    "Met Mike today — he's the Salesforce guy, built most of the reporting. He said Finance doesn't trust the forecast because Salesforce and NetSuite recognise bookings differently. Sarah owns forecasting on the business side, but John in Finance has been fighting this for months.",
+    [["person",mike],["person",sarah],["person",john],["system",sf],["system",ns],["problem",bBook]],[mike]);
+  const c3=cap(38,"Forecast review with Sarah",
+    "Forecast review. Sarah walked me through the methodology. Leadership actually looks at Clari, not Salesforce — which explains why the QBR numbers never matched what I was pulling.",
+    [["person",sarah],["system",clari],["process",pFcst],["process",pQBR]],[sarah]);
+  const c4=cap(31,"Close week is real",
+    "Learned the hard way that nobody schedules anything in close week. John was unavailable for three days. The forecast locks on the third working day.",
+    [["person",john],["process",pClose]],[john]);
+  const c5=cap(26,"Priya on the warehouse",
+    "Coffee with Priya. The Snowflake migration is done — Sam runs the pipelines. If I want a clean bookings view that isn't Salesforce, that's where it lives.",
+    [["person",priya],["person",sam],["system",snow],["project",jWare]],[priya]);
+  const c6=cap(21,"Territory work is blocked",
+    "Tried to kick off territory realignment. Blocked — nobody can tell me who owns the account hierarchy in Salesforce. Mike thinks it used to be a Finance thing. I'll follow up with Sarah on who can actually decide.",
+    [["project",jTerr],["problem",bTerr],["person",mike],["person",sarah]],[mike]);
+  const c7=cap(17,"Nina on CPQ",
+    "Deal desk sync with Nina. Anything over 20% discount comes to her personally. She's out for six weeks from November and there is no cover — I need to ask who administers CPQ while she's gone.",
+    [["person",nina],["system",cpq],["process",pDeal],["question",q2]],[nina]);
+  const c8=cap(14,"Partner revenue is a hole",
+    "Omar walked me through the partner motion. Indirect deals get attributed to whichever rep touched them last, so partner-sourced revenue is effectively double-counted. There is no model for this at all.",
+    [["person",omar],["problem",bAttr],["project",jPart]],[omar]);
+  const c9=cap(11,"Kate on renewals",
+    "Kate's team fixed the renewal date problem back in March — Raj supplied the signed dates and Sam loaded them. Worth knowing the pattern: contracts are the truth, Salesforce is a copy.",
+    [["person",kate],["person",raj],["person",sam],["problem",bChurn],["project",jRen]],[kate]);
+  const c10=cap(8,"QBR dry run",
+    "Sat in on the QBR dry run. Dana was right — the risk column is what Sarah reads first. Reordered my deck.",
+    [["person",dana],["person",sarah],["process",pQBR]],[dana]);
+  const c11=cap(5,"Tom on the brand",
+    "Tom explained the Vantage / Halden thing. Customers only ever say Vantage; internally everyone says Halden. ICX is a family, not a product — I'd been treating it as one.",
+    [["person",tom],["info",iICX]],[tom]);
+  const c12=cap(3,"Wendell's leftovers",
+    "Went looking for Wendell's forecast rebuild. Half of it is in a Snowflake schema nobody has touched since March. I need to work out whether any of it is reusable before I build the same thing again.",
+    [["person",prev],["system",snow],["project",jFcst],["question",q4]]);
+  const c13=cap(2,"Marguerite, briefly",
+    "Two minutes with Marguerite in the lift. She asked when the bookings numbers will agree. I said I'd come back to her with a date — I owe her that this week.",
+    [["person",cfo],["problem",bBook]],[cfo]);
+  const c14=cap(1,"Luis flagged the hygiene duplication",
+    "Luis pointed out we have two pipeline hygiene reviews on the books doing the same thing. One of them is mine and one is his.",
+    [["person",luis],["project",jHyg]],[luis]);
+
+  // ---- the relationships those notes established ----
+  const L=(st,a,rel,tt,b,conf,via)=>addLink(o.id,st,a.id,rel,tt,b.id,conf==null?.9:conf,via||"");
+  L("person",mike,"KNOWS","system",sf,.96,c2.id);  L("person",mike,"KNOWS","system",ns,.7,c2.id);
+  L("person",mike,"KNOWS","system",cpq,.85);       L("person",gus,"KNOWS","system",ns,.9);
+  L("person",priya,"KNOWS","system",snow,.95,c5.id); L("person",sam,"KNOWS","system",snow,.9,c5.id);
+  L("person",sam,"KNOWS","system",tab,.85);        L("person",ada,"KNOWS","system",clari,.8);
+  L("person",luis,"KNOWS","system",sf,.8);         L("person",jo,"KNOWS","system",gong,.9);
+  L("person",sarah,"OWNS","process",pFcst,.9,c3.id);
+  L("person",ada,"INVOLVED_IN","process",pFcst,.9,c1.id);
+  L("person",john,"INVOLVED_IN","problem",bBook,.9,c2.id);
+  L("person",mike,"INVOLVED_IN","problem",bBook,.8,c2.id);
+  L("person",cfo,"INVOLVED_IN","problem",bBook,.85,c13.id);
+  L("person",luis,"INVOLVED_IN","project",jHyg,1,c14.id);
+  L("person",ada,"INVOLVED_IN","project",jFcst,.95);
+  L("person",sam,"INVOLVED_IN","project",jBook,.8);
+  L("person",erin,"INVOLVED_IN","project",jTerr,.8); L("person",carl,"INVOLVED_IN","project",jTerr,.8);
+  L("person",hana,"INVOLVED_IN","project",jRen,.9);  L("person",raj,"HELPED_SOLVE","problem",bChurn,1,c9.id);
+  L("person",bea,"INVOLVED_IN","process",pClose,.85);
+  L("problem",bBook,"AFFECTS","project",jFcst,.8,c2.id);
+  L("problem",bBook,"AFFECTS","project",jBook,1,c2.id);
+  L("problem",bTerr,"AFFECTS","project",jTerr,1,c6.id);
+  L("problem",bLag,"AFFECTS","process",pFcst,.9);
+  L("problem",bAttr,"AFFECTS","project",jPart,1,c8.id);
+  L("project",jFcst,"USES","system",sf,1,c2.id);    L("project",jFcst,"USES","system",clari,.8,c3.id);
+  L("project",jFcst,"USES","system",snow,.8,c12.id); L("project",jBook,"USES","system",ns,1);
+  L("project",jCPQ,"USES","system",cpq,1);          L("project",jRen,"USES","system",sf,.8);
+  L("project",jWare,"USES","system",snow,1,c5.id);  L("project",jHyg,"USES","system",sf,.9);
+  L("process",pFcst,"USES","system",sf,.9,c3.id);   L("process",pFcst,"USES","system",clari,.9,c3.id);
+  L("process",pQBR,"USES","system",clari,1,c3.id);  L("process",pClose,"USES","system",ns,1,c4.id);
+  L("process",pDeal,"USES","system",cpq,1,c7.id);   L("process",pOnb,"USES","system",gong,.8);
+  L("department",fin,"OWNS","system",ns,.9,c2.id);  L("department",it,"OWNS","system",sf,.9);
+  L("department",fin,"DEPENDS_ON","project",jBook,.9);
+  L("department",sales,"DEPENDS_ON","project",jTerr,.9,c6.id);
+  L("department",cs,"DEPENDS_ON","project",jRen,.85);
+  L("question",q1,"RELATES_TO","person",john,.9);   L("question",q2,"RELATES_TO","person",nina,1,c7.id);
+  L("question",q3,"RELATES_TO","person",omar,.9,c8.id); L("question",q4,"RELATES_TO","person",prev,1,c12.id);
+  L("info",iICX,"RELATES_TO","department",pmm,.8,c11.id);
+  L("person",ada,"WORKS_WITH","person",luis,1);     L("person",mike,"WORKS_WITH","person",priya,.8);
+  L("person",nina,"WORKS_WITH","person",raj,.8);
+  const DEC=wOf("decisions",o.id);
+  L("decision",DEC[0],"AFFECTS","problem",bBook,1);   L("decision",DEC[0],"AFFECTS","process",pClose,.9);
+  L("decision",DEC[1],"AFFECTS","process",pQBR,1);    L("decision",DEC[1],"AFFECTS","system",clari,1);
+  L("decision",DEC[2],"AFFECTS","project",jTerr,1);   L("decision",DEC[3],"AFFECTS","project",jWare,1);
+  L("person",cfo,"OWNS","decision",DEC[0],.9);        L("person",dana,"OWNS","decision",DEC[1],1);
+  const INF=wOf("infos",o.id);
+  L("info",INF[1],"RELATES_TO","process",pQBR,1);     // QBR the ritual
+  L("info",INF[2],"RELATES_TO","problem",bBook,.9);   // countersign
+  L("info",INF[3],"RELATES_TO","department",fin,.9);  // the March restatement
+  L("info",INF[4],"RELATES_TO","team",tDeal,1);       // Deal Desk
+  L("info",INF[5],"RELATES_TO","person",sarah,.8);    // reading the room
+  L("question",wOf("questions",o.id)[5],"RELATES_TO","project",jTerr,.9);
+
+  // ---- age everything so the timeline, growth chart and weekly numbers read like two real months
+  const age=(d,list)=>list.forEach(r=>{ if(r) r.at=ago(d); });
+  age(58,[me,rev,tGTM,group,div,brand]);
+  age(56,[dana,sarah,cfo,sales,fin,it]);
+  age(52,[ada,luis,prev]);
+  age(45,[mike,john,sf,ns,bBook,pFcst,gus]);
+  age(40,[clari,pQBR,pClose,data,pmm,cs,legal]);
+  age(34,[jFcst,tFcst,tDeal,bea,nina,cpq,pDeal]);
+  age(26,[priya,sam,snow,tab,jWare,tBI]);
+  age(21,[jTerr,bTerr,erin,carl,tEnable,jo]);
+  age(17,[q2,jCPQ,gong,pOnb]);
+  age(14,[omar,bAttr,jPart,q3]);
+  age(11,[kate,hana,raj,jRen,bChurn]);
+  age(8,[jBook,bLag,zuora]);
+  age(5,[tom,pia,iICX]);
+  age(3,[q4,jHyg,sfdcDup]);
+  age(1,[jHygDup,mikeDup,quinn]);
+  wOf("bites",o.id).forEach((b,i)=>{ b.at=ago([40,45,11,5,31,17,26,8,20,11][i]||20); });
+  wOf("decisions",o.id).forEach((d,i)=>{ d.at=ago([44,38,30,26][i]||30); });
+  wOf("infos",o.id).forEach((r,i)=>{ if(!r.at||r.at>ago(4)) r.at=ago([38,40,45,44,34,8][i]||30); });
+  o.nextActionLabel="Give Marguerite a date for the bookings fix";
+  o.nextActionDate=iso(1);
 }
+
 
 /* ============================ FILES (JD / résumé attachments) ============================
    Attachments used to be base64 inside the one localStorage key, where a single 2MB PDF ate
@@ -11999,6 +12316,9 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 
 adoptSyncedAI();   // a key already in the vault from another device works on this one from boot
+// Anyone already signed in when this shipped has never had their copy attributed. Stamp it now, or
+// the first time they sign into a second account the old data would look unowned and follow them.
+if(signedIn()&&!localOwner()) setLocalOwner(session.uid);
 readInviteLink();  // an invite link configures the project before anything asks for it
 render();
 renderLockGate();  // if the vault is sealed, nothing is readable until it is opened

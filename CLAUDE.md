@@ -64,6 +64,18 @@ you paste into a new AI chat to prep for interviews.
   when **both** the device and the account have data it asks instead of letting last-write-wins pick,
   naming the counts on each side. `authSignOut(wipeLocal)` can take the local copy with it, which is
   what "sign out" has to mean on a shared computer.
+  **`devPrefs.ownerUid` records which account the local copy belongs to** (device-local, never
+  synced) and it is the thing that makes accounts genuinely separate. Without it the app cannot tell
+  *"I used this app on my own and now I'm making an account"* (adopt what's here — correct) from
+  *"someone else was signed in on this browser"* (absolutely not). It could not, and a brand-new
+  account created in a browser that had been used for another one **inherited that account's entire
+  company**: an empty vault took the `pushNow()` seed-from-here branch. Now a `foreign` sign-in never
+  offers to push what's here — it asks once (with a backup offered, and **no option that would carry
+  the other account's notes across**), then loads that account's own vault, empty if that is what it
+  is. `emptyDoc()` is what a genuinely new account starts from, and **`lastPushSig` must not be
+  primed before that first `pushNow()`** or the new account never gets a vault row at all.
+  `loadSample()` asks the same way — add alongside, replace everything, or cancel — because a
+  destructive choice never goes in `confirm()`.
 - `LOCK` — **retired, but never deleted.** The passphrase encryption predates accounts and solved the
   same problem with a worse failure mode (forget it and the data is gone). It can no longer be turned
   on — `openLockSetup`/`enableLock` are gone — but everything that **opens** a sealed vault stays
@@ -510,7 +522,11 @@ straight over it.
 `recapCard` → objectives → `circleCard` → `quietCard` → `paceCard` →
 `gaugesCard` → `actionTiles` → `growthCard` → count tiles → `worthKnowingCard` →
 `reconnectCard` → `changedCard` → `coverageCard` → open questions → recent notes → gaps → timeline.
-- **`readiness(o)` / `gaugesCard` — five speedometers, every one a real ratio with a real
+- **`deptColor` hands out hues by POSITION in the department list, not by hashing the name.** Hashing
+put four of eight departments on the same green, which makes the globe's legend a lie when the whole
+point is telling them apart; golden-angle steps keep twenty departments distinct. Cached per
+department list, because it is called once per node per frame.
+**`readiness(o)` / `gaugesCard` — five speedometers, every one a real ratio with a real
   denominator taken from your own records**: people who appear in a note, people with a reporting
   line, departments you've actually been inside, systems+projects with a known owner, questions
   closed. There is no industry benchmark here and inventing one would be the same lie the post-hire
@@ -835,8 +851,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,890 browser
-assertions** across forty-five Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,930 browser
+assertions** across forty-six Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

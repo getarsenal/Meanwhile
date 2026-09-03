@@ -499,6 +499,10 @@ straight over it.
   into its separate responsibilities and each is matched by its own words (`jdTerms`, `JD_STOP`)
   against every record in the map; a line with nothing behind it is a real gap, and the report shows
   what each covered line matched on so you can disagree with it. Unticked objectives count too.
+  Matching is on **whole words** (a couple of trailing characters allowed, so analyst matches
+  analysts) — `includes` had "stand up a programme" covered by the word "non-standard" — and a line
+  carrying three or more meaningful words needs **two** of them in one record, because a single
+  coincidental word is not coverage.
 - `connectToday` — *who to talk to today, literally*. Three sources, never a vibe: a note that says
   you owe them (`OWE_RX`, and the sentence is the reason), an open question the graph points at them,
   or your manager/a report with something open and a real silence. Never you, never someone who left.
@@ -771,6 +775,14 @@ Quarterly Business Review, via `initialsOf`), **one name inside another** (Sales
 CRM, naming the extra words), a **known alias** (`canonThing` + `SYS_ALIAS`), the **same words in a
 different order** (Jaccard), and a **typo** (`editDist`, capped and early-exiting). People go through
 the existing nickname-aware `personMatch` first.
+**Three more signals were added once a big demo map made the false positives visible.** A record
+that is the **parent** of the other is rejected outright — a division and the department inside it
+are not the same record however alike the names look. Containment is **weaker for a department, team
+or org** (`DUP_STRUCTURAL`): organisations name units by nesting words on purpose, so Engineering and
+Customer Engineering are two real teams, while Salesforce and Salesforce CRM usually are not two real
+systems. And a **shared neighbour only counts if few things touch it** (`DUP_HUB`) — every department
+hangs off the same organization, so "one connection in common" was true of every pair of departments
+in the company and quietly promoted Product and Product Marketing to likely duplicates.
 **Names differing only in their digits are rejected before any of that** — Q1/Q2 forecast, phase 1 /
 phase 2, v1/v2 are enumerations, and a single differing digit otherwise reads as a one-character typo
 and scores 0.8. That was a real false positive a test caught.

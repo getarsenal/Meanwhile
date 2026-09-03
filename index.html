@@ -768,6 +768,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
   .dup-acts .dup-no{margin-left:0}
 }
 
+.gl-find-q{flex:0 1 168px;min-width:0;font-size:12px;padding:7px 11px;border-radius:9px}
+.gl-tip{position:absolute;pointer-events:none;max-width:240px;padding:9px 11px;border-radius:11px;
+  background:rgba(10,12,18,.94);border:1px solid var(--line2);backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;gap:3px;z-index:3}
+.gt-n{display:flex;gap:7px;align-items:center;font-size:12.5px;font-weight:800;line-height:1.35}
+.gt-n i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+.gt-m{font-size:10.5px;color:var(--muted);line-height:1.45}
+.gt-d{font-size:10px;color:var(--faint)}
 .gl-time{display:flex;gap:11px;align-items:center;margin:11px 0 2px;min-width:0}
 .gl-play{flex:0 0 auto;width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
   background:var(--panel);color:var(--txt);cursor:pointer;font-size:11px;line-height:1;padding:0}
@@ -1593,7 +1601,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v65 · 2026-09-03";
+const BUILD = "v66 · 2026-09-03";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -4730,6 +4738,11 @@ let globeG=null, globeSig="", globeSel=null, globeHide=new Set(), globeSuggest=f
 let globeRAF=0, globeCam={yaw:0.6,pitch:-0.22,zoom:1}, globeSpin=true, globeIntroAt=0;
 /* Three lenses onto the same sphere. None of them re-lays it out: things fade in and out of a map
    that stays where you left it, which reads as the rest going quiet rather than the world moving. */
+let globeHover=null;          // what the pointer is over, if anything
+let globeHoverXY=null;
+let globeDrag=false;          // the idle spin stops while you are turning it by hand
+let globeQuery="";            // find something on the sphere; everything else dims
+let globeFocus=null;          // {yaw,pitch} the camera is easing toward after a selection
 let globeColor="type";        // "type" | "dept" — is a point a KIND of thing, or a PART of the org?
 let globeMine=false;          // just my corner: me, my chain, my reports, and what they touch
 let globeTime=0;              // 0 = everything; otherwise only what you knew by this timestamp
@@ -4800,6 +4813,7 @@ function renderGlobe(){
       <div class="gl-title"><h2>${esc(o.company)}</h2>
         <div class="gl-sub">${globeMine||globeTime?`showing ${shown} of ${g.nodes.length}`:`${g.nodes.length} things you know`} · ${g.edges.length} connections · ${linked} of them joined up</div></div>
       <div class="gl-acts">
+        <input type="search" class="gl-find-q" id="glQ" placeholder="Find on the map…" value="${esc(globeQuery)}" data-glq="1" autocomplete="off"/>
         <button class="btn ghost sm" data-act="globe-reset">Recentre</button>
         <button class="btn ghost sm${globeSpin?" on":""}" data-act="globe-spin">${globeSpin?"Pause":"Spin"}</button>
         <button class="btn ghost sm${globeColor==="dept"?" on":""}" data-act="globe-color">${globeColor==="dept"?"By department":"By type"}</button>
@@ -4809,7 +4823,8 @@ function renderGlobe(){
     </div>
     <div class="gl-stage" id="glStage">
       <canvas id="glCanvas"></canvas>
-      <div class="gl-hint" id="glHint">Drag to turn it · pinch or scroll to zoom · tap a point to open it</div>
+      <div class="gl-hint" id="glHint">Drag to turn it · scroll to zoom · click a point to explore it · double-click to open</div>
+      <div class="gl-tip" id="glTip" hidden></div>
       <div class="gl-panel" id="glPanel" hidden></div>
     </div>
     ${span?`<div class="gl-time">
@@ -4875,7 +4890,7 @@ function globeFindings(g,ins){
    a perspective divide, then painted back-to-front so the far hemisphere sits behind the near one.
    Arcs are slerped along the surface and lifted slightly — that lift is what makes the reference
    images read as a globe rather than a flat scatter. */
-const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9, GLOBE_ARC_MAX=520;
+const GLOBE_R=1, GLOBE_LIFT=0.14, GLOBE_FOV=2.9, GLOBE_ARC_MAX=520, GLOBE_BURST=0.82;
 /* One 64px glow per colour, reused for the life of the page. The palette is small (department and
    record-type colours), so this cache never grows. */
 const globeGlowCache=new Map();
@@ -4915,7 +4930,7 @@ function armGlobe(){
   if(globeRAF) cancelAnimationFrame(globeRAF);
   // The intro plays when you ARRIVE, not on every re-render — replaying a 1.4s animation each time
   // you tap a node would be unbearable.
-  const introDur=reduce?0:1500;
+  const introDur=reduce?0:2100;
   let t0=performance.now();
   if(!globeIntroAt||performance.now()-globeIntroAt>60000) globeIntroAt=t0; else t0=globeIntroAt;
   const proj=[];
@@ -4927,28 +4942,43 @@ function armGlobe(){
   const draw=now=>{
     const dt=now-t0;
     const intro=introDur?Math.min(1,dt/introDur):1;
-    if(globeSpin&&!reduce&&intro>=1) globeCam.yaw+=0.0016;
+    if(globeSpin&&!reduce&&intro>=1&&!globeDrag) globeCam.yaw+=0.0016;
+    globeEaseFocus();                       // if something was selected, swing it round to the front
     ctx.setTransform(DPR,0,0,DPR,0,0);
     ctx.clearRect(0,0,W0,H0);
-    // the ground the disk sits on, and the glow the sphere throws
     const cx=W0/2, cy0=H0/2, R=Math.min(W0,H0)*0.42*globeCam.zoom;
+    globeStars(ctx,W0,H0,now);              // the room it hangs in
     const bg=ctx.createRadialGradient(cx,cy0,R*0.1,cx,cy0,R*1.9);
     bg.addColorStop(0,"rgba(94,106,210,.16)"); bg.addColorStop(1,"rgba(0,0,0,0)");
     ctx.fillStyle=bg; ctx.fillRect(0,0,W0,H0);
-    if(intro<1){ globeDrawIntro(ctx,W0,H0,R,intro); globeRAF=requestAnimationFrame(draw); return; }
+    // The arrival: rings on the floor that stand up, spin, and burst into the map. The last
+    // fifteen percent overlaps the real sphere fading in, so there is no cut between them.
+    if(intro<1){
+      globeDrawIntro(ctx,W0,H0,R,intro,now-t0);
+      if(intro<GLOBE_BURST){ globeRAF=requestAnimationFrame(draw); return; }
+    }
+    const born=intro>=1?1:(intro-GLOBE_BURST)/(1-GLOBE_BURST);   // 0→1 across the burst
     const cy=Math.cos(globeCam.yaw), sy=Math.sin(globeCam.yaw);
     const cp=Math.cos(globeCam.pitch), sp=Math.sin(globeCam.pitch);
-    const P=p=>{ const s=GLOBE_FOV/(GLOBE_FOV+p.z); return {sx:cx+p.x*R*s, sy:cy0+p.y*R*s, s, z:p.z}; };
+    const grow=0.34+0.66*born;                        // they arrive out of the middle
+    const P=p=>{ const s=GLOBE_FOV/(GLOBE_FOV+p.z);
+      return {sx:cx+p.x*R*grow*s, sy:cy0+p.y*R*grow*s, s, z:p.z}; };
     proj.length=0;
     g.nodes.forEach(n=>{ if(!globeVisible(n)) return;
       const r=rot(n,cy,sy,cp,sp); const q=P(r);
       proj.push({n,r,sx:q.sx,sy:q.sy,s:q.s,z:r.z});
       n._sx=q.sx; n._sy=q.sy; n._z=r.z;
     });
-    const near=globeSel?new Set([globeSel].concat([...(g.ins.nb[globeSel]||[])])):null;
-    const lit=k=>!near||near.has(k);
+    const focusKey=globeSel||globeHover;
+    const near=focusKey&&g.byKey[focusKey]?new Set([focusKey].concat([...(g.ins.nb[focusKey]||[])])):null;
+    const q=norm(globeQuery||"");
+    const hitQ=n=>!q||q.split(" ").filter(Boolean).every(w=>norm(n.name).includes(w)||norm(ENT[n.t].label).includes(w));
+    const lit=k=>{ const n=g.byKey[k]; if(!n) return false;
+      if(q) return hitQ(n);
+      return !near||near.has(k); };
     // the wireframe cage — faint meridians, so the sphere reads as a sphere even when sparse
-    globeDrawCage(ctx,cx,cy0,R,cy,sy,cp,sp);
+    globeAtmos(ctx,cx,cy0,R*grow,born);
+    globeDrawCage(ctx,cx,cy0,R*grow,cy,sy,cp,sp);
     // arcs, far ones first
     const arcs=[];
     g.edges.forEach(e=>{
@@ -4968,7 +4998,7 @@ function armGlobe(){
       // with something selected the rest drop to 4% alpha — at that point they cost more than they
       // show, so on a big map they simply aren't drawn
       if(!on&&near&&drawArcs.length>200) return;
-      globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near);
+      globeDrawArc(ctx,e,cx,cy0,R*grow,cy,sy,cp,sp,rot,P,on,near,now);
     });
     // nodes, far first so near ones sit on top
     proj.sort((a,b)=>b.z-a.z);
@@ -4978,7 +5008,7 @@ function armGlobe(){
       const base=2.1+Math.min(5.4,Math.sqrt(n.deg)*1.9);
       const r=base*p.s*(0.55+0.45*depth)*Math.max(.75,globeCam.zoom*.85);
       const col=globeNodeColor(n);
-      const a=(on?1:0.13)*(0.35+0.65*depth);
+      const a=(on?1:0.13)*(0.35+0.65*depth)*born;
       if(n.deg>2&&on){                                 // hubs glow
         // A pre-rendered sprite, not a fresh createRadialGradient every hub every frame — building
         // a hundred gradients per frame is what dragged a big map down to ~20fps.
@@ -4992,24 +5022,27 @@ function armGlobe(){
       // a hot centre: the colour says what it is, the white says it is a point of light
       if(on&&r>2.2){ ctx.fillStyle=`rgba(255,255,255,${0.25+0.5*depth})`;
         ctx.beginPath(); ctx.arc(p.sx,p.sy,r*0.42,0,7); ctx.fill(); }
-      if(n.key===globeSel||n.id===g.me){
-        ctx.strokeStyle=n.id===g.me?"#ffd479":"#fff"; ctx.lineWidth=1.6;
+      if(n.key===globeSel||n.key===globeHover||n.id===g.me){
+        ctx.strokeStyle=n.key===globeSel?"#fff":n.key===globeHover?"rgba(255,255,255,.7)":"#ffd479";
+        ctx.lineWidth=n.key===globeSel?1.8:1.4;
         ctx.beginPath(); ctx.arc(p.sx,p.sy,r+3.5,0,7); ctx.stroke();
       }
+      n._r=r;                                          // what the hit test should aim at
     });
     // labels: only what you can actually read — the selected node, its neighbours, and the hubs
     ctx.font="600 11px -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
     ctx.textAlign="center";
     const label=[];
     proj.forEach(p=>{ const n=p.n;
-      if(p.z<-0.15) return;
-      const want=globeSel?lit(n.key):(n.deg>=Math.max(3,g.edges.length/Math.max(1,g.nodes.length)*2.2));
+      if(p.z>0.15) return;                    // z<0 is NEAR: this test used to be backwards
+      const want=(focusKey||globeQuery)?lit(n.key)
+        :(n.deg>=Math.max(3,g.edges.length/Math.max(1,g.nodes.length)*2.2));
       if(want) label.push(p);
     });
     // nearest first, and a label that would land on one already drawn is simply dropped — two
     // names on top of each other is worse than one name missing
     const taken=[];
-    label.sort((a,b)=>a.z-b.z).slice(0,globeSel?18:14).forEach(p=>{
+    label.sort((a,b)=>a.z-b.z).slice(0,focusKey||globeQuery?20:14).forEach(p=>{
       const txt=clip(p.n.name,22);
       const w=ctx.measureText(txt).width+10, h=15;
       const x=p.sx-w/2, y=p.sy+9;
@@ -5033,27 +5066,42 @@ function armGlobe(){
     if(e.target.closest(".gl-panel")) return;
     pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2){ const v=[...pts.values()]; pinch=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y); z0=globeCam.zoom; return; }
-    drag=true; moved=false; lx=e.clientX; ly=e.clientY;
+    drag=true; globeDrag=true; globeFocus=null; moved=false; lx=e.clientX; ly=e.clientY;
     stage.setPointerCapture(e.pointerId);
   });
   stage.addEventListener("pointermove",e=>{
     if(pts.has(e.pointerId)) pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(pts.size===2){ const v=[...pts.values()]; const d=Math.hypot(v[0].x-v[1].x,v[0].y-v[1].y);
       if(pinch) globeCam.zoom=Math.max(.6,Math.min(3,z0*(d/pinch))); return; }
-    if(!drag) return;
+    if(!drag){
+      // hovering: name what is under the pointer without making you commit to a click
+      if(e.pointerType==="touch") return;
+      const p=pos(e), n=globePick(p);
+      const key=n?n.key:null;
+      if(key!==globeHover){ globeHover=key; stage.style.cursor=key?"pointer":""; }
+      globeHoverXY=key?p:null;
+      globeTip(key,p);
+      return;
+    }
     const dx=e.clientX-lx, dy=e.clientY-ly;
     if(Math.abs(dx)+Math.abs(dy)>4) moved=true;
     globeCam.yaw+=dx*0.006;
     globeCam.pitch=Math.max(-1.3,Math.min(1.3,globeCam.pitch+dy*0.006));
     lx=e.clientX; ly=e.clientY;
   });
+  stage.addEventListener("pointerleave",()=>{ globeHover=null; globeHoverXY=null; globeTip(null); });
   const end=e=>{
     pts.delete(e.pointerId); if(pts.size<2) pinch=0;
     if(drag&&!moved) globeHit(pos(e));
-    drag=false;
+    drag=false; globeDrag=false;
   };
   stage.addEventListener("pointerup",end);
   stage.addEventListener("pointercancel",end);
+  // a second tap on the same point opens the record — the panel's button is the slow way
+  stage.addEventListener("dblclick",e=>{
+    if(e.target.closest(".gl-panel")) return;
+    const n=globePick(pos(e)); if(n) openEnt(n.t,n.id);
+  });
   stage.addEventListener("wheel",e=>{ e.preventDefault();
     globeCam.zoom=Math.max(.6,Math.min(3,globeCam.zoom*(e.deltaY>0?0.92:1.08))); },{passive:false});
 }
@@ -5089,7 +5137,7 @@ function globeDrawCage(ctx,cx,cy0,R,cy,sy,cp,sp){
 }
 /* An arc is slerped between the two points and lifted off the surface, so it curves the way the
    reference images do instead of cutting a dull straight chord through the middle. */
-function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
+function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near,now){
   const a=e.a,b=e.b;
   const dot=Math.max(-1,Math.min(1,a.x*b.x+a.y*b.y+a.z*b.z));
   const om=Math.acos(dot);
@@ -5098,7 +5146,7 @@ function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
   const base=e.kind==="suggest"?0.5:e.kind==="collab"?0.4:0.34;
   ctx.beginPath();
   if(e.kind==="suggest") ctx.setLineDash([3,4]); else ctx.setLineDash([]);
-  let lastZ=0;
+  let lastZ=0; const pts=[];
   for(let i=0;i<=steps;i++){
     const t=i/steps;
     let x,y,z;
@@ -5108,7 +5156,7 @@ function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
     const lift=1+GLOBE_LIFT*Math.sin(Math.PI*t)*Math.min(1,om);
     const d=Math.hypot(x,y,z)||1;
     const r=rot({x:x/d*lift,y:y/d*lift,z:z/d*lift},cy,sy,cp,sp);
-    const q=P(r); lastZ=r.z;
+    const q=P(r); lastZ=r.z; pts.push(q);
     if(i===0) ctx.moveTo(q.sx,q.sy); else ctx.lineTo(q.sx,q.sy);
   }
   const depth=1-(lastZ+1)/2;
@@ -5116,54 +5164,124 @@ function globeDrawArc(ctx,e,cx,cy0,R,cy,sy,cp,sp,rot,P,on,near){
   ctx.lineWidth=(e.kind==="suggest"?1:Math.min(2.2,0.7+e.n*0.35))*(on?1:0.6);
   ctx.stroke();
   ctx.setLineDash([]);
+  /* When something is selected, a bead of light runs along each of its connections. It is the one
+     thing a still picture cannot do: it shows which way the relationship points and makes the
+     selection's reach obvious at a glance. */
+  if(on&&near&&now){
+    const k=((now*0.00045)+(e.a.x+e.b.y))%1;
+    const i=Math.min(pts.length-1,Math.floor(k*(pts.length-1)));
+    const q=pts[i];
+    ctx.fillStyle=globeRGBA("#ffffff",0.55*(0.3+0.7*depth));
+    ctx.beginPath(); ctx.arc(q.sx,q.sy,1.7,0,7); ctx.fill();
+  }
 }
-/* THE ARRIVAL. A disk lying on a floor, the app's mark cut out of it, that spins up and lifts into
-   the sphere. Pure canvas — no image to load, so it works offline and on the first paint. */
-function globeDrawIntro(ctx,W0,H0,R,t){
-  const cx=W0/2, cy=H0/2;
-  const ease=1-Math.pow(1-t,3);
-  const spin=ease*Math.PI*7;
-  const lie=Math.pow(1-ease,1.4);                 // 1 = flat on the floor, 0 = facing you
-  const ry=cy+lie*H0*0.16;
-  const sq=0.12+0.88*(1-lie);                     // the ellipse standing up
-  ctx.save();
-  ctx.translate(cx,ry); ctx.scale(1,Math.max(0.06,sq));
-  // the floor it sits on
-  if(lie>0.02){
-    const fl=ctx.createRadialGradient(0,0,R*0.2,0,0,R*2.2);
-    fl.addColorStop(0,`rgba(94,106,210,${0.20*lie})`); fl.addColorStop(1,"rgba(0,0,0,0)");
-    ctx.fillStyle=fl; ctx.beginPath(); ctx.arc(0,0,R*2.2,0,7); ctx.fill();
+/* THE ARRIVAL — an armillary sphere assembling itself.
+   Four phases, all on one canvas so it works offline and on the first paint:
+     FLOOR  the rings lie nested and almost edge-on, low in the frame, as if on the floor of a room
+            you are looking across (the reference sketch: three flattened ellipses, stacked)
+     STAND  they lift to the centre and come upright, each taking its own tilt
+     SPIN   they turn about their own axes, different directions, different speeds — a rotating
+            celestial globe
+     BURST  they accelerate, expand past the frame and fade, while the real map fades in behind
+   Every ring is a real circle in 3D rotated by Rodrigues about its own axis, so the projected
+   ellipse genuinely changes shape as it turns. Ticks around the band make the rotation readable —
+   a plain circle spinning about its own normal looks like nothing at all. */
+const GLOBE_RINGS=[
+  {r:0.98, axis:[0.10,1,0.05],  spd: 1.00, col:"#8f97ff", lw:2.4, ticks:36},
+  {r:0.80, axis:[1,0.18,-0.25], spd:-0.72, col:"#7fd7cf", lw:2.1, ticks:24},
+  {r:0.62, axis:[0.35,0.4,1],   spd: 1.45, col:"#c9b0ff", lw:1.9, ticks:18},
+  {r:0.44, axis:[-0.6,1,0.35],  spd:-1.9,  col:"#ffd479", lw:1.6, ticks:12}
+];
+function globeRodrigues(p,a,ang){
+  const c=Math.cos(ang), s=Math.sin(ang), k=1-c;
+  const [ax,ay,az]=a;
+  const d=ax*p[0]+ay*p[1]+az*p[2];
+  return [ p[0]*c + (ay*p[2]-az*p[1])*s + ax*d*k,
+           p[1]*c + (az*p[0]-ax*p[2])*s + ay*d*k,
+           p[2]*c + (ax*p[1]-ay*p[0])*s + az*d*k ];
+}
+function globeDrawIntro(ctx,W0,H0,R,t,ms){
+  const cx=W0/2;
+  // ---- phase weights -------------------------------------------------------------------------
+  const FLOOR=0.16, STAND=0.50, SPIN=GLOBE_BURST;
+  const seg=(a,b)=>Math.max(0,Math.min(1,(t-a)/(b-a)));
+  const stand=seg(FLOOR,STAND);                 // 0 lying down → 1 upright
+  const ease=1-Math.pow(1-stand,3);
+  const burst=seg(SPIN,1);
+  const cy=H0*(0.78-0.28*ease);                 // rises from the floor to the middle
+  const pitch=-1.15+0.93*ease;                  // a low view across the floor → the map's own angle
+  const scale=(0.42+0.58*ease)*(1+burst*burst*4.2);   // grows, then flies past the frame
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const camYaw=0.20*ease;
+  const cyw=Math.cos(camYaw), syw=Math.sin(camYaw);
+  const P=(p)=>{
+    const x=p[0]*cyw - p[2]*syw, z0=p[0]*syw + p[2]*cyw;
+    const y=p[1]*cp - z0*sp,     z=p[1]*sp + z0*cp;
+    const k=GLOBE_FOV/(GLOBE_FOV+z);
+    return {x:cx+x*R*scale*k, y:cy+y*R*scale*k, z};
+  };
+  // ---- the floor it starts on ----------------------------------------------------------------
+  if(stand<1){
+    const fade=1-ease;
+    const fl=ctx.createRadialGradient(cx,H0*0.80,R*0.15,cx,H0*0.80,R*1.7);
+    fl.addColorStop(0,`rgba(94,106,210,${0.20*fade})`); fl.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=fl; ctx.beginPath(); ctx.ellipse(cx,H0*0.80,R*1.7,R*0.42,0,0,7); ctx.fill();
   }
-  ctx.rotate(spin);
-  const rr=R*(0.55+0.45*ease);
-  const rim=ctx.createLinearGradient(-rr,-rr,rr,rr);
-  rim.addColorStop(0,"#6d72c4"); rim.addColorStop(0.5,"#9aa6ff"); rim.addColorStop(1,"#4ea3a0");
-  ctx.strokeStyle=rim; ctx.lineWidth=Math.max(1.5,rr*0.055);
-  ctx.beginPath(); ctx.arc(0,0,rr,0,7); ctx.stroke();
-  ctx.strokeStyle=globeRGBA("#9aa6ff",0.45); ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(0,0,rr*0.78,0,7); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0,0,rr*0.34,0,7); ctx.stroke();
-  // the cut-out: spokes through the plate, so the light reads through it
-  for(let i=0;i<12;i++){ const a=i*Math.PI/6;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(a)*rr*0.36,Math.sin(a)*rr*0.36);
-    ctx.lineTo(Math.cos(a)*rr*0.76,Math.sin(a)*rr*0.76);
-    ctx.strokeStyle=globeRGBA("#9aa6ff",0.16+0.5*Math.abs(Math.sin(a*2+spin)));
-    ctx.lineWidth=Math.max(1,rr*0.02); ctx.stroke();
-  }
-  const core=ctx.createRadialGradient(0,0,0,0,0,rr*0.34);
-  core.addColorStop(0,`rgba(230,235,255,${0.5+0.4*ease})`); core.addColorStop(1,"rgba(109,114,196,0)");
-  ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,rr*0.34,0,7); ctx.fill();
-  ctx.restore();
-  // the sphere resolving out of it
-  if(ease>0.55){
-    const k=(ease-0.55)/0.45;
-    ctx.strokeStyle=globeRGBA("#9aa6ff",0.30*k);
-    ctx.lineWidth=1;
-    for(let m=0;m<6;m++){ const a=m*Math.PI/6+spin*0.1;
-      ctx.beginPath(); ctx.ellipse(cx,cy,R*Math.abs(Math.cos(a)),R,0,0,7); ctx.stroke();
+  // ---- the rings ------------------------------------------------------------------------------
+  const spinT=(ms||0)*0.0016;
+  const rush=1+burst*5;                          // they speed up before they let go
+  GLOBE_RINGS.forEach((ring,idx)=>{
+    const a=ring.axis, m=Math.hypot(a[0],a[1],a[2])||1;
+    const ax=[a[0]/m,a[1]/m,a[2]/m];
+    // lying down they share one plane; standing up each takes its own tilt
+    const own=ring.spd*spinT*rush*ease;
+    const alpha=(idx===0?1:ease*0.35+0.65)*Math.pow(1-burst,1.5);
+    const pts=[];
+    const N=64;
+    for(let i=0;i<=N;i++){
+      const th=i/N*Math.PI*2;
+      let p=[Math.cos(th)*ring.r, Math.sin(th)*ring.r, 0];
+      // flatten every ring into the floor plane while it is down, then let it take its own tilt
+      p=[p[0], p[1]*(0.20+0.80*ease), p[2]];
+      p=globeRodrigues(p,ax,own);
+      pts.push(P(p));
     }
-    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+    ctx.beginPath();
+    pts.forEach((q,i)=>{ if(i===0) ctx.moveTo(q.x,q.y); else ctx.lineTo(q.x,q.y); });
+    ctx.strokeStyle=globeRGBA(ring.col,Math.max(0,0.85*alpha));
+    ctx.lineWidth=ring.lw; ctx.stroke();
+    // a second, tighter line makes it a band rather than a wire — the engraved-brass look
+    ctx.beginPath();
+    pts.forEach((q,i)=>{ const k=0.93;
+      const x=cx+(q.x-cx)*k, y=cy+(q.y-cy)*k;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+    ctx.strokeStyle=globeRGBA(ring.col,Math.max(0,0.32*alpha));
+    ctx.lineWidth=1; ctx.stroke();
+    // ticks: without them a circle turning about its own normal is invisible
+    if(ease>0.25&&burst<0.7){
+      ctx.strokeStyle=globeRGBA(ring.col,Math.max(0,0.5*alpha*ease));
+      ctx.lineWidth=1;
+      for(let i=0;i<ring.ticks;i++){
+        const th=i/ring.ticks*Math.PI*2;
+        let p1=[Math.cos(th)*ring.r,Math.sin(th)*ring.r*(0.20+0.80*ease),0];
+        let p2=[Math.cos(th)*ring.r*0.93,Math.sin(th)*ring.r*0.93*(0.20+0.80*ease),0];
+        const q1=P(globeRodrigues(p1,ax,own)), q2=P(globeRodrigues(p2,ax,own));
+        ctx.beginPath(); ctx.moveTo(q1.x,q1.y); ctx.lineTo(q2.x,q2.y); ctx.stroke();
+      }
+    }
+  });
+  // ---- the core, and the flash it lets go with -------------------------------------------------
+  const coreR=R*scale*0.30;
+  const core=ctx.createRadialGradient(cx,cy,0,cx,cy,coreR);
+  core.addColorStop(0,`rgba(235,240,255,${(0.30+0.55*ease)*(1-burst)})`);
+  core.addColorStop(1,"rgba(109,114,196,0)");
+  ctx.fillStyle=core; ctx.beginPath(); ctx.arc(cx,cy,coreR,0,7); ctx.fill();
+  if(burst>0){
+    const fr=R*(0.3+burst*2.2);
+    const fl2=ctx.createRadialGradient(cx,cy,fr*0.55,cx,cy,fr);
+    fl2.addColorStop(0,`rgba(180,195,255,${0.30*(1-burst)})`);
+    fl2.addColorStop(1,"rgba(180,195,255,0)");
+    ctx.fillStyle=fl2; ctx.beginPath(); ctx.arc(cx,cy,fr,0,7); ctx.fill();
   }
 }
 /* Watching the map fill in. The slider is the truth; Play just drives it. Everything it does is
@@ -5194,21 +5312,95 @@ function globePlayToggle(){
     globeSetTime(t,false);
   },66);
 }
-/* Hit-testing is done against the projected positions the last frame wrote, so what you tap is
-   exactly what you saw — no second projection that could disagree with the picture. */
-function globeHit(pt){
-  const o=workOp(); if(!o||!globeG) return;
-  let best=null, bd=1e9;
+/* Selecting something on the far side used to leave you staring at the back of the sphere. Now the
+   camera swings round so the thing you picked is facing you — the angles are solved from the node's
+   own position, then eased, so it reads as the globe turning rather than a cut. */
+function globeFocusOn(key){
+  const n=globeG&&globeG.byKey[key]; if(!n) return;
+  // we want the node rotated to (0,·,-1): yaw brings it into the ZY plane, pitch lifts it level
+  const yaw=Math.atan2(-n.x,-n.z);
+  const zAfter=n.x*Math.sin(yaw)+n.z*Math.cos(yaw);
+  const pitch=-Math.atan2(n.y,-zAfter);
+  globeFocus={yaw,pitch:Math.max(-1.1,Math.min(1.1,pitch))};
+}
+function globeEaseFocus(){
+  if(!globeFocus) return;
+  const wrap=a=>{ while(a>Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.PI; return a; };
+  const dy=wrap(globeFocus.yaw-globeCam.yaw), dp=globeFocus.pitch-globeCam.pitch;
+  if(Math.abs(dy)<0.004&&Math.abs(dp)<0.004){ globeFocus=null; return; }
+  globeCam.yaw+=dy*0.14; globeCam.pitch+=dp*0.14;
+}
+/* A slow drift of faint points behind the sphere. It costs nothing and it turns a black rectangle
+   into somewhere the globe is hanging. Seeded once so it doesn't shimmer. */
+let globeStarSeed=null;
+function globeStars(ctx,W0,H0,now){
+  if(!globeStarSeed){
+    globeStarSeed=[]; let s=12345;
+    for(let i=0;i<70;i++){ s=(s*1103515245+12345)&0x7fffffff;
+      globeStarSeed.push({x:(s%1000)/1000,y:((s>>10)%1000)/1000,r:0.4+((s>>20)%100)/140,p:(s%628)/100}); }
+  }
+  const t=now*0.00006;
+  globeStarSeed.forEach(st=>{
+    const x=((st.x+t)%1)*W0, y=st.y*H0;
+    ctx.fillStyle=`rgba(190,205,255,${0.10+0.10*Math.sin(now*0.0011+st.p)})`;
+    ctx.beginPath(); ctx.arc(x,y,st.r,0,7); ctx.fill();
+  });
+}
+/* The rim: a sphere you can feel the edge of rather than a scatter of dots. */
+function globeAtmos(ctx,cx,cy,R,alpha){
+  const g1=ctx.createRadialGradient(cx,cy,R*0.62,cx,cy,R*1.06);
+  g1.addColorStop(0,"rgba(80,110,200,0)");
+  g1.addColorStop(0.82,`rgba(96,126,225,${0.10*alpha})`);
+  g1.addColorStop(1,"rgba(96,126,225,0)");
+  ctx.fillStyle=g1; ctx.beginPath(); ctx.arc(cx,cy,R*1.06,0,7); ctx.fill();
+  ctx.strokeStyle=`rgba(150,175,255,${0.13*alpha})`; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+}
+/* The hover card. A DOM element rather than canvas text: it wraps, it stays crisp at any pixel
+   ratio, and it can carry the record's own colour without re-measuring anything. */
+function globeTip(key,pt){
+  const el=document.getElementById("glTip"); if(!el) return;
+  const n=key&&globeG&&globeG.byKey[key];
+  if(!n||!pt){ el.hidden=true; return; }
+  const bits=[ENT[n.t].label];
+  if(n.t==="person"&&n.rec.title) bits.push(n.rec.title);
+  if(n.dept) bits.push(entLabel("department",n.dept)+(n.inherited?" (via its connections)":""));
+  if(n.rec.status) bits.push(n.rec.status);
+  el.innerHTML=`<span class="gt-n"><i style="background:${cssCol(globeNodeColor(n))}"></i>${esc(clip(n.name,52))}</span>
+    <span class="gt-m">${esc(bits.filter(Boolean).join(" · "))}</span>
+    <span class="gt-d">${n.deg?`${n.deg} connection${n.deg===1?"":"s"} · click to explore`:"not connected to anything yet"}</span>`;
+  el.hidden=false;
+  const st=el.parentElement.getBoundingClientRect();
+  const w=el.offsetWidth||180, h=el.offsetHeight||44;
+  el.style.left=Math.max(6,Math.min(st.width-w-6,pt.x+14))+"px";
+  el.style.top=Math.max(6,Math.min(st.height-h-6,pt.y-h-12))+"px";
+}
+/* What you tap is what you saw. Two things were wrong here: the far-side guard had the sign
+   backwards — `s = FOV/(FOV+z)` means NEGATIVE z is near, so it was skipping everything in front of
+   you and picking from behind — and a bare nearest-centre search let a big far node beat a small
+   near one it wasn't even under. Now only the near hemisphere is considered, the tolerance follows
+   the dot's own drawn radius, and among everything under the finger the nearest wins. */
+function globePick(pt){
+  if(!globeG) return null;
+  let best=null, bestZ=9;
   globeG.nodes.forEach(n=>{
     if(!globeVisible(n)||n._sx==null) return;
-    if(n._z<-0.35) return;                     // don't grab something on the far side
+    if(n._z>0.25) return;                                   // behind the sphere
     const d=Math.hypot(n._sx-pt.x,n._sy-pt.y);
-    if(d<bd){ bd=d; best=n; }
+    if(d>Math.max(13,(n._r||3)+9)) return;
+    if(n._z<bestZ){ bestZ=n._z; best=n; }                   // most negative z = closest to you
   });
-  if(best&&bd<=22) globeSelect(best.key); else globeSelect(null);
+  return best;
+}
+function globeHit(pt){
+  const o=workOp(); if(!o||!globeG) return;
+  const n=globePick(pt);
+  globeSelect(n?n.key:null);
 }
 function globeSelect(key){
   globeSel=key||null;
+  if(key) globeFocusOn(key);            // bring it to the front rather than leaving it round the back
+  else globeFocus=null;
   const panel=document.getElementById("glPanel"); if(!panel) return;
   const g=globeG, n=key&&g.byKey[key];
   if(!n){ panel.hidden=true; panel.innerHTML=""; return; }
@@ -11230,10 +11422,40 @@ document.addEventListener("input",e=>{
   if(!t||!t.dataset) return;
   if(t.dataset.pickq){ pickFilter(t); return; }      // searching a dropdown
   if(t.dataset.gltime){ globeSetTime(+t.value,true); return; }
+  if(t.dataset.glq){
+    globeQuery=t.value;
+    const g=globeG;
+    if(g){
+      const q=norm(globeQuery).split(" ").filter(Boolean);
+      const hits=q.length?g.nodes.filter(n=>globeVisible(n)&&q.every(w=>norm(n.name).includes(w)||norm(ENT[n.t].label).includes(w))):[];
+      // narrowed to one? turn the globe to it, the same as clicking it would
+      if(hits.length===1) globeFocusOn(hits[0].key);
+      const c=document.getElementById("glQn");
+      if(c) c.textContent=q.length?(hits.length?`${hits.length} lit`:"nothing matches"):"";
+    }
+    return;
+  }
   if(!t.dataset.lfin) return;
   lfGet(t.dataset.lfin).q=t.value;
   lfApply(t.dataset.lfin);
 });
+/* The map answers to the keyboard too: Escape lets go of a selection or a search before it closes
+   anything else, and the arrows turn it without a mouse. */
+document.addEventListener("keydown",e=>{
+  if(view!=="globe"||!globeG) return;
+  const typing=e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+  if(e.key==="Escape"&&!typing&&(globeSel||globeQuery)){
+    e.stopPropagation(); e.preventDefault();
+    globeQuery=""; const q=document.getElementById("glQ"); if(q) q.value="";
+    globeSelect(null); return;
+  }
+  if(typing||e.metaKey||e.ctrlKey||e.altKey) return;
+  const step=e.shiftKey?0.22:0.09;
+  if(e.key==="ArrowLeft"){ globeCam.yaw-=step; globeFocus=null; e.preventDefault(); }
+  else if(e.key==="ArrowRight"){ globeCam.yaw+=step; globeFocus=null; e.preventDefault(); }
+  else if(e.key==="ArrowUp"){ globeCam.pitch=Math.max(-1.3,globeCam.pitch-step); globeFocus=null; e.preventDefault(); }
+  else if(e.key==="ArrowDown"){ globeCam.pitch=Math.min(1.3,globeCam.pitch+step); globeFocus=null; e.preventDefault(); }
+},true);
 // Escape clears the filter before it closes anything — one press to see the whole list again
 document.addEventListener("keydown",e=>{
   const t=e.target;

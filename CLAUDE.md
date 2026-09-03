@@ -738,10 +738,27 @@ something the DOM should be asked to do.
 - **`globeSignature(o)`** caches the layout; re-laying out on every render would be slow *and*
   disorienting. **The bind flag lives on the element** (`stage.dataset.bound`), the same rule as
   `armWorkGraph`. `render()` cancels the rAF when you leave the view.
-- The **arrival** (`globeDrawIntro`) is the Treasure Planet moment: a disc lying on a floor, rings
-  and spokes cut through it, that spins up, stands up and resolves into the sphere. Pure canvas — no
-  image to load, so it works offline and on first paint. It plays on **arrival, not on every
-  render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
+- **Picking has to agree with the picture.** `s = FOV/(FOV+z)`, so **negative z is NEAR** — and the
+  far-side guard in the hit test had that backwards, so a click skipped everything in front of you
+  and selected from the hemisphere behind. The label filter had the same inversion. `globePick` now
+  considers only the near hemisphere, sizes its tolerance to the dot's own drawn radius, and among
+  everything under the finger takes the nearest. Anything reading `_z` should assume the same rule.
+- **Hover** (`globeTip`) names what is under the pointer — a DOM card, not canvas text, so it wraps
+  and stays crisp at any pixel ratio. Hover lights the same neighbourhood a selection does.
+- **Selecting swings the globe round** (`globeFocusOn`/`globeEaseFocus`): the yaw and pitch that put
+  the node at z = −1 are solved from its own position and then eased, so picking something on the
+  far side no longer leaves you staring at the back. Taking hold of the globe cancels it.
+- `globeQuery` (the **Find on the map** box) dims everything that doesn't match; one match focuses.
+  Escape lets go of a selection or a search, the arrows turn it, double-click opens the record.
+- A **bead of light** runs along the selected node's arcs — the one thing a still picture cannot do.
+- The **arrival** (`globeDrawIntro`) is an armillary sphere assembling itself, in four phases:
+  the rings lie nested and nearly flat low in the frame (a floor seen across a room), lift and stand,
+  spin about their own axes at different speeds and directions (`GLOBE_RINGS`, Rodrigues rotation —
+  a plain circle turning about its own normal looks like nothing, hence the tick marks), then
+  accelerate, expand past the frame and fade while the real map fades in behind them (`GLOBE_BURST`
+  is the crossover, and the scene is painted at `born` alpha through it, so there is no cut). Pure
+  canvas — no image to load, so it works offline and on first paint. It plays on **arrival, not on
+  every render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
 
 ## THE DUPLICATE CHECKER (`dupScan` / `openDupes`)
 Records arrive typed by hand, extracted from a note and read off a photo, and each route spells the
@@ -851,8 +868,8 @@ edit/delete work. Don't create rounds/people without ids.
   dozen handlers each dereference an undefined opportunity.
 
 ## How to verify changes (do this — don't ship untested)
-The app has been through a full audit — static (AST) plus runtime — and there are **~1,930 browser
-assertions** across forty-six Playwright suites. They live in the scratchpad, not the repo (the app
+The app has been through a full audit — static (AST) plus runtime — and there are **~1,980 browser
+assertions** across forty-seven Playwright suites. They live in the scratchpad, not the repo (the app
 stays dependency-free), so recreate what you need rather than hunting for them. What they cover,
 and what a future change should not regress:
 - **XSS**: a payload in *every* user-writable field, then render every view, work tab, drawer tab,

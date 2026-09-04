@@ -188,6 +188,11 @@ you paste into a new AI chat to prep for interviews.
   structured JSON, with `rsParseManual()` copy-paste fallback. Export: `rsHTML()`/`rsCSS()` render a
   clean printable doc (Modern/Classic/Compact templates) and `rsPrint()` uses the browser print
   pipeline → Save as PDF (no libraries). `resumeText()` derives from the structured data when present.
+- **`ABOUT ME` — the one place that holds context about the *person*, and the semantic layer that
+  carries it into every prompt.** A résumé says where you worked; it does not say how you like to
+  work, what you are genuinely good at, what you will not put up with, or how you want to be written
+  for — and those are what make a draft sound like you rather than like a template. See the
+  dedicated section below.
 - AI prompts: `buildBrief / prepPrompt / introPrompt / researchPrompt / questionsPrompt / thankyouPrompt`,
   plus `resumeText()`. `aiGen(prompt,title)` runs any prompt through the engine and shows the result
   inline (paste-mode falls back to copy); `aiCall(prompt,doc,opts)` takes `opts.json=false` for prose.
@@ -807,6 +812,52 @@ Surfaced in two places: a card in **Insights** (`globeFindings`) and an action t
 overview** once there are `same`/`likely` ones. That tile encodes `act|dupes`, a **fourth prefix**
 the `data-dash` handler has to know — see the note above about forgetting one.
 
+## ABOUT ME (`PROFILE_SECTIONS` / `meText` / `openProfile`)
+Everything else in the app is context about *companies*. This is the context about the **person**,
+and it is what the AI features were missing: the app knew a name and a headline, so every draft it
+wrote was competent and anonymous. A résumé cannot fix that — it records where you worked, not how
+you work, what you are actually good at, what you will not put up with, or how you want to be
+written for.
+
+**One registry, three consumers.** `PROFILE_SECTIONS` drives the editor, the completeness meter and
+the prompt block, the same way `ENT` drives lists/forms/detail for records. Add a section there and
+it appears in all three; there is no second list to keep in step. Each entry carries `label`, `hint`,
+a real-sentence `ph` (the hardest part of a form like this is knowing how candid to be — a specific
+example gives permission for a specific answer), `rows`, an `ai` heading for the prompt, and:
+- **`scope`** (`ME_SCOPES`: `apply` = the job hunt, `work` = post-hire including capture) — what
+  stops this becoming prompt bloat. A capture agent filing a note needs your role and how you work,
+  not your salary dealbreakers, so `looking` and `avoid` are apply-only and never reach a work prompt.
+- **`tight`** — the subset that survives in prompts which already carry an entire company map
+  (`capturePrompt`, `askWorkPrompt`, `objectivesPrompt`), clipped harder (`ME_CLIP_TIGHT` 340 vs
+  `ME_CLIP` 700). That difference is what separates tailoring from crowding out the evidence.
+
+**`meText(scope,{tight})` is a PREAMBLE, not an appendix.** A model reads instructions in order, so
+"here is who you are writing for" has to land before the records or it reads as trivia at the end —
+`buildBrief` puts it above the stage line, and a test asserts that ordering. It reaches: every
+apply-side prompt (via `buildBrief`, plus `researchPrompt`/`thankyouPrompt`/`followupPrompt`/
+`askPrompt`/`scorecardPrompt` which don't go through it), and `capturePrompt`, `askWorkPrompt`,
+`objectivesPrompt` on the work side.
+
+**Handing a model context is not the same as telling it what the context is for.** `capturePrompt`
+and `askWorkPrompt` each carry an extra rule saying to use ABOUT ME for *how* they write — register,
+level, what to pitch advice at — and **never** for what they record. Those rules are built from a
+local `me` and **omitted entirely when the block is absent**, because a rule pointing at a section
+that isn't there is noise; a test caught exactly that, since the rule's own words matched the
+`/ABOUT ME/` probe with tailoring switched off.
+
+**`useAI:false` turns the whole thing off in one place** — some people want the app personal and the
+prompts neutral, and burying that choice inside eleven fields would be worse. `meText` returns `""`
+and every consumer degrades to what it did before.
+
+**The editor** (`openProfile`/`profileBody`/`meSync`/`meSave`, draft in `meDraft`, same contract as
+`rsSync`) is one screen with a completeness bar. `profileScore()` also drives the Settings card
+(`profileBox`) and the welcome screen's fifth `.wf` row, which ticks itself off at `profileRich()`
+(4 fields). **The AI import fills blanks and never overwrites your words** — `meApplyParsed` skips
+any field you've already typed, lands in the editor for review rather than in `state`, and nothing
+is saved until you press save; `profileParsePrompt` is told to leave a section empty rather than pad
+it, because an invented working style then flavours every draft the app makes for the rest of time.
+`meFromResume` reuses `resumeText()`; `meDraftManual` is the paste-mode fallback.
+
 ## THE DEMO DATA (`loadSample` / `loadSampleDemoExtras` / `loadSampleWork`)
 It exists to show the app at full stretch — ~200 graph nodes, 44 people, 10 roles, 2 competing
 offers, a scored scorecard, a résumé, 30 notes and 30 knowledge bites — because every gauge, report
@@ -837,9 +888,12 @@ new test so the next rename doesn't.
 - `o.hired`: `{startDate, title, manager, managerId, meId, acceptedAt}` — present once `status==="hired"`.
   `meId` points at the person record on `o.people` that is **you**.
 - `o.people[]` gains post-hire fields: `deptId`, `teamId`, `managerId`, `standing`, `expertise[]`, `at`, `fromCapture`.
-- `profile` (PERSONALIZATION, `getProfile()`): `name`/`headline` set in Settings → Profile. The name
-  drives the Home greeting (`render()`: "Good afternoon, {first}"), the welcome state, and AI briefs
-  (`buildBrief` adds a "Candidate (me)" line). Synced like the rest of state.
+- `profile` (ABOUT ME, `getProfile()`): `name`/`headline`/`pronouns`/`location` plus one text field
+  per entry in `PROFILE_SECTIONS`, and `useAI`. The name drives the Home greeting (`render()`:
+  "Good afternoon, {first}"), the welcome state and the person record created at hire; the rest is
+  the semantic layer (see below). Synced like the rest of state. `getProfile()` **guards the
+  accessor, not thirty call sites** — a backup or older build can leave `profile` as a string or
+  null and every reader then does `.name` on it and the app fails to draw.
 - `stories[]` (PREP BANK): `{id,title,tags[],s,t,a,r}` STAR stories; `questions[]`: `{id,q,a,tags[]}`.
   `getStories()/getQuestions()` lazily create the arrays; `storyBankText()` feeds them into the AI
   prep prompts (`prepPrompt`, `appAnswersPrompt`). UI: `openPrepBank()` (Settings + AI Brief tab).

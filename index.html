@@ -1508,6 +1508,26 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .rs-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .rs-card-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
+/* ---- About me ---- */
+.me-meter{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.me-meter-t{display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:8px}
+.me-meter-t b{color:var(--text);font-size:13.5px}
+.me-meter-t span{margin-left:auto;font-size:12px;font-weight:800;color:var(--accent3)}
+.me-bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.me-bar i{display:block;height:100%;border-radius:99px;background:var(--grad);transition:width .35s ease}
+.me-meter-s{font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:8px}
+.me-sec{margin-bottom:14px}
+.me-sec-h{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.me-sec-h label{font-size:13px;font-weight:750;color:var(--text);min-width:0}
+.me-scope{flex:0 0 auto;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);border:1px solid var(--line);border-radius:99px;padding:2px 7px;white-space:nowrap}
+.me-hint{font-size:11.5px;color:var(--faint);line-height:1.5;margin-bottom:6px}
+.me-sec textarea{width:100%;min-height:0}
+.me-priv{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0 4px}
+.me-toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.me-toggle input{margin-top:2px;flex:0 0 auto}
+.me-toggle span{display:block;min-width:0}
+.me-toggle b{display:block;font-size:13px;font-weight:750}
+.me-toggle small{display:block;font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:3px}
 </style>
 </head>
 <body>
@@ -1601,7 +1621,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v68 · 2026-09-04";
+const BUILD = "v69 · 2026-09-04";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -1628,6 +1648,66 @@ let remoteLocked = false;                // ...and whether it arrived from the c
    lock keys and DEFAULT_PROJECT; it has now bitten three times. */
 const SCHEMA = 2;
 function docSchema(d){ return +(((d||{}).meta||{}).schema)||1; }
+
+/* ============================ ABOUT ME ============================
+   The one place that holds context about the PERSON, so every prompt in the app opens knowing who
+   it is talking to. A résumé says where you worked; it does not say how you like to work, what you
+   are actually good at, what you will not put up with, or how you want to be written for — and
+   those are the things that make a draft sound like you instead of like a template.
+
+   ONE REGISTRY, THREE CONSUMERS. `PROFILE_SECTIONS` drives the editor, the completeness meter and
+   the prompt block, exactly like `ENT` does for records. Add a section here and it appears in all
+   three; there is no second list to keep in step.
+
+   `scope` is what stops this becoming prompt bloat. Not every prompt wants every section — a
+   capture agent filing a note needs your role and how you work, not your salary dealbreakers — so
+   each section names the prompt families it belongs in and `meText(scope)` assembles only those.
+   Everything is clipped per-section (`ME_CLIP`), because a profile is pasted into prompts that
+   already carry a company's whole map and an unbounded field would crowd the records out.
+
+   DECLARED ABOVE `load()` — same TDZ trap as SCHEMA, the lock keys and DEFAULT_PROJECT, which has
+   bitten this file four times now. migrate() normalizes the profile, load() calls it inside a
+   try/catch, and a `const` read from above its declaration throws where that catch would swallow
+   it and hand back an empty app. */
+const ME_SCOPES = ["apply","work"];   // apply = the job hunt · work = post-hire, incl. capture
+const ME_CLIP = 700;                  // per section, per prompt
+const ME_CLIP_TIGHT = 340;            // …when the prompt already carries a whole company map
+const PROFILE_SECTIONS = [
+  { k:"about", label:"Who I am", ai:"Who I am", scope:["apply","work"], rows:4, tight:1,
+    hint:"The short version you'd give a new colleague — what you do, how you got here, what you're known for.",
+    ph:"12 years in revenue operations, mostly at B2B software companies scaling past their first big enterprise deals. I'm the person who gets brought in when the numbers stop agreeing with each other…" },
+  { k:"career", label:"Where I've worked", ai:"My career so far", scope:["apply","work"], rows:4,
+    hint:"The narrative your résumé can't hold — why you moved, what each place taught you, the thread running through it. Dates and titles belong in Résumé studio; this is the story around them.",
+    ph:"Started in finance at a bank, moved to a Series B startup because I wanted to build rather than report…" },
+  { k:"strengths", label:"What I'm genuinely good at", ai:"My strengths", scope:["apply","work"], rows:3, tight:1,
+    hint:"Be specific and immodest. This is what the AI will lead with about you.",
+    ph:"Taking a mess of conflicting systems and finding the one number everyone can agree on. Getting sales and finance in a room without it turning into a fight…" },
+  { k:"growth", label:"What I'm working on", ai:"What I'm working on / weaker at", scope:["apply","work"], rows:2,
+    hint:"Where you're stretching, or what you know you're weaker at. Keeps advice honest.",
+    ph:"Saying no earlier. I take on other people's problems and then run out of week…" },
+  { k:"style", label:"How I like to work", ai:"How I work", scope:["apply","work"], rows:3, tight:1,
+    hint:"Pace, autonomy, meetings, deep work, how you make decisions.",
+    ph:"Async and written by default. I want the context up front and then to be left alone. I'd rather ship something rough on Tuesday than perfect in three weeks…" },
+  { k:"comms", label:"How I communicate", ai:"How I communicate", scope:["apply","work"], rows:2, tight:1,
+    hint:"Direct or diplomatic? Long or short? How you like to receive things.",
+    ph:"Direct, short, no throat-clearing. I'd rather be told the problem than walked up to it…" },
+  { k:"values", label:"What matters to me at work", ai:"What I value", scope:["apply","work"], rows:3,
+    hint:"The things that make a job good or bad for you, beyond money.",
+    ph:"Working with people who are better than me. Not having to fight for basic tooling. A manager who gives me the why…" },
+  { k:"looking", label:"What I'm looking for next", ai:"What I want next", scope:["apply"], rows:3,
+    hint:"Only used in the job hunt — the role you actually want and why you're moving.",
+    ph:"A director-level ops role somewhere between Series C and IPO, with a real seat at the planning table…" },
+  { k:"avoid", label:"Dealbreakers", ai:"My dealbreakers", scope:["apply"], rows:2,
+    hint:"What would make you turn a role down. Used when comparing offers.",
+    ph:"Five days in an office. A CRO who doesn't believe in forecasting. Anything below £X…" },
+  { k:"voice", label:"How AI should write for me", ai:"My voice — write as me, like this", scope:["apply","work"], rows:3, tight:1,
+    hint:"Tone, length, words you'd never use. This is the single biggest lever on drafts sounding like you.",
+    ph:"Warm but not gushing. Short sentences. Never \"excited to share\", never \"leverage\", never exclamation marks. British spelling…" },
+  { k:"notes", label:"Anything else worth knowing", ai:"Other context about me", scope:["apply","work"], rows:3,
+    hint:"Constraints, context, the stuff that doesn't fit anywhere else.",
+    ph:"I'm the primary carer two afternoons a week. I don't drink at work things. I'm dyslexic — I read slides badly and prose well…" },
+];
+function meSections(scope){ return PROFILE_SECTIONS.filter(s=>!scope||s.scope.indexOf(scope)>=0); }
 let state = load();
 let view = "dashboard";
 let searchQ = "";
@@ -2600,7 +2680,53 @@ function renderNav(){
 }
 
 /* ============================ RENDER ROUTER ============================ */
-function getProfile(){ state.profile=state.profile||{}; return state.profile; }
+function getProfile(){
+  // A hand-edited backup or an older build can leave `profile` as a string, a number or null —
+  // every reader here then does `.name` on it and the whole app fails to draw. Guarding the one
+  // accessor is cheaper than guarding thirty call sites; the fields themselves are read through
+  // String()/esc(), so a number or an array where prose belongs degrades rather than throws.
+  return (state.profile = (state.profile && typeof state.profile==="object" && !Array.isArray(state.profile)) ? state.profile : {});
+}
+/* ---- ABOUT ME: the semantic layer ----
+   `meText(scope)` is the block every AI feature in the app opens with. It is deliberately a
+   PREAMBLE rather than an appendix: a model reads instructions in order, and "here is who you are
+   writing for" has to land before the records or it reads as trivia at the end.
+
+   Two clips, not one. An apply-side prompt has room; `capturePrompt` and `askWorkPrompt` already
+   carry an entire company map, so sections marked `tight` are the only ones that survive there and
+   they survive shorter. That is the difference between tailoring and crowding out the evidence.
+
+   `useAI:false` turns the whole thing off in one place — some people will want the app personal
+   and the prompts neutral, and burying that choice inside eleven fields would be worse. */
+function meLine(v,n){ const t=String(v||"").replace(/\s+/g," ").trim(); return t.length>n?t.slice(0,n-1).trimEnd()+"…":t; }
+function meText(scope,opts){
+  const p=getProfile(); if(p.useAI===false) return "";
+  const tight=!!(opts&&opts.tight);
+  const head=[];
+  if(p.name) head.push(p.name);
+  if(p.headline) head.push(p.headline);
+  if(p.pronouns) head.push(p.pronouns);
+  if(p.location&&!tight) head.push(p.location);
+  const L=[];
+  meSections(scope).forEach(s=>{
+    if(tight&&!s.tight) return;
+    const v=meLine(p[s.k], tight?ME_CLIP_TIGHT:ME_CLIP);
+    if(v) L.push(`${s.ai}: ${v}`);
+  });
+  if(!head.length&&!L.length) return "";
+  return `\n--- ABOUT ME (the person you are working for — tailor tone, examples and recommendations to this; never contradict it, and never repeat it back at me) ---\n`
+    + (head.length?`${head.join(" · ")}\n`:"")
+    + L.join("\n")
+    + `\n--- END ABOUT ME ---\n`;
+}
+// How much of it is filled — shown as a bar, and as the reason the empty-state row ticks itself off
+function profileScore(){
+  const p=getProfile();
+  const fields=[["name",!!p.name],["headline",!!p.headline]].concat(PROFILE_SECTIONS.map(s=>[s.k,!!String(p[s.k]||"").trim()]));
+  const done=fields.filter(f=>f[1]).length;
+  return { done, total:fields.length, pct:Math.round(done/fields.length*100), missing:PROFILE_SECTIONS.filter(s=>!String(p[s.k]||"").trim()) };
+}
+function profileRich(){ return profileScore().done>=4; }
 function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
   // Bounce off Work only when the app is guessing. If you've said you're employed, Work stays put
@@ -3065,6 +3191,7 @@ function emptyState(){
       ${step({act:"add",icon:I.briefcase,title:"Add a role by hand",sub:"Company, stage, contacts and notes"})}
       ${step({act:"ai-settings",icon:I.spark,done:aiOn,title:aiOn?`AI connected — ${aiEngineLabel().replace(" ✓","")}`:"Connect your AI",sub:aiOn?"Powering briefs, thank-you notes and capture":"Free with Gemini or Groq. Everything works without it too."})}
       ${step({act:"edit-resume",icon:I.user,done:hasResume,title:hasResume?"Résumé saved":"Add your résumé",sub:hasResume?"Your briefs and cover letters are tailored to it":"So every brief and cover letter sounds like you"})}
+      ${step({act:"open-profile",icon:I.spark,done:profileRich(),title:profileRich()?"Meanwhile knows you":"Tell it about you",sub:profileRich()?"How you work and how you write shapes every draft":"How you work, what you're good at, how you want to be written for"})}
     </div>
     <button class="wf-link" data-act="sample">Just looking? Load demo data</button>
   </div>`;
@@ -3404,7 +3531,7 @@ function pipelineContext(){
   return L.join("\n");
 }
 function askPrompt(q){
-  return `You are my sharp, practical job-search assistant inside my interview tracker. My pipeline:\n\n${pipelineContext()}\n\nMy résumé:\n${resumeText()}\n\n---\nAnswer concisely using specifics from my pipeline above. If I ask you to draft something (email/message), write it ready-to-send. Lead with what matters most.\n\nMe: ${q}`;
+  return `You are my sharp, practical job-search assistant inside my interview tracker.\n${meText("apply")}\nMy pipeline:\n\n${pipelineContext()}\n\nMy résumé:\n${resumeText()}\n\n---\nAnswer concisely using specifics from my pipeline above. If I ask you to draft something (email/message), write it ready-to-send. Lead with what matters most.\n\nMe: ${q}`;
 }
 function askAICard(){
   const live=aiEngine()!=="paste"&&aiEngine()!=="off";
@@ -3623,6 +3750,7 @@ function scorecardPrompt(){
   const sc=getScorecard(), offers=scOffers();
   const totW=sc.criteria.reduce((s,c)=>s+Math.max(0,+c.weight||0),0)||1;
   const L=[];
+  const me=meText("apply"); if(me) L.push(me.trim(),"");
   L.push(`I'm choosing between ${offers.length} job offer${offers.length>1?"s":""}. Below is my weighted decision scorecard — my priorities (with weights) and how I've rated each offer 1–5 on every factor. Please pressure-test my scoring, flag blind spots or things I should ask about, weigh the trade-offs, and give me a clear recommendation with your reasoning.`);
   L.push("");
   L.push(`## My priorities (weight = how much it matters)`);
@@ -4117,11 +4245,12 @@ function capturePrompt(o,text,answered,nShots){
   const prior = (answered&&answered.length)
     ? `\n--- I ANSWERED YOUR QUESTIONS ---\n${answered.map(a=>`Q: ${a.ask}\nA: ${a.answer}`).join("\n")}\n--- END ---\nUse these answers. Don't ask them again. Only ask something new if it genuinely blocks a decision.\n`
     : "";
+  const me = meText("work",{tight:1});
   const schema = nShots
     ? CAPTURE_SCHEMA.replace('{\n "summary"','{\n "transcript": "",         // everything legible in the picture(s), written out verbatim\n "summary"')
     : CAPTURE_SCHEMA;
   return `You are the organizational memory of one person and you are about to file a note for them. Today is ${todayYMD()}. They work at ${o.company}${o.hired&&o.hired.title?` as ${o.hired.title}`:""}.
-${mePrompt(o)}${knownEntitiesText(o.id)}${glossaryText(o.id,text)}${openQuestionsText(o.id)}${prior}
+${me}${mePrompt(o)}${knownEntitiesText(o.id)}${glossaryText(o.id,text)}${openQuestionsText(o.id)}${prior}
 Your job: read the note, work out what it means for what they already know, and propose what to record. They review everything before it is saved, so propose confidently — but never invent.
 
 Rules:
@@ -4135,7 +4264,8 @@ Rules:
 - updates: only for records already on record, and only when the note clearly says something changed (a project became blocked, a problem got solved). Name the exact record. Say why.
 - answers: only for open questions listed above, and only when the note genuinely answers one.
 - tasks: at most 1, only if the note implies something THEY need to do next. Resolve relative dates to YYYY-MM-DD.
-- advice: at most 2, one line each — what's worth chasing, who's worth talking to. Only from what's here.
+- advice: at most 2, one line each — what's worth chasing, who's worth talking to. Only from what's here.${me?`
+- Use ABOUT ME above to shape HOW you file, never WHAT: write the task, the summary and the advice the way they write, at their level and in their register, and pitch advice at what they say they're working on. It never licenses inventing a record, an owner or an opinion they didn't state.`:""}
 - Leave arrays empty rather than guessing. Return ONLY the JSON object, no markdown.
 ${shotRules(nShots||0)}
 ${schema}
@@ -5544,7 +5674,7 @@ function objectivesPrompt(o){
 
 ${jd?`--- THE JOB DESCRIPTION THEY WERE HIRED AGAINST ---\n${jd.slice(0,3500)}\n--- END ---`:"(No job description on file — work from the notes alone and leave every \"jd\" field empty.)"}
 
-${mePrompt(o)}
+${meText("work",{tight:1})}${mePrompt(o)}
 --- WHAT THEIR NOTES CONTAIN ---
 ${objMaterial(o)||"(almost nothing yet)"}
 --- END ---
@@ -8503,9 +8633,9 @@ function workRefs(o,q){
   return {refs,text:L.join("\n")};
 }
 function askWorkPrompt(o,q,ctx){
-  const day=hireDay(o);
+  const day=hireDay(o), me=meText("work",{tight:1});
   return `You are the organizational memory of one person — ${getProfile().name||"the user"}${o.hired&&o.hired.title?`, ${o.hired.title}`:""} at ${o.company}${day>0?`, ${day} days in`:""}. Everything below is what THEY have personally recorded. Today is ${todayYMD()}.
-
+${me}
 ${ctx.text}
 
 ---
@@ -8515,7 +8645,8 @@ Hard rules:
 - Cite your sources inline with the bracket ids exactly as they appear, e.g. [p2] or [c7]. Every specific claim needs at least one.
 - Distinguish what is recorded from what you're inferring. Say "You recorded…", "Based on three notes…", "This appears to be…".
 - If the records don't cover it, say so plainly and suggest who they could ask or what to find out. Never invent people, owners, reporting lines, dates, project status, company politics or anyone's opinions.
-- Be concise and concrete. Lead with the answer. No preamble, no headings unless it genuinely helps.
+- Be concise and concrete. Lead with the answer. No preamble, no headings unless it genuinely helps.${me?`
+- ABOUT ME above tells you who you're answering — match their register and pitch the advice at how they say they work. It changes the wording, never the facts.`:""}
 
 Question: ${q}`;
 }
@@ -9015,7 +9146,9 @@ function buildBrief(o){
   const L=[];
   L.push(`# Interview brief — ${o.company}${o.role?` (${o.role})`:""}`);
   L.push("");
-  if(getProfile().name) L.push(`- Candidate (me): ${getProfile().name}${getProfile().headline?` — ${getProfile().headline}`:""}`);
+  // Who this is for goes FIRST — a model reads in order, and a profile tacked on the end reads as trivia
+  const me=meText("apply"); if(me){ L.push(me.trim()); L.push(""); }
+  else if(getProfile().name) L.push(`- Candidate (me): ${getProfile().name}${getProfile().headline?` — ${getProfile().headline}`:""}`);
   L.push(`- Stage: ${stage(o.status).name}`);
   if(o.source) L.push(`- How I got here: ${o.source}${o.referrer?` (via ${o.referrer})`:""}`);
   if(o.workMode||o.location) L.push(`- Setup: ${[o.workMode,o.location].filter(Boolean).join(", ")}`);
@@ -9042,7 +9175,7 @@ function introPrompt(o){
   return buildBrief(o)+`\n\n---\nUsing the brief above, write me a warm, confident 30-second self-introduction to open this interview at ${o.company} — tailored to the role and what they care about. Keep it natural and spoken, not corporate. Then give me a 2-sentence shorter version for a recruiter screen.\n\nMy background:\n${resumeText()}`;
 }
 function researchPrompt(o,p){
-  return `Help me prep to meet an interviewer. Research this person and give me: a short summary of their background and career path, what they likely care about / focus on in interviews, any common ground I might build rapport on, and 4 thoughtful questions I could ask them.\n\nPerson: ${p.name}${p.title?` — ${p.title}`:""} at ${o.company}\nLinkedIn: ${p.linkedin||"(none provided — search for them)"}\n${p.notes?`What I already know: ${p.notes}\n`:""}Role I'm interviewing for: ${o.role||"(role)"}. Use web search if you can.`;
+  return `Help me prep to meet an interviewer. Research this person and give me: a short summary of their background and career path, what they likely care about / focus on in interviews, any common ground I might build rapport on, and 4 thoughtful questions I could ask them.\n\n${meText("apply",{tight:1})}Person: ${p.name}${p.title?` — ${p.title}`:""} at ${o.company}\nLinkedIn: ${p.linkedin||"(none provided — search for them)"}\n${p.notes?`What I already know: ${p.notes}\n`:""}Role I'm interviewing for: ${o.role||"(role)"}. Use web search if you can.`;
 }
 function questionsPrompt(o){
   const next=nextEvent(o);
@@ -9050,7 +9183,7 @@ function questionsPrompt(o){
 }
 function thankyouPrompt(o,r){
   const who=(r&&r.interviewers)||((o.people||[]).map(p=>p.name).join(", "));
-  return `Write a concise, genuine thank-you email to send after my ${r?`"${r.name||r.type||"interview"}" round`:"interview"} at ${o.company}${o.role?` for the ${o.role} role`:""}.${who?` I met with ${who}.`:""}\nWarm and specific, not generic — reference the conversation at a high level and reaffirm my interest and fit. About 120 words. Start with a one-line subject ("Subject: …").${r&&r.debrief?`\n\nHow it went / what we covered: ${r.debrief}`:""}\n\nA little about me for voice:\n${resumeText()}`;
+  return `Write a concise, genuine thank-you email to send after my ${r?`"${r.name||r.type||"interview"}" round`:"interview"} at ${o.company}${o.role?` for the ${o.role} role`:""}.${who?` I met with ${who}.`:""}\nWarm and specific, not generic — reference the conversation at a high level and reaffirm my interest and fit. About 120 words. Start with a one-line subject ("Subject: …").${r&&r.debrief?`\n\nHow it went / what we covered: ${r.debrief}`:""}\n${meText("apply")}\nA little about me for voice:\n${resumeText()}`;
 }
 // One-tap generate: run a prompt through the engine and show the result; paste-mode falls back to copy
 // ---- Application kit (cover letter / JD match / application answers / follow-up) ----
@@ -9066,7 +9199,7 @@ function appAnswersPrompt(o){
 function followupPrompt(o){
   const quiet=daysSince(o.updatedAt)||0;
   const who=(o.people||[]).map(p=>p.name).join(", ");
-  return `Write a short, warm follow-up email about the ${o.role||"role"} at ${o.company} — I applied/last spoke about ${quiet} days ago and haven't heard back.${who?` My contact: ${who}.`:""} Reiterate genuine interest, add a light touch of value, and politely ask about next steps. ~90 words, not pushy. Start with a one-line subject ("Subject: …").\n\nA little about me for voice:\n${resumeText()}`;
+  return `Write a short, warm follow-up email about the ${o.role||"role"} at ${o.company} — I applied/last spoke about ${quiet} days ago and haven't heard back.${who?` My contact: ${who}.`:""} Reiterate genuine interest, add a light touch of value, and politely ask about next steps. ~90 words, not pushy. Start with a one-line subject ("Subject: …").\n${meText("apply")}\nA little about me for voice:\n${resumeText()}`;
 }
 /* ---- Prep bank: reusable STAR stories + a question library (feeds AI prep) ---- */
 function getStories(){ state.stories=state.stories||[]; return state.stories; }
@@ -9074,6 +9207,166 @@ function getQuestions(){ state.questions=state.questions||[]; return state.quest
 function storyBankText(){
   const s=getStories(); if(!s.length) return "";
   return "\n\n## My STAR stories (use for behavioral answers; cite by title)\n"+s.map(x=>`- "${x.title||"Story"}"${(x.tags||[]).length?` [${x.tags.join(", ")}]`:""} — S: ${x.s||""} | T: ${x.t||""} | A: ${x.a||""} | R: ${x.r||""}`).join("\n");
+}
+/* ---- ABOUT ME: the editor ----
+   One screen, eleven boxes, entered once and tweaked. The placeholders are real sentences rather
+   than "e.g. your working style", because the hardest part of a form like this is knowing how
+   candid to be — a specific example gives permission for a specific answer.
+
+   `meDraft` holds the edits so the AI import can rewrite the body without losing what's typed;
+   `meSync()` reads the DOM in before any re-render, the same contract as `rsSync`. */
+let meDraft=null;
+function openProfile(){ meDraft=Object.assign({},getProfile()); openEditor(profileBody()); }
+// The Settings card: name and headline stay inline (they're what people come here for), and the
+// completeness bar is the honest prompt to go deeper — a button alone says nothing about how much
+// of you the app actually knows.
+function profileBox(){
+  const p=getProfile(), sc=profileScore(), off=p.useAI===false;
+  return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.user} About me</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Your name personalizes the app — the greeting up top. Everything else tailors what the AI writes, so a brief sounds like you rather than like a template.</div>
+    <div class="form-2">
+      <div class="form-row"><label>Your name</label><input id="profileName" value="${esc(p.name||"")}" placeholder="Connor" autocomplete="name"/></div>
+      <div class="form-row"><label>What you do <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="profileHeadline" value="${esc(p.headline||"")}" placeholder="Product Manager"/></div>
+    </div>
+    <div class="me-meter" style="margin:12px 0">
+      <div class="me-meter-t"><b>${sc.done} of ${sc.total}</b> filled in<span>${sc.pct}%</span></div>
+      <div class="me-bar"><i style="width:${sc.pct}%"></i></div>
+      <div class="me-meter-s">${off?"⚠ Tailoring is switched off — your profile is saved but not used in any prompt."
+        :sc.done<4?"Add how you work, what you're good at and how you want to be written for. It's the single biggest lever on drafts sounding like you."
+        :`Used in every brief, draft, capture and answer.${sc.missing.length?` Still blank: ${esc(sc.missing.slice(0,2).map(x=>x.label.toLowerCase()).join(", "))}.`:""}`}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary sm" data-act="profile-save">${I.check} Save name</button>
+      <button class="btn ghost sm" data-act="open-profile">${I.edit} Open About me</button>
+    </div>
+  </div>`;
+}
+function meSync(){
+  if(!meDraft) return;
+  ["name","headline","pronouns","location"].forEach(k=>{ const e=$("#me-"+k); if(e) meDraft[k]=e.value.trim(); });
+  PROFILE_SECTIONS.forEach(s=>{ const e=$("#me-"+s.k); if(e) meDraft[s.k]=e.value.trim(); });
+}
+function meSave(){
+  meSync();
+  const p=getProfile();
+  ["name","headline","pronouns","location"].forEach(k=>{ p[k]=meDraft[k]||""; });
+  PROFILE_SECTIONS.forEach(s=>{ p[s.k]=meDraft[s.k]||""; });
+  save(); closeEditor(); render(); toast("About me saved ✓");
+}
+function meScopeChip(s){
+  const both=s.scope.length>1;
+  return `<span class="me-scope">${both?"Job hunt + Work":s.scope[0]==="apply"?"Job hunt":"Work"}</span>`;
+}
+function profileBody(){
+  const d=meDraft||getProfile(), sc=profileScore(), on=d.useAI!==false;
+  const box=s=>`<div class="me-sec">
+    <div class="me-sec-h"><label for="me-${s.k}">${esc(s.label)}</label>${meScopeChip(s)}</div>
+    <div class="me-hint">${esc(s.hint)}</div>
+    <textarea id="me-${s.k}" rows="${s.rows}" placeholder="${esc(s.ph)}">${esc(d[s.k]||"")}</textarea>
+  </div>`;
+  return `<div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.user}</div>
+    <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">About me</h2><div style="font-size:12px;color:var(--faint)">Tell it once — every draft, brief and note is tailored to you</div></div>
+    <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+  </div>
+
+  <div class="me-meter">
+    <div class="me-meter-t"><b>${sc.done} of ${sc.total}</b> filled in<span>${sc.pct}%</span></div>
+    <div class="me-bar"><i style="width:${sc.pct}%"></i></div>
+    <div class="me-meter-s">${sc.missing.length?`Still blank: ${esc(sc.missing.slice(0,3).map(s=>s.label.toLowerCase()).join(", "))}${sc.missing.length>3?` +${sc.missing.length-3} more`:""}. Anything you skip is simply left out — there are no required fields.`:"Everything's filled in. Come back and tweak it whenever something changes."}</div>
+  </div>
+
+  <div class="rs-import">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Rather not start from a blank page? Let AI draft it from your résumé or a bio you paste, then edit what it got wrong. Engine: ${aiEngineLabel()} · <span data-act="ai-settings" style="color:var(--accent3);cursor:pointer;font-weight:700">change</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn ghost sm" data-act="me-from-resume">${I.ai} Draft from my résumé</button>
+      <button class="btn ghost sm" data-act="me-from-text">${I.copy} Draft from pasted text</button>
+    </div>
+  </div>
+
+  <div class="rs-sec">You</div>
+  <div class="form-2">
+    <div class="form-row"><label>Your name</label><input id="me-name" value="${esc(d.name||"")}" placeholder="Connor" autocomplete="name"/></div>
+    <div class="form-row"><label>What you do</label><input id="me-headline" value="${esc(d.headline||"")}" placeholder="Head of Revenue Operations"/></div>
+  </div>
+  <div class="form-2">
+    <div class="form-row"><label>Pronouns <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="me-pronouns" value="${esc(d.pronouns||"")}" placeholder="they/them"/></div>
+    <div class="form-row"><label>Where you are <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="me-location" value="${esc(d.location||"")}" placeholder="Manchester, UK"/></div>
+  </div>
+
+  <div class="rs-sec">The things a résumé can't say</div>
+  <div style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Write like you'd talk. Half a paragraph beats a bullet list — the AI reads it as context, not as a form. The tag on each box says where it gets used.</div>
+  ${meSections().map(box).join("")}
+
+  <div class="me-priv">
+    <label class="me-toggle"><input type="checkbox" id="me-useai" ${on?"checked":""} data-act="me-useai"/> <span><b>Use this to tailor AI</b><small>On: every brief, draft, capture and answer opens with who you are. Off: the app stays personal, the prompts stay neutral. This never leaves your device except in the prompts you send to the AI engine you chose.</small></span></label>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn ghost" data-act="cancel-editor">Cancel</button>
+    <button class="btn primary" data-act="me-save">${I.check} Save about me</button>
+  </div>`;
+}
+/* AI import. The prompt is told to write in the FIRST PERSON and to leave a section empty rather
+   than pad it — an invented working style is worse than a blank one, because it then flavours
+   every draft the app makes for the rest of time. */
+function profileParsePrompt(){
+  return `Read the text below about one person and turn it into a personal profile, written in the FIRST PERSON, as if they wrote it about themselves.
+
+Return ONLY a JSON object (no markdown), with these keys:
+{ "name":"", "headline":"", "location":"",
+${PROFILE_SECTIONS.map(s=>` "${s.k}":""   // ${s.label} — ${s.hint}`).join("\n")} }
+
+Rules:
+- Only use what the text actually says or clearly implies. Never invent a working style, a value, a dealbreaker or a personality trait — those are the fields that would go on to flavour every draft this app writes, so a wrong one is worse than a blank one.
+- Leave a key as "" if the text doesn't support it. Most résumés will only support name, headline, location, about, career and strengths. That is fine and expected.
+- 2-4 sentences per field, conversational, their own words where you have them.
+- Don't editorialise or flatter.`;
+}
+function meApplyParsed(parsed){
+  if(!parsed||typeof parsed!=="object") { toast("⚠ Couldn't read that"); return; }
+  meSync(); meDraft=meDraft||Object.assign({},getProfile());
+  let n=0;
+  ["name","headline","location"].concat(PROFILE_SECTIONS.map(s=>s.k)).forEach(k=>{
+    const v=String(parsed[k]||"").trim();
+    if(v && !String(meDraft[k]||"").trim()){ meDraft[k]=v; n++; }
+  });
+  if(editorEl) spSetBody(profileBody()); else openProfile();
+  toast(n?`Drafted ${n} section${n===1?"":"s"} — edit anything it got wrong, then save`:"Nothing new to add — your profile is already fuller than that text");
+}
+async function meAIDraft(text){
+  const eng=aiEngine();
+  if(eng==="off"||eng==="paste"){ meDraftManual(text); return; }
+  if(!String(text||"").trim()){ toast("Nothing to read yet"); return; }
+  toast("Reading…");
+  try{ meApplyParsed(aiParse(await aiCall(profileParsePrompt()+"\n\n--- THE TEXT ---\n"+text))); }
+  catch(e){ toast("⚠ "+e.message); }
+}
+function meFromResume(){
+  const t=resumeText();
+  if(!t||!t.trim()){ toast("No résumé yet — add one in Settings → Résumé studio first"); return; }
+  meAIDraft(t);
+}
+let meManualText="";
+function meDraftManual(text){
+  meManualText=text||"";
+  openEditor(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px;font-weight:850">Draft about me</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <ol style="font-size:12.5px;color:var(--muted);line-height:1.7;padding-left:18px;margin:0 0 12px">
+    <li>Copy the prompt below into any AI chat.</li>
+    <li>Paste its JSON answer into the box and apply.</li>
+  </ol>
+  <textarea id="meManualPrompt" readonly style="min-height:120px;font-size:11.5px">${esc(profileParsePrompt()+"\n\n--- THE TEXT ---\n"+(meManualText||"(paste text about yourself here)"))}</textarea>
+  <button class="btn ghost sm" data-act="me-copy-prompt" style="margin:8px 0 14px">${I.copy} Copy prompt</button>
+  <div class="form-row"><label>Paste the JSON back</label><textarea id="meManualJSON" style="min-height:120px" placeholder='{ "about": "…" }'></textarea></div>
+  <div class="modal-actions"><button class="btn ghost" data-act="cancel-editor">Cancel</button><button class="btn primary" data-act="me-manual-apply">${I.check} Apply</button></div>`);
+}
+function meFromText(){
+  meSync();
+  openEditor(`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:18px;font-weight:850">Draft from text</h2><button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+  <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Paste anything that describes you — a LinkedIn About section, a bio, an old cover letter, a performance review, or just a brain-dump. It only fills in boxes you've left empty.</div>
+  <div class="form-row"><textarea id="meRawText" style="min-height:180px" placeholder="Paste here…"></textarea></div>
+  <div class="modal-actions"><button class="btn ghost" data-act="me-back">Back</button><button class="btn primary" data-act="me-read-text">${I.ai} Read it</button></div>`);
 }
 function openPrepBank(){ openEditor(prepBankBody()); }
 function prepBankBody(){
@@ -9533,15 +9826,7 @@ function openSettings(){
     <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
   </div>
 
-  <div class="ai-box" style="margin-top:14px">
-    <div class="ai-head">${I.user} Profile</div>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Your name personalizes the app — the greeting up top — and your AI drafts speak as you.</div>
-    <div class="form-2">
-      <div class="form-row"><label>Your name</label><input id="profileName" value="${esc(getProfile().name||"")}" placeholder="Connor" autocomplete="name"/></div>
-      <div class="form-row"><label>What you do <span style="color:var(--faint);font-weight:500">— optional</span></label><input id="profileHeadline" value="${esc(getProfile().headline||"")}" placeholder="Product Manager"/></div>
-    </div>
-    <button class="btn primary sm" data-act="profile-save">${I.check} Save profile</button>
-  </div>
+  ${profileBox()}
 
   ${accountBox()}
 
@@ -11123,6 +11408,16 @@ document.addEventListener("click",e=>{
       .catch(e=>{ if(st){ st.style.color="var(--bad)"; st.textContent="⚠ "+e.message; } });
     return; }
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
+  if(act==="open-profile"){ openProfile(); return; }
+  if(act==="me-save"){ meSave(); return; }
+  if(act==="me-from-resume"){ meSync(); meFromResume(); return; }
+  if(act==="me-from-text"){ meFromText(); return; }
+  if(act==="me-back"){ openEditor(profileBody()); return; }
+  if(act==="me-read-text"){ const v=($("#meRawText")||{}).value||""; if(!v.trim()){ toast("Paste something first"); return; } meAIDraft(v); return; }
+  if(act==="me-copy-prompt"){ copy(($("#meManualPrompt")||{}).value||"","Prompt copied — paste it into any AI"); return; }
+  if(act==="me-manual-apply"){ const raw=($("#meManualJSON")||{}).value||""; try{ meApplyParsed(aiParse(raw)); }catch(err){ toast("⚠ That didn't look like JSON"); } return; }
+  // the toggle lives on the draft, so it survives a re-render mid-edit and only lands on Save
+  if(act==="me-useai"){ meSync(); if(meDraft) meDraft.useAI=!!t.checked; const p=getProfile(); p.useAI=!!t.checked; save(); return; }
   if(act==="cards-closed"){ cardsShowClosed=!cardsShowClosed; render(); return; }
   if(act==="prep-bank"){ openPrepBank(); return; }
   if(act==="prep-back"){ openPrepBank(); return; }
@@ -11801,6 +12096,23 @@ function loadSampleDemoExtras(iso){
   const p=getProfile();
   if(!p.name) p.name="";                                  // never invent a name for them
   if(!p.headline) p.headline="Revenue operations leader — forecasting, territories and the systems underneath them.";
+  // A filled-in About me, because the demo exists to show the app at full stretch and this is now
+  // the thing that makes every draft in it sound like a person. Only fills what's blank — someone
+  // who has already written their own profile never has it overwritten by the sample.
+  const meDemo={
+    about:"Fifteen years in revenue operations, nearly all of it at B2B software companies going through the jump from founder-led sales to something that can be forecast. I'm the person they call when the numbers stop agreeing with each other and nobody can say which system is right.",
+    career:"Started in FP&A at a bank, which is where I learned to distrust a number I can't trace. Moved to a Series B startup because I wanted to build the thing rather than report on it, and have stayed on that side since — two scale-ups and one acquisition. The thread is always the same: I end up owning the seam between sales, finance and the systems underneath.",
+    strengths:"Taking a mess of conflicting systems and finding the one number everyone will agree to be measured on. Getting sales and finance into a room without it turning into a fight. Writing the thing down so the argument doesn't have to happen twice.",
+    growth:"Saying no earlier. I take on other people's problems and then run out of week. Also: I default to building the elegant version when the ugly one would have shipped a month ago.",
+    style:"Async and written by default — give me the context up front and then leave me alone. I'd rather ship something rough on Tuesday than perfect in three weeks. I make decisions fast and revisit them without ego if the evidence moves.",
+    comms:"Direct and short. I'd rather be told the problem than walked up to it. No throat-clearing, no burying the ask in paragraph four.",
+    values:"Working with people who are better than me at something. Not having to fight for basic tooling. A manager who gives me the why and then gets out of the way. Somewhere that treats forecasting as a discipline rather than a monthly guess.",
+    looking:"A director-level ops role somewhere between Series C and IPO, with a real seat at the planning table rather than a reporting function bolted onto sales.",
+    avoid:"Five days in an office. A CRO who doesn't believe in forecasting. Owning a number I have no levers on.",
+    voice:"Warm but not gushing. Short sentences. Never \"excited to share\", never \"leverage\" as a verb, never exclamation marks. British spelling.",
+    notes:"I'm the primary carer two afternoons a week, so I protect Tuesday and Thursday afternoons. I read prose well and slides badly — send me the doc."
+  };
+  Object.keys(meDemo).forEach(k=>{ if(!String(p[k]||"").trim()) p[k]=meDemo[k]; });
   state.resume=state.resume||{};
   if(!state.resume.data) state.resume.data={
     name:p.name||"Your name", title:"Head of GTM Operations",

@@ -8762,21 +8762,13 @@ function biteBlock(o,text,cap){
    objectives and meeting prep, where the whole point is that only relevant ones travel.
    `GLOSS_STOP` is used rather than `STOP` for the same two reasons as in `glossaryText`: it is
    declared above this and it is stricter — one shared "the" is not a match.
-   A single common word is also no longer enough on its own: with two or more meaningful terms in
-   the query, a bite has to hit at least two, which is the same rule `jdCommitments` settled on. */
-function biteWords(b){
-  return new Set(norm([b.fact,(b.tags||[]).join(" "),b.kind,b.note,b.source].filter(Boolean).join(" ")).split(" ").filter(Boolean));
-}
-function bitesFor(o,q,cap){
-  const all=entAll("bite",o.id);
-  if(!all.length) return [];
-  const T=[...new Set(norm(q||"").split(" ").filter(w=>w.length>2&&!GLOSS_STOP.has(w)))];
-  if(!T.length) return [];
-  const need=T.length>=2?2:1;
-  const score=b=>{ const w=biteWords(b); return T.reduce((n,t)=>n+(w.has(t)?1:0),0); };
-  return all.map(b=>({b,s:score(b)})).filter(x=>x.s>=need)
-    .sort((a,b)=>b.s-a.s).slice(0,cap||12).map(x=>x.b);
-}
+
+   RARITY IS THE FILTER, NOT A HIT COUNT. The first attempt at this demanded two matching terms, the
+   rule `jdCommitments` settled on — and it was wrong here, because a JD line is a whole
+   responsibility with several meaningful words while a question is often distinctive in exactly
+   one ("what does Altare mean"). So instead a term that appears in more than a third of the pile is
+   dropped as carrying no signal, and a single surviving term is enough. That kills "here" and "all"
+   without killing the one word the question was actually about. */
 /* A bite was only ever visible in the Knowledge tab and the once-a-day rotation, which is a strange
    fate for the layer that holds the things you most need at the moment you are looking at a person
    or a system. `bitesAbout` finds them three ways, cheapest first: the explicit `personId` the form
@@ -8809,6 +8801,23 @@ function bitesAboutHTML(type,rec){
       <span class="kb-f">${esc(b.fact||"")}</span>
       ${b.source?`<span class="kb-s">${esc(b.source)}</span>`:""}
     </button>`).join("")}</div>`;
+}
+function biteWords(b){
+  return new Set(norm([b.fact,(b.tags||[]).join(" "),b.kind,b.note,b.source].filter(Boolean).join(" ")).split(" ").filter(Boolean));
+}
+function bitesFor(o,q,cap){
+  const all=entAll("bite",o.id);
+  if(!all.length) return [];
+  const T=[...new Set(norm(q||"").split(" ").filter(w=>w.length>2&&!GLOSS_STOP.has(w)))];
+  if(!T.length) return [];
+  const words=all.map(biteWords);
+  const df=t=>words.reduce((n,w)=>n+(w.has(t)?1:0),0);
+  const cut=Math.max(1,Math.floor(all.length/3));
+  const useful=T.filter(t=>{ const d=df(t); return d>0&&d<=cut; });
+  if(!useful.length) return [];
+  const score=w=>useful.reduce((n,t)=>n+(w.has(t)?1:0),0);
+  return all.map((b,i)=>({b,s:score(words[i])})).filter(x=>x.s>0)
+    .sort((a,b)=>b.s-a.s).slice(0,cap||12).map(x=>x.b);
 }
 function workRefs(o,q){
   const refs={}; const L=[]; let n={};

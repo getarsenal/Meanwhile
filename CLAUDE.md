@@ -726,8 +726,12 @@ one builder — no match, no block — and it wraps them with the instruction th
 had them through `workRefs`. **`bitesFor` had to be fixed first**: it scored with `hay.includes(t)`,
 so the word "here" in a note matched "AMS means Americas here" and any ordinary sentence dragged in
 half the pile — the same substring bug `jdCommitments` shipped with. It now matches whole words
-against a word set, uses `GLOSS_STOP` (declared above it, and stricter than `STOP`), and needs **two**
-hits when the query has two or more meaningful terms.
+against a word set and uses `GLOSS_STOP` (declared above it, and stricter than `STOP`). **Rarity is
+the filter, not a hit count** — the first attempt demanded two matching terms, the rule
+`jdCommitments` settled on, and it was wrong here: a JD line is a whole responsibility with several
+meaningful words, while a question is often distinctive in exactly one ("what does Altare mean"),
+and `kb.mjs` caught it. A term appearing in more than a third of the pile is dropped as carrying no
+signal; one surviving term is then enough.
 **They are also extracted from captures now** — the layer existed for a
 year and only ever filled by hand, because `CAPTURE_SCHEMA` never asked for one. It does (see the
 four week numbers above); a bite arrives as an ordinary tickable plan item like any other record.

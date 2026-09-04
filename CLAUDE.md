@@ -807,6 +807,25 @@ Surfaced in two places: a card in **Insights** (`globeFindings`) and an action t
 overview** once there are `same`/`likely` ones. That tile encodes `act|dupes`, a **fourth prefix**
 the `data-dash` handler has to know — see the note above about forgetting one.
 
+## THE DEMO DATA (`loadSample` / `loadSampleDemoExtras` / `loadSampleWork`)
+It exists to show the app at full stretch — ~200 graph nodes, 44 people, 10 roles, 2 competing
+offers, a scored scorecard, a résumé, 30 notes and 30 knowledge bites — because every gauge, report
+and detector here is a ratio over real records and reads as broken on a map of six things.
+**Everyone in it is a character from a well-known TV show** (Jack Donaghy, Pam Beesly, Kim Wexler,
+Leslie Knope…). That is not a joke — a demo full of plausible invented strangers is indistinguishable
+from your own notes at a glance, and Connor has twice had to stop and work out whether a name on the
+screen was real. A recognisable name says *this is the sample* without a banner saying so.
+**Three name collisions in it are deliberate and are load-bearing fixtures**, so never "tidy" them:
+*Mike Ehrmantraut* / *Michael Ehrmantraut* is the nickname pair `personMatch`'s `NICK` table has to
+catch, *Pam Beesly* appears twice as an exact duplicate, and the department pairs Product / Product
+Marketing and Engineering / Customer Engineering are the **false positives** `DUP_STRUCTURAL` and
+`DUP_HUB` exist to suppress. `dupScan` on the demo should return two `same`-tier person pairs and no
+`same`-tier department pair; several suites assert exactly that.
+**The suites reach into it by name**, which is the cost of a rich fixture: `t`/`t2`/`t4`/`t6`/`t7`
+look people up with a regex and `t4`'s mock answers one of the demo's open questions **by its exact
+text**. Rename anyone here and those go with it — prefer a structural lookup (`o.people[0]`) in any
+new test so the next rename doesn't.
+
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
 - `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], orgs[], departments[], systems[],

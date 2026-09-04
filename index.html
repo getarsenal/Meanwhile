@@ -1601,7 +1601,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v67 · 2026-09-03";
+const BUILD = "v68 · 2026-09-04";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -11681,23 +11681,23 @@ async function loadSample(){
   }
   const today=new Date(); const iso=d=>{ const x=new Date(today); x.setDate(x.getDate()+d); return x.toISOString().slice(0,10); };
   const demo=[
-    {company:"Aperture Labs",role:"Senior Product Manager",status:"onsite",source:"Referral",referrer:"Jordan Kim",workMode:"Hybrid",location:"San Francisco",excitement:5,compMin:"180000",compMax:"220000",compNotes:"+0.1% equity",appliedDate:iso(-24),jobUrl:"https://aperturelabs.com/careers/pm",tags:["dream","ai","startup"],
+    {company:"Aperture Labs",role:"Senior Product Manager",status:"onsite",source:"Referral",referrer:"Leslie Knope",workMode:"Hybrid",location:"San Francisco",excitement:5,compMin:"180000",compMax:"220000",compNotes:"+0.1% equity",appliedDate:iso(-24),jobUrl:"https://aperturelabs.com/careers/pm",tags:["dream","ai","startup"],
       product:"Series B AI tooling company building dev-productivity copilots. ~120 people, strong eng culture, just raised $40M. Product is genuinely impressive — fast and well-designed.",
       vibes:"Everyone I've met is sharp and low-ego. Fast process. Hiring manager clearly excited. Green flags everywhere — only worry is comp vs current.",
       nextActionLabel:"Onsite loop",nextActionDate:iso(3),nextMeetingLink:"https://meet.google.com/demo",
-      people:[{name:"Jordan Kim",title:"Director of Product",linkedin:"https://linkedin.com/in/demo",notes:"My referral. Warm, big-picture thinker. Came from Stripe."},{name:"Priya Anand",title:"VP Eng",notes:"Will dig into how I work with eng. Values crisp prioritization."}],
-      rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-18),status:"done",rating:4,debrief:"Good vibe, comp range confirmed. They move fast."},{name:"HM interview w/ Jordan",type:"Phone / HM",date:iso(-9),status:"done",rating:5,debrief:"Clicked immediately. Talked roadmap & how they ship."},{name:"Onsite loop (4x)",type:"Onsite loop",date:iso(3),status:"",interviewers:"Priya, Sam, Lena, Marcus",link:"https://meet.google.com/demo",prep:"Prep a product teardown of their copilot. Refresh on AI eval metrics."}]},
-    {company:"Northwind Bank",role:"Product Lead, Payments",status:"technical",source:"Recruiter reached out",referrer:"Dana (in-house recruiter)",workMode:"Remote",excitement:3,compMin:"190000",compMax:"230000",appliedDate:iso(-15),tags:["fintech","stable"],
+      people:[{name:"Leslie Knope",title:"Director of Product",linkedin:"https://linkedin.com/in/demo",notes:"My referral. Warm, big-picture thinker. Came from Stripe."},{name:"Cristina Yang",title:"VP Eng",notes:"Will dig into how I work with eng. Values crisp prioritization."}],
+      rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-18),status:"done",rating:4,debrief:"Good vibe, comp range confirmed. They move fast."},{name:"HM interview w/ Leslie",type:"Phone / HM",date:iso(-9),status:"done",rating:5,debrief:"Clicked immediately. Talked roadmap & how they ship."},{name:"Onsite loop (4x)",type:"Onsite loop",date:iso(3),status:"",interviewers:"Leslie, Cristina, Ann, Tom",link:"https://meet.google.com/demo",prep:"Prep a product teardown of their copilot. Refresh on AI eval metrics."}]},
+    {company:"Northwind Bank",role:"Product Lead, Payments",status:"technical",source:"Recruiter reached out",referrer:"Donna Paulsen (in-house recruiter)",workMode:"Remote",excitement:3,compMin:"190000",compMax:"230000",appliedDate:iso(-15),tags:["fintech","stable"],
       product:"Large bank modernizing payments. Slower, more corporate, but huge scope and great comp + stability.",
       vibes:"Process is bureaucratic. Comp is strong. Less excited but a solid fallback / leverage.",
       nextActionLabel:"Take-home case study due",nextActionDate:iso(5),
-      people:[{name:"Marcus Webb",title:"Sr Director",notes:"Reserved. Cares about metrics and risk."}],
+      people:[{name:"Gus Fring",title:"Sr Director",notes:"Reserved. Cares about metrics and risk."}],
       rounds:[{name:"Recruiter call",type:"Recruiter screen",date:iso(-12),status:"done",rating:3},{name:"Case study",type:"Take-home",date:iso(5),status:"",prep:"Payments modernization case. Show measurable impact framing."}]},
     {company:"Lumen Health",role:"Group PM",status:"recruiter",source:"LinkedIn",workMode:"Onsite",location:"Boston",excitement:4,appliedDate:iso(-6),tags:["healthtech","mission"],
       product:"Health-tech scale-up improving patient intake. Mission-driven, real impact.",
       vibes:"Early days but the mission resonates. Recruiter was lovely.",
       nextActionLabel:"Schedule HM call",nextActionDate:iso(2),
-      people:[{name:"Elena Cruz",title:"Recruiter",notes:"Responsive and friendly."}],
+      people:[{name:"Meredith Grey",title:"Recruiter",notes:"Responsive and friendly."}],
       rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-1),status:"done",rating:4,debrief:"Good fit on paper. Setting up HM next."}]},
     {company:"Vertex Robotics",role:"Senior PM, Platform",status:"rejected",source:"Cold apply",workMode:"Hybrid",location:"Austin",excitement:3,appliedDate:iso(-40),tags:["hardware"],
       vibes:"Got to onsite, didn't land it — they went with an internal candidate. Decent practice round.",
@@ -11705,36 +11705,36 @@ async function loadSample(){
     {company:"Cobalt Studio",role:"Principal PM",status:"wishlist",source:"Networking event",excitement:5,tags:["dream","design","gaming"],
       product:"Indie game-tools studio I'd love to work at. No opening yet — keeping warm via a contact.",
       vibes:"Aspirational. Met their head of product at a meetup — said to ping when I'm ready.",
-      people:[{name:"Riley Stone",title:"Head of Product",linkedin:"https://linkedin.com/in/demo",notes:"Met at GDC meetup. Said to reach out — follow up in a couple weeks."}]},
+      people:[{name:"Troy Barnes",title:"Head of Product",linkedin:"https://linkedin.com/in/demo",notes:"Met at GDC meetup. Said to reach out — follow up in a couple weeks."}]},
     // two live offers, so the scorecard has something real to weigh
-    {company:"Kestrel Data",role:"Director of Revenue Operations",status:"offer",source:"Referral",referrer:"Ada Whitfield",workMode:"Remote",location:"Remote (US)",
+    {company:"Kestrel Data",role:"Director of Revenue Operations",status:"offer",source:"Referral",referrer:"Pam Beesly",workMode:"Remote",location:"Remote (US)",
       excitement:4,compMin:"205000",compMax:"225000",compNotes:"$215k base + 15% bonus, 0.05% equity",appliedDate:iso(-52),tags:["revops","remote"],
       product:"Series C data-infrastructure company, ~300 people. First RevOps leader — everything would be greenfield.",
       vibes:"The scope is enormous and the support is thin. They know it and said so, which I respect.",
       offer:{base:"215000",bonus:"15%",equity:"0.05%",start:iso(30),deadline:iso(6),notes:"Wants an answer inside a week. Would report to the COO."},
       nextActionLabel:"Answer Kestrel",nextActionDate:iso(5),
-      people:[{name:"Ilse Kramer",title:"COO",notes:"Would be my manager. Very direct, clearly overloaded."},
-              {name:"Bruno Sacchi",title:"VP Sales",notes:"Sceptical of RevOps as a function. Winning him over is the job."}],
+      people:[{name:"Selina Meyer",title:"COO",notes:"Would be my manager. Very direct, clearly overloaded."},
+              {name:"Louis Litt",title:"VP Sales",notes:"Sceptical of RevOps as a function. Winning him over is the job."}],
       rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-48),status:"done",rating:4},
-              {name:"COO interview",type:"Phone / HM",date:iso(-40),status:"done",rating:5,interviewers:"Ilse Kramer",debrief:"Best conversation I have had in this search."},
-              {name:"Panel",type:"Panel",date:iso(-28),status:"done",rating:3,interviewers:"Bruno Sacchi, two AEs",debrief:"Bruno pushed back the whole time. Not hostile, just unconvinced."},
+              {name:"COO interview",type:"Phone / HM",date:iso(-40),status:"done",rating:5,interviewers:"Selina Meyer",debrief:"Best conversation I have had in this search."},
+              {name:"Panel",type:"Panel",date:iso(-28),status:"done",rating:3,interviewers:"Louis Litt, two AEs",debrief:"Louis pushed back the whole time. Not hostile, just unconvinced."},
               {name:"Offer call",type:"Executive",date:iso(-8),status:"done",rating:5}]},
     {company:"Ardent Health",role:"Senior Director, Sales Operations",status:"offer",source:"Recruiter reached out",workMode:"Hybrid",location:"Nashville",
       excitement:3,compMin:"230000",compMax:"245000",compNotes:"$238k base + 20% bonus, no equity",appliedDate:iso(-61),tags:["healthtech","stable"],
       product:"Health system with a large commercial arm. Slower, bigger, far more process.",
       vibes:"More money, less interesting. A team of eleven already in place, which is the real draw.",
       offer:{base:"238000",bonus:"20%",equity:"none",start:iso(45),deadline:iso(12),notes:"Relocation package included. Two days a week onsite in Nashville."},
-      people:[{name:"Cheryl Odom",title:"VP Commercial Ops",notes:"Would be my manager. Twenty years there."}],
+      people:[{name:"Phyllis Vance",title:"VP Commercial Ops",notes:"Would be my manager. Twenty years there."}],
       rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-57),status:"done",rating:3},
-              {name:"HM interview",type:"Phone / HM",date:iso(-46),status:"done",rating:4,interviewers:"Cheryl Odom"},
-              {name:"Onsite loop",type:"Onsite loop",date:iso(-24),status:"done",rating:3,interviewers:"Cheryl Odom, CFO, two directors",debrief:"Long day. Competent people, slow decisions."},
+              {name:"HM interview",type:"Phone / HM",date:iso(-46),status:"done",rating:4,interviewers:"Phyllis Vance"},
+              {name:"Onsite loop",type:"Onsite loop",date:iso(-24),status:"done",rating:3,interviewers:"Phyllis Vance, CFO, two directors",debrief:"Long day. Competent people, slow decisions."},
               {name:"Offer",type:"Executive",date:iso(-11),status:"done",rating:4}]},
     {company:"Fathom Logistics",role:"Head of Sales Operations",status:"ghosted",source:"Job board",workMode:"Onsite",location:"Long Beach",
       excitement:2,appliedDate:iso(-74),tags:["logistics"],
       vibes:"Two rounds then silence for six weeks. Wrote it off.",
       rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-70),status:"done",rating:2},
               {name:"HM interview",type:"Phone / HM",date:iso(-62),status:"done",rating:3,debrief:"Fine. Never heard back."}]},
-    {company:"Halcyon Software",role:"Director, GTM Systems",status:"withdrawn",source:"Referral",referrer:"Luis Ferreira",workMode:"Remote",
+    {company:"Halcyon Software",role:"Director, GTM Systems",status:"withdrawn",source:"Referral",referrer:"Jim Halpert",workMode:"Remote",
       excitement:3,appliedDate:iso(-66),tags:["saas"],
       vibes:"Pulled out after the second round — the role turned out to be a Salesforce admin job with a director title.",
       rounds:[{name:"Recruiter screen",type:"Recruiter screen",date:iso(-63),status:"done",rating:3},
@@ -11846,11 +11846,11 @@ function loadSampleWork(iso){
       +"Represent GTM Ops in the EMEA integration workstream.\n"
       +"Own the annual sales capacity plan.\n"
       +"Run a customer advisory board twice a year.",
-    hired:{startDate:iso(-86),title:"Head of GTM Operations",manager:"Dana Reyes",acceptedAt:ago(99)},
+    hired:{startDate:iso(-86),title:"Head of GTM Operations",manager:"Miranda Bailey",acceptedAt:ago(99)},
     rounds:[{id:uid(),name:"Recruiter screen",type:"Recruiter screen",date:iso(-188),status:"done",rating:4,debrief:"Straightforward. Comp band confirmed early, which I appreciated."},
-            {id:uid(),name:"Hiring manager — Dana",type:"Phone / HM",date:iso(-180),status:"done",rating:5,interviewers:"Dana Reyes",debrief:"Dana was blunt about the mess. That made me want it more."},
-            {id:uid(),name:"Panel w/ Sarah + Marguerite",type:"Panel",date:iso(-172),status:"done",rating:5,interviewers:"Sarah Johnson, Marguerite Boone",debrief:"Talked forecasting and territory design the whole time. Marguerite pushed hard on recognition."},
-            {id:uid(),name:"Final — CRO",type:"Executive",date:iso(-164),status:"done",rating:4,interviewers:"Gerald Nkemelu",debrief:"Short. Mostly wanted to know if I'd survive the QBR."}]};
+            {id:uid(),name:"Hiring manager — Miranda",type:"Phone / HM",date:iso(-180),status:"done",rating:5,interviewers:"Miranda Bailey",debrief:"Miranda was blunt about the mess. That made me want it more."},
+            {id:uid(),name:"Panel w/ Peggy + Lucille",type:"Panel",date:iso(-172),status:"done",rating:5,interviewers:"Peggy Olson, Lucille Bluth",debrief:"Talked forecasting and territory design the whole time. Lucille pushed hard on recognition."},
+            {id:uid(),name:"Final — CRO",type:"Executive",date:iso(-164),status:"done",rating:4,interviewers:"Jack Donaghy",debrief:"Short. Mostly wanted to know if I'd survive the QBR."}]};
   state.opportunities.push(o);
   const ms=(d,kind,label,extra)=>wAdd("milestones",Object.assign({opId:o.id,at:ago(d),kind,label},extra||{}));
   ms(99,"accepted","Accepted the offer");
@@ -11873,7 +11873,7 @@ function loadSampleWork(iso){
   const dep=(n,f)=>wAdd("departments",Object.assign({opId:o.id,name:n,orgId:div.id},f||{}));
   const rev=dep("Revenue Operations",{note:"Where I sit. Forecast, territories, deal desk, tooling."});
   const sales=dep("Sales",{note:"Two regional directors plus enablement and partners."});
-  const fin=dep("Finance",{note:"Conservative since the restatement. Everything routes through Marguerite."});
+  const fin=dep("Finance",{note:"Conservative since the restatement. Everything routes through Lucille."});
   const it=dep("IT",{note:"Owns Salesforce and the integrations, not the reporting."});
   const pmm=dep("Product Marketing"), cs=dep("Customer Success"), legal=dep("Legal");
   const data=dep("Data Platform",{parentId:it.id,note:"Split out of IT last year. Runs the warehouse."});
@@ -11895,51 +11895,51 @@ function loadSampleWork(iso){
     o.people.push(p); P.push(p); return p;
   };
   const me    = per((getProfile().name||"You").trim()||"You","Head of GTM Operations",rev,tGTM,{at:ago(86)});
-  const cro   = per("Gerald Nkemelu","Chief Revenue Officer",sales,null,{expertise:["board reporting"],notes:"Two levels up. I see him in the QBR and nowhere else."});
-  const dana  = per("Dana Reyes","VP Revenue Operations",rev,tGTM,{expertise:["territory design","comp plans"],notes:"My manager. Direct, fast, hates being surprised in front of Sarah."});
-  const cfo   = per("Marguerite Boone","CFO",fin,null,{expertise:["revenue recognition","board reporting"],notes:"Cares about one number and when it will be right."});
-  const sarah = per("Sarah Johnson","VP Sales",sales,null,{expertise:["forecasting","territory management"],notes:"Reads the risk column first. Always."});
-  const john  = per("John Alvarez","Controller",fin,tClose,{expertise:["revenue recognition","NetSuite"]});
-  const gus   = per("Gus Lindqvist","IT Systems Manager",it,null,{expertise:["integrations","NetSuite","middleware"]});
-  const mike  = per("Mike Okafor","Salesforce Administrator",it,tTool,{expertise:["Salesforce","reporting","CPQ"],notes:"Built most of the reporting. Knows where every body is buried."});
-  const priya = per("Priya Raman","Director, Data Platform",data,tBI,{expertise:["Snowflake","dbt","modelling"]});
-  const ada   = per("Ada Whitfield","Senior Revenue Analyst",rev,tGTM,{expertise:["forecast modelling","Excel"],notes:"Has been holding the roll-up together alone since Wendell left."});
-  const luis  = per("Luis Ferreira","Revenue Analyst",rev,tGTM,{expertise:["Salesforce reporting"]});
-  const nina  = per("Nina Castellanos","Deal Desk Manager",rev,tDeal,{expertise:["CPQ","pricing approvals"],notes:"Out on leave from November. No cover arranged."});
-  const tom   = per("Tom Liolios","Director, Product Marketing",pmm,null,{expertise:["positioning","launch","competitive"]});
-  const kate  = per("Katherine Osei","Director, Customer Success",cs,tRen,{expertise:["renewals","churn"]});
-  const raj   = per("Raj Bhatt","Senior Counsel",legal,null,{expertise:["contracts","data protection"]});
-  const erin  = per("Erin Novak","Sales Director, East",sales,tEnable,{expertise:["enterprise"]});
-  const carl  = per("Carl Mensah","Sales Director, West",sales,tEnable);
-  const bea   = per("Beatrice Lund","FP&A Manager",fpa,tFcst,{expertise:["planning","board reporting"]});
-  const sam   = per("Sam Whitcombe","Data Engineer",data,tPipe,{expertise:["Snowflake","pipelines","dbt"]});
-  const jo    = per("Jo Park","Enablement Manager",sales,tEnable,{expertise:["onboarding","Gong"]});
-  const hana  = per("Hana Suzuki","Renewals Manager",cs,tRen,{expertise:["renewals"]});
-  const omar  = per("Omar Haddad","Partner Manager",sales,tPart,{expertise:["channel","partners"]});
-  const pia   = per("Pia Lindgren","Product Marketing Manager",pmm,null,{expertise:["launch"]});
-  const quinn = per("Quinn Doyle","Sales Operations Analyst",sales,null,{at:ago(24)});
-  const dev   = per("Devi Sundaram","Director, FP&A",fpa,tFcst,{expertise:["planning"]});
-  const yuki  = per("Yuki Tanabe","Sales Systems Analyst",rev,tTool,{expertise:["Salesforce","flows"]});
-  const bram  = per("Bram de Vries","Commercial Director, EMEA",emea,null,{expertise:["EMEA","integration"],notes:"Runs the EMEA number. Polite and completely immovable on their close process."});
-  const elke  = per("Elke Fischer","Revenue Operations Manager, EMEA",emea,null,{expertise:["EMEA reporting"]});
-  const marco = per("Marco Bianchi","Deal Desk Analyst",rev,tDeal);
-  const tess  = per("Tess Aliyev","Renewals Analyst",cs,tRen);
-  const nkem  = per("Nkem Achebe","Data Analyst",data,tBI,{expertise:["Tableau"]});
-  const rosa  = per("Rosa Delgado","Enterprise AE",sales,null,{expertise:["enterprise"],notes:"Biggest deals, loudest about the quote turnaround."});
-  const wes   = per("Wes Cordero","Mid-Market AE",sales,null);
-  const ines  = per("Inés Aguilar","Solutions Engineer",ce,null,{expertise:["demo","integrations"]});
-  const felix = per("Felix Ward","Principal Engineer",eng,null,{expertise:["billing","platform"]});
-  const nadia = per("Nadia Osei","Group Product Manager",prod,null,{expertise:["pricing","packaging"]});
-  const teo   = per("Teo Marchetti","Support Manager",cs,null);
-  const anke  = per("Anke Vogel","Legal Ops",legal,null,{expertise:["contract templates"]});
-  const jules = per("Jules Amara","Business Systems Contractor",it,tTool,{standing:"Not an employee",notes:"Contractor through March. Doing the CPQ migration work."});
-  const prev  = per("Wendell Cross","Head of GTM Operations (before me)",rev,tGTM,
+  const cro   = per("Jack Donaghy","Chief Revenue Officer",sales,null,{expertise:["board reporting"],notes:"Two levels up. I see him in the QBR and nowhere else."});
+  const dana  = per("Miranda Bailey","VP Revenue Operations",rev,tGTM,{expertise:["territory design","comp plans"],notes:"My manager. Direct, fast, hates being surprised in front of Peggy."});
+  const cfo   = per("Lucille Bluth","CFO",fin,null,{expertise:["revenue recognition","board reporting"],notes:"Cares about one number and when it will be right."});
+  const sarah = per("Peggy Olson","VP Sales",sales,null,{expertise:["forecasting","territory management"],notes:"Reads the risk column first. Always."});
+  const john  = per("Oscar Martinez","Controller",fin,tClose,{expertise:["revenue recognition","NetSuite"]});
+  const gus   = per("Roy Trenneman","IT Systems Manager",it,null,{expertise:["integrations","NetSuite","middleware"]});
+  const mike  = per("Mike Ehrmantraut","Salesforce Administrator",it,tTool,{expertise:["Salesforce","reporting","CPQ"],notes:"Built most of the reporting. Knows where every body is buried."});
+  const priya = per("Amy Santiago","Director, Data Platform",data,tBI,{expertise:["Snowflake","dbt","modelling"]});
+  const ada   = per("Pam Beesly","Senior Revenue Analyst",rev,tGTM,{expertise:["forecast modelling","Excel"],notes:"Has been holding the roll-up together alone since Walter left."});
+  const luis  = per("Jim Halpert","Revenue Analyst",rev,tGTM,{expertise:["Salesforce reporting"]});
+  const nina  = per("Angela Martin","Deal Desk Manager",rev,tDeal,{expertise:["CPQ","pricing approvals"],notes:"Out on leave from November. No cover arranged."});
+  const tom   = per("Tom Haverford","Director, Product Marketing",pmm,null,{expertise:["positioning","launch","competitive"]});
+  const kate  = per("Kim Wexler","Director, Customer Success",cs,tRen,{expertise:["renewals","churn"]});
+  const raj   = per("Saul Goodman","Senior Counsel",legal,null,{expertise:["contracts","data protection"]});
+  const erin  = per("Joan Holloway","Sales Director, East",sales,tEnable,{expertise:["enterprise"]});
+  const carl  = per("Roger Sterling","Sales Director, West",sales,tEnable);
+  const bea   = per("Ann Perkins","FP&A Manager",fpa,tFcst,{expertise:["planning","board reporting"]});
+  const sam   = per("Abed Nadir","Data Engineer",data,tPipe,{expertise:["Snowflake","pipelines","dbt"]});
+  const jo    = per("Andy Bernard","Enablement Manager",sales,tEnable,{expertise:["onboarding","Gong"]});
+  const hana  = per("Tahani Al-Jamil","Renewals Manager",cs,tRen,{expertise:["renewals"]});
+  const omar  = per("Barney Stinson","Partner Manager",sales,tPart,{expertise:["channel","partners"]});
+  const pia   = per("April Ludgate","Product Marketing Manager",pmm,null,{expertise:["launch"]});
+  const quinn = per("Ryan Howard","Sales Operations Analyst",sales,null,{at:ago(24)});
+  const dev   = per("Ben Wyatt","Director, FP&A",fpa,tFcst,{expertise:["planning"]});
+  const yuki  = per("Maurice Moss","Sales Systems Analyst",rev,tTool,{expertise:["Salesforce","flows"]});
+  const bram  = per("Chidi Anagonye","Commercial Director, EMEA",emea,null,{expertise:["EMEA","integration"],notes:"Runs the EMEA number. Polite and completely immovable on their close process."});
+  const elke  = per("Eleanor Shellstrop","Revenue Operations Manager, EMEA",emea,null,{expertise:["EMEA reporting"]});
+  const marco = per("Dwight Schrute","Deal Desk Analyst",rev,tDeal);
+  const tess  = per("Cece Parekh","Renewals Analyst",cs,tRen);
+  const nkem  = per("Winston Bishop","Data Analyst",data,tBI,{expertise:["Tableau"]});
+  const rosa  = per("Don Draper","Enterprise AE",sales,null,{expertise:["enterprise"],notes:"Biggest deals, loudest about the quote turnaround."});
+  const wes   = per("Pete Campbell","Mid-Market AE",sales,null);
+  const ines  = per("Felicity Smoak","Solutions Engineer",ce,null,{expertise:["demo","integrations"]});
+  const felix = per("Bertram Gilfoyle","Principal Engineer",eng,null,{expertise:["billing","platform"]});
+  const nadia = per("Liz Lemon","Group Product Manager",prod,null,{expertise:["pricing","packaging"]});
+  const teo   = per("Toby Flenderson","Support Manager",cs,null);
+  const anke  = per("Diane Lockhart","Legal Ops",legal,null,{expertise:["contract templates"]});
+  const jules = per("Jean-Ralphio Saperstein","Business Systems Contractor",it,tTool,{standing:"Not an employee",notes:"Contractor through March. Doing the CPQ migration work."});
+  const prev  = per("Walter White","Head of GTM Operations (before me)",rev,tGTM,
     {standing:"Predecessor — had my role",notes:"Left in March. Most of the forecast tooling is his. Nobody picked up his open threads."});
-  const gone  = per("Marcy Del Rio","Renewals Analyst",cs,tRen,{standing:"No longer here",notes:"Left for a competitor in June. Renewal dates were her project."});
-  const moved = per("Kofi Mensah","Analyst",data,tBI,{standing:"Changed team",notes:"Was in RevOps until August, moved to Data Platform. Still the person who knows the old reports."});
+  const gone  = per("Rachel Green","Renewals Analyst",cs,tRen,{standing:"No longer here",notes:"Left for a competitor in June. Renewal dates were her project."});
+  const moved = per("Chandler Bing","Analyst",data,tBI,{standing:"Changed team",notes:"Was in RevOps until August, moved to Data Platform. Still the person who knows the old reports."});
   // the kind of duplicate that really accumulates: a business card typed in months later
-  const mikeDup = per("Michael Okafor","",it,null,{at:ago(12),notes:"Added from a business card at the QBR."});
-  const adaDup  = per("Ada Whitfield","Revenue Analyst",rev,null,{at:ago(6),notes:"Created by mistake when I was filing the forecast notes."});
+  const mikeDup = per("Michael Ehrmantraut","",it,null,{at:ago(12),notes:"Added from a business card at the QBR."});
+  const adaDup  = per("Pam Beesly","Revenue Analyst",rev,null,{at:ago(6),notes:"Created by mistake when I was filing the forecast notes."});
   o.hired.meId=me.id; o.hired.managerId=dana.id;
   [[dana,cro],[cfo,null],[sarah,cro],[cro,null],[me,dana],[ada,me],[luis,me],[nina,dana],[yuki,dana],
    [john,cfo],[bea,dev],[dev,cfo],[gus,null],[mike,gus],[jules,gus],[priya,null],[sam,priya],[nkem,priya],
@@ -11960,8 +11960,8 @@ function loadSampleWork(iso){
   const ns=sysOf("NetSuite",gus,{note:"Finance system of record for booked revenue."});
   const clari=sysOf("Clari",dana,{note:"What leadership actually looks at in the QBR. Not reconciled to Salesforce."});
   const snow=sysOf("Snowflake",priya,{note:"The warehouse. Everything trustworthy lands here eventually."});
-  const dbt=sysOf("dbt",sam,{note:"Transformations. Sam is the only person who can change them."});
-  const tab=sysOf("Tableau",nkem), gong=sysOf("Gong",jo), cpq=sysOf("CPQ",nina,{note:"Bolted onto Salesforce. Nina personally approves anything over 20%."});
+  const dbt=sysOf("dbt",sam,{note:"Transformations. Abed is the only person who can change them."});
+  const tab=sysOf("Tableau",nkem), gong=sysOf("Gong",jo), cpq=sysOf("CPQ",nina,{note:"Bolted onto Salesforce. Angela personally approves anything over 20%."});
   const zuora=sysOf("Zuora",null,{note:"Nobody seems to own this. May be dead."});
   const outreach=sysOf("Outreach",jo), zendesk=sysOf("Zendesk",teo), jira=sysOf("Jira",felix);
   const looker=sysOf("Looker",null,{note:"EMEA's reporting tool. Not connected to anything we have."});
@@ -11971,10 +11971,10 @@ function loadSampleWork(iso){
   const sfdcDup=sysOf("Salesforce CRM",null,{note:"Added before I realised we already had it recorded."});
   const proc=(n,owner,f)=>{ const r=wAdd("processes",Object.assign({opId:o.id,name:n},f||{}));
     if(owner) addLink(o.id,"person",owner.id,"OWNS","process",r.id,.9,""); return r; };
-  const pFcst=proc("Weekly forecast call",sarah,{steps:"Reps update Salesforce Monday. Ada rebuilds the roll-up Tuesday. Sarah presents Wednesday morning."});
+  const pFcst=proc("Weekly forecast call",sarah,{steps:"Reps update Salesforce Monday. Pam rebuilds the roll-up Tuesday. Peggy presents Wednesday morning."});
   const pClose=proc("Monthly close",john,{steps:"Finance locks the third working day. Nothing moves that week."});
   const pQBR=proc("QBR",dana,{steps:"Quarterly. Leadership reviews Clari, not Salesforce. Risk column first."});
-  const pDeal=proc("Deal desk review",nina,{steps:"Anything non-standard. Under 20% the queue handles it; over, Nina personally."});
+  const pDeal=proc("Deal desk review",nina,{steps:"Anything non-standard. Under 20% the queue handles it; over, Angela personally."});
   const pOnb=proc("Rep onboarding",jo), pTerr=proc("Territory planning",dana,{steps:"Annual, frozen after Q1."});
   const pRen=proc("Renewal motion",hana), pComp=proc("Commission calculation",bea);
   const pLaunch=proc("Product launch",tom), pEsc=proc("Customer escalation",teo);
@@ -11986,7 +11986,7 @@ function loadSampleWork(iso){
   const jFcst=prj("Forecast redesign","Active",me,rev,{description:"Rebuilding how the weekly forecast is produced so Finance can trust it.",myRole:"Owner"});
   const jTerr=prj("FY26 territory realignment","Blocked",dana,sales,{description:"Waiting on a clean account hierarchy. Blocked since I got here."});
   const jBook=prj("Bookings reconciliation","Active",john,fin,{description:"Getting Salesforce and NetSuite to agree on what was booked."});
-  const jCPQ=prj("CPQ migration","Active",nina,rev,{description:"Moving off the bolted-on CPQ. Jules is doing the build."});
+  const jCPQ=prj("CPQ migration","Active",nina,rev,{description:"Moving off the bolted-on CPQ. Jean-Ralphio is doing the build."});
   const jRen=prj("Renewal automation","Active",kate,cs);
   const jWare=prj("Warehouse migration to Snowflake","Complete",priya,data,{description:"Done in February. The one thing here that went well."});
   const jPart=prj("Partner attribution model","Not started",omar,sales,{description:"Indirect revenue is not attributed anywhere today."});
@@ -11994,7 +11994,7 @@ function loadSampleWork(iso){
   const jEMEA=prj("EMEA systems integration","Active",bram,emea,{description:"Bringing EMEA onto our CRM and close calendar. Politically the hardest thing I own."});
   const jCorvid=prj("Corvid CRM decommission","Blocked",gus,it,{description:"Cannot decommission until someone owns the data retention answer."});
   const jComp=prj("Comp plan redesign FY26","Active",dana,rev);
-  const jQuote=prj("Quote turnaround reduction","Active",me,rev,{description:"Rosa's deals wait four days for a quote. Target is one."});
+  const jQuote=prj("Quote turnaround reduction","Active",me,rev,{description:"Don's deals wait four days for a quote. Target is one."});
   const jSelf=prj("Self-serve billing expansion","Active",felix,eng);
   const jCI=prj("Competitive intelligence programme","Not started",tom,pmm,{description:"In my JD. Nothing started."});
   const jGov=prj("Data retention policy","Blocked",raj,legal,{description:"Blocking two other things."});
@@ -12004,96 +12004,96 @@ function loadSampleWork(iso){
 
   const prob=(t,st,f)=>wAdd("problems",Object.assign({opId:o.id,title:t,status:st},f||{}));
   const bBook=prob("Salesforce and NetSuite report different bookings","Investigating",
-    {description:"Revenue recognition rules differ, so the two systems never agree.",attempts:"Compared three months by hand with John. The gap is countersign timing, not data."});
+    {description:"Revenue recognition rules differ, so the two systems never agree.",attempts:"Compared three months by hand with Oscar. The gap is countersign timing, not data."});
   const bTerr=prob("Nobody owns the territory hierarchy","Discovered",{description:"Every trail goes cold. Mike thinks it used to be Finance."});
   const bLag=prob("Forecast is a week stale by the time it is presented","Investigating");
   const bAttr=prob("Partner-sourced deals are double-counted","Discovered");
-  const bQuote=prob("Non-standard quotes take four days","Investigating",{description:"Rosa has lost two deals to it. The bottleneck is Nina personally."});
+  const bQuote=prob("Non-standard quotes take four days","Investigating",{description:"Don has lost two deals to it. The bottleneck is Angela personally."});
   const bEMEA=prob("EMEA closes on a different calendar","Discovered",{description:"They close on the 5th. We close on the 3rd. Every consolidated number is wrong for two days."});
   const bChurn=prob("Renewal dates in Salesforce do not match the contracts","Solved",
-    {solution:"Raj's team supplied the signed dates; Sam loaded them in March.",attempts:"Tried to fix it in Salesforce first, which was the wrong end."});
+    {solution:"Saul's team supplied the signed dates; Abed loaded them in March.",attempts:"Tried to fix it in Salesforce first, which was the wrong end."});
   const bDup=prob("Corvid accounts are duplicated in Salesforce","Investigating");
-  const bComm=prob("Commission disputes every quarter","Accepted",{description:"Known, tolerated. Bea reruns it by hand.",solution:"Not worth fixing until the comp plan changes."});
+  const bComm=prob("Commission disputes every quarter","Accepted",{description:"Known, tolerated. Ann reruns it by hand.",solution:"Not worth fixing until the comp plan changes."});
   const bBus=prob("Nobody can say what the pipeline was last Tuesday","Discovered",{description:"No snapshots. Everything is current-state only."});
   const bOwn=prob("Zuora has no owner","Discovered");
-  const bDemo=prob("Demo environment data is three years old","Solved",{solution:"Inés refreshed it in September."});
+  const bDemo=prob("Demo environment data is three years old","Solved",{solution:"Felicity refreshed it in September."});
 
   const dec=(t,f)=>wAdd("decisions",Object.assign({opId:o.id,title:t},f||{}));
   const dRec=dec("Forecast recognises bookings only after countersign",{madeBy:"Finance leadership",date:"Two years ago",
     reason:"The board wanted conservative recognition after the restatement.",alternatives:"Recognise at verbal commit — rejected as unauditable."});
-  const dClari=dec("Clari is the number leadership reviews",{madeBy:"Dana Reyes",reason:"Salesforce roll-ups were never reconciled in time for the QBR."});
-  const dFreeze=dec("Territory changes freeze after Q1",{madeBy:"Sarah Johnson",reason:"Mid-year changes destroyed quota credibility two years running."});
-  const dSnow=dec("Warehouse moved to Snowflake",{madeBy:"Priya Raman",date:"February",reason:"Redshift could not keep up with the nightly load."});
-  const dCPQ=dec("Rebuild CPQ rather than patch it",{madeBy:"Dana Reyes and Nina Castellanos",reason:"The approval matrix could not express the new discount bands."});
-  const dEMEA=dec("EMEA keeps its own close calendar until FY27",{madeBy:"Marguerite Boone",reason:"Changing it mid-year would have meant restating EMEA's quarter."});
-  const dNoLooker=dec("We are not adopting Looker",{madeBy:"Priya Raman",reason:"Two BI tools is one too many. EMEA moves to Tableau."});
-  const dContract=dec("Jules stays through the CPQ migration",{madeBy:"Gus Lindqvist",reason:"Nobody internal can pick it up before March."});
-  const dSelf=dec("Self-serve stays on Stripe",{madeBy:"Felix Ward",reason:"Moving it into CPQ would have doubled the migration."});
-  const dQuiet=dec("No territory changes discussed before the QBR",{madeBy:"Sarah Johnson",reason:"Reps stop selling the moment they hear the word."});
+  const dClari=dec("Clari is the number leadership reviews",{madeBy:"Miranda Bailey",reason:"Salesforce roll-ups were never reconciled in time for the QBR."});
+  const dFreeze=dec("Territory changes freeze after Q1",{madeBy:"Peggy Olson",reason:"Mid-year changes destroyed quota credibility two years running."});
+  const dSnow=dec("Warehouse moved to Snowflake",{madeBy:"Amy Santiago",date:"February",reason:"Redshift could not keep up with the nightly load."});
+  const dCPQ=dec("Rebuild CPQ rather than patch it",{madeBy:"Miranda Bailey and Angela Martin",reason:"The approval matrix could not express the new discount bands."});
+  const dEMEA=dec("EMEA keeps its own close calendar until FY27",{madeBy:"Lucille Bluth",reason:"Changing it mid-year would have meant restating EMEA's quarter."});
+  const dNoLooker=dec("We are not adopting Looker",{madeBy:"Amy Santiago",reason:"Two BI tools is one too many. EMEA moves to Tableau."});
+  const dContract=dec("Jean-Ralphio stays through the CPQ migration",{madeBy:"Roy Trenneman",reason:"Nobody internal can pick it up before March."});
+  const dSelf=dec("Self-serve stays on Stripe",{madeBy:"Bertram Gilfoyle",reason:"Moving it into CPQ would have doubled the migration."});
+  const dQuiet=dec("No territory changes discussed before the QBR",{madeBy:"Peggy Olson",reason:"Reps stop selling the moment they hear the word."});
 
   const q=(t,f)=>wAdd("questions",Object.assign({opId:o.id,q:t,status:"Open"},f||{}));
   const q1=q("Why do Salesforce and NetSuite recognise bookings differently?");
-  const q2=q("Who administers CPQ once Nina goes on leave?");
+  const q2=q("Who administers CPQ once Angela goes on leave?");
   const q3=q("Who signs off partner attribution?");
-  const q4=q("What happened to Wendell's forecast rebuild — is any of it reusable?");
+  const q4=q("What happened to Walter's forecast rebuild — is any of it reusable?");
   const q5=q("Is the Zuora instance still in use, or can it be retired?");
   const q6=q("Who owns the data retention answer that is blocking Corvid?");
   const q7=q("What is the real headcount number for FY26 territories — Workday or the comp plan?");
-  const q8=q("Does EMEA have a deal desk at all, or does Bram approve everything?");
+  const q8=q("Does EMEA have a deal desk at all, or does Chidi approve everything?");
   const q9=q("Why is there no pipeline snapshot anywhere?");
-  q("How is the Q1 territory freeze enforced in practice?",{status:"Answered",answer:"Sarah's team locks the hierarchy in Salesforce; changes go through Dana."});
-  q("Who can change a dbt model?",{status:"Answered",answer:"Only Sam. Priya reviews. This is a bus factor of one and everyone knows it."});
+  q("How is the Q1 territory freeze enforced in practice?",{status:"Answered",answer:"Peggy's team locks the hierarchy in Salesforce; changes go through Miranda."});
+  q("Who can change a dbt model?",{status:"Answered",answer:"Only Abed. Amy reviews. This is a bus factor of one and everyone knows it."});
   q("What does ICX actually refer to?",{status:"Answered",answer:"A product family, not a product. Tom explained it — I had been treating it as one thing."});
-  q("When does the CPQ migration land?",{status:"Answered",answer:"March, and only if Jules's contract is extended."});
+  q("When does the CPQ migration land?",{status:"Answered",answer:"March, and only if Jean-Ralphio's contract is extended."});
   const q10=q("Can we get a pipeline snapshot out of Snowflake instead of building one?");
 
   const inf=(t,k,sum,note)=>wAdd("infos",{opId:o.id,title:t,kind:k,summary:sum,note:note||""});
   const iICX=inf("ICX","Product or offering","The umbrella name for the customer-experience product family — not a single product.");
-  inf("QBR","Meeting or ritual","Quarterly business review. Leadership looks at Clari numbers, not Salesforce.","Risk column first. Dana was right about this.");
+  inf("QBR","Meeting or ritual","Quarterly business review. Leadership looks at Clari numbers, not Salesforce.","Risk column first. Miranda was right about this.");
   inf("Countersign","Policy or rule","A deal is booked only once both parties have signed. This is why forecast and bookings diverge.");
   inf("The March restatement","Company history","The event that made Finance conservative about recognition. Everyone refers to it obliquely and nobody explains it.");
-  inf("Deal Desk","Team or group","Approves any non-standard pricing. Nina runs it.");   // also a team — filed twice
+  inf("Deal Desk","Team or group","Approves any non-standard pricing. Angela runs it.");   // also a team — filed twice
   inf("Reading the room in the QBR","Other","Leadership wants the number and the risk, not the methodology.");
   inf("Close week","Meeting or ritual","The first week of the month. Finance is unavailable and nothing else gets decided.");
   inf("The Corvid deal","Company history","Acquired last year for the analytics engine. The CRM was never merged, which is why account data is a mess.");
   inf("Vantage vs Halden","Naming or branding","Vantage is the brand customers know. Halden is the company. Internally everyone says Halden.");
-  inf("The Tuesday roll-up","Meeting or ritual","Ada rebuilds the forecast every Tuesday by hand. This is the single point of failure in my JD.");
-  inf("Band 4","Policy or rule","The discount band above which pricing needs Nina personally, not the queue.");
-  inf("EMEA close calendar","Policy or rule","They close on the 5th, we close on the 3rd. Locked until FY27 by Marguerite's decision.");
-  inf("Bus factor","Other","Sam for dbt, Nina for CPQ, Ada for the roll-up. Three people, three single points of failure.");
-  inf("Gerald's question","Other","The CRO asks one thing in every QBR: what changed since last quarter and why.");
+  inf("The Tuesday roll-up","Meeting or ritual","Pam rebuilds the forecast every Tuesday by hand. This is the single point of failure in my JD.");
+  inf("Band 4","Policy or rule","The discount band above which pricing needs Angela personally, not the queue.");
+  inf("EMEA close calendar","Policy or rule","They close on the 5th, we close on the 3rd. Locked until FY27 by Lucille's decision.");
+  inf("Bus factor","Other","Abed for dbt, Angela for CPQ, Pam for the roll-up. Three people, three single points of failure.");
+  inf("Jack's question","Other","The CRO asks one thing in every QBR: what changed since last quarter and why.");
 
   const bite=(fact,kind,src,who)=>wAdd("bites",{opId:o.id,fact,kind,source:src||"",personId:who?who.id:""});
-  bite("AMS means Americas here, not application managed services.","Term or acronym","Dana",dana);
-  bite("The forecast locks on the third working day of the month.","Unwritten rule","John",john);
-  bite("Renewals book against the original close date, not the renewal date.","Unwritten rule","Hana",hana);
+  bite("AMS means Americas here, not application managed services.","Term or acronym","Miranda",dana);
+  bite("The forecast locks on the third working day of the month.","Unwritten rule","Oscar",john);
+  bite("Renewals book against the original close date, not the renewal date.","Unwritten rule","Tahani",hana);
   bite("Vantage is the brand; Halden is the company. Customers only ever say Vantage.","Naming or branding","Tom",tom);
-  bite("Nobody schedules anything in close week — the first week of the month.","Unwritten rule","Ada",ada);
-  bite("CPQ approvals over 20% discount go to Nina personally, not the queue.","Gotcha","Nina",nina);
-  bite("The warehouse holds about 400 million rows; full rebuilds take four hours.","Number","Sam",sam);
-  bite("Sarah reads the risk column first. Put it on the left.","Preference","Dana",dana);
-  bite("\"The restatement\" always means March two years ago.","Term or acronym","Marguerite",cfo);
-  bite("Legal will not review anything with under five working days' notice.","Unwritten rule","Raj",raj);
-  bite("EMEA closes on the 5th. We close on the 3rd.","Number","Elke",elke);
-  bite("Band 4 is the discount level that needs a human. Everything below is automatic.","Term or acronym","Nina",nina);
-  bite("Gerald only ever asks what changed since last quarter.","Preference","Dana",dana);
+  bite("Nobody schedules anything in close week — the first week of the month.","Unwritten rule","Pam",ada);
+  bite("CPQ approvals over 20% discount go to Angela personally, not the queue.","Gotcha","Angela",nina);
+  bite("The warehouse holds about 400 million rows; full rebuilds take four hours.","Number","Abed",sam);
+  bite("Peggy reads the risk column first. Put it on the left.","Preference","Miranda",dana);
+  bite("\"The restatement\" always means March two years ago.","Term or acronym","Lucille",cfo);
+  bite("Legal will not review anything with under five working days' notice.","Unwritten rule","Saul",raj);
+  bite("EMEA closes on the 5th. We close on the 3rd.","Number","Eleanor",elke);
+  bite("Band 4 is the discount level that needs a human. Everything below is automatic.","Term or acronym","Angela",nina);
+  bite("Jack only ever asks what changed since last quarter.","Preference","Miranda",dana);
   bite("Corvid accounts still carry a CVD- prefix in Salesforce.","Gotcha","Mike",mike);
-  bite("Only Sam can change a dbt model. Priya reviews, Sam ships.","Gotcha","Priya",priya);
-  bite("Quota credit follows the account owner at close, not at open.","Unwritten rule","Sarah",sarah);
-  bite("Marketing-sourced means the first touch, not the last.","Term or acronym","Pia",pia);
-  bite("Jira project VNT is the product board; VAN is the old one nobody uses.","Gotcha","Felix",felix);
-  bite("Rosa is the loudest voice on quote turnaround, and she is right.","Fact","",rosa);
-  bite("Bram will agree in the meeting and not change anything afterwards.","Preference","Dana",bram);
-  bite("The self-serve number is small enough that Finance rounds it away.","Number","Felix",felix);
-  bite("Tuesday afternoon is the only time Ada is not rebuilding the roll-up.","Unwritten rule","Ada",ada);
-  bite("Dana wants bad news on Monday, not Wednesday.","Preference","",dana);
-  bite("Anything with a customer name in the subject line gets read; anything with a metric does not.","Preference","Jo",jo);
-  bite("The comp plan and Workday disagree on headcount by about eleven people.","Number","Bea",bea);
-  bite("Nobody has run a pipeline snapshot since Wendell left.","Fact","Ada",ada);
-  bite("Support tickets tagged P1 go to Teo directly, not the queue.","Gotcha","Teo",teo);
-  bite("Legal templates live in Anke's drive, not in the contract system.","Gotcha","Anke",anke);
-  bite("A deal is not 'closed won' until the countersigned PDF is attached.","Unwritten rule","John",john);
-  bite("Erin's team runs on a different forecast cadence — Thursdays.","Gotcha","Erin",erin);
+  bite("Only Abed can change a dbt model. Amy reviews, Abed ships.","Gotcha","Amy",priya);
+  bite("Quota credit follows the account owner at close, not at open.","Unwritten rule","Peggy",sarah);
+  bite("Marketing-sourced means the first touch, not the last.","Term or acronym","April",pia);
+  bite("Jira project VNT is the product board; VAN is the old one nobody uses.","Gotcha","Bertram",felix);
+  bite("Don is the loudest voice on quote turnaround, and she is right.","Fact","",rosa);
+  bite("Chidi will agree in the meeting and not change anything afterwards.","Preference","Miranda",bram);
+  bite("The self-serve number is small enough that Finance rounds it away.","Number","Bertram",felix);
+  bite("Tuesday afternoon is the only time Pam is not rebuilding the roll-up.","Unwritten rule","Pam",ada);
+  bite("Miranda wants bad news on Monday, not Wednesday.","Preference","",dana);
+  bite("Anything with a customer name in the subject line gets read; anything with a metric does not.","Preference","Andy",jo);
+  bite("The comp plan and Workday disagree on headcount by about eleven people.","Number","Ann",bea);
+  bite("Nobody has run a pipeline snapshot since Walter left.","Fact","Pam",ada);
+  bite("Support tickets tagged P1 go to Toby directly, not the queue.","Gotcha","Toby",teo);
+  bite("Legal templates live in Diane's drive, not in the contract system.","Gotcha","Diane",anke);
+  bite("A deal is not 'closed won' until the countersigned PDF is attached.","Unwritten rule","Oscar",john);
+  bite("Joan's team runs on a different forecast cadence — Thursdays.","Gotcha","Joan",erin);
 
   /* ---- three months of notes, in the voice of somebody actually taking them ------------------- */
   const cap=(days,summary,text,ents,met)=>{
@@ -12104,94 +12104,94 @@ function loadSampleWork(iso){
   };
   const C=[];
   C.push(cap(84,"First week — met the team",
-    "First proper week. Dana walked me through the org — or her version of it, which is not quite the org chart. Ada and Luis are my two analysts. Ada has been holding the forecast roll-up together on her own since Wendell left in March, and it is entirely manual.",
+    "First proper week. Miranda walked me through the org — or her version of it, which is not quite the org chart. Pam and Jim are my two analysts. Pam has been holding the forecast roll-up together on her own since Walter left in March, and it is entirely manual.",
     [["person",dana],["person",ada],["person",luis],["person",prev],["team",tGTM]],[dana,ada,luis]));
   C.push(cap(80,"The org chart is not the org",
-    "Second week. Two things are true: the reporting lines say one thing, and who actually decides says another. Dana is my manager but Sarah is who I have to convince. Marguerite is who has to believe the number.",
+    "Second week. Two things are true: the reporting lines say one thing, and who actually decides says another. Miranda is my manager but Peggy is who I have to convince. Lucille is who has to believe the number.",
     [["person",dana],["person",sarah],["person",cfo]],[dana]));
   C.push(cap(77,"Met Mike; found the bookings discrepancy",
-    "Met Mike today — he is the Salesforce guy, built most of the reporting over twelve years. He said Finance does not trust the forecast because Salesforce and NetSuite recognise bookings differently. Sarah owns forecasting on the business side, John in Finance has been fighting this for months. Nobody has put them in a room.",
+    "Met Mike today — he is the Salesforce guy, built most of the reporting over twelve years. He said Finance does not trust the forecast because Salesforce and NetSuite recognise bookings differently. Peggy owns forecasting on the business side, Oscar in Finance has been fighting this for months. Nobody has put them in a room.",
     [["person",mike],["person",sarah],["person",john],["system",sf],["system",ns],["problem",bBook]],[mike]));
-  C.push(cap(73,"Forecast review with Sarah",
-    "Forecast review. Sarah walked me through the methodology. Leadership actually looks at Clari, not Salesforce — which explains why the QBR numbers never matched what I was pulling. Nobody thought to mention this for three weeks.",
+  C.push(cap(73,"Forecast review with Peggy",
+    "Forecast review. Peggy walked me through the methodology. Leadership actually looks at Clari, not Salesforce — which explains why the QBR numbers never matched what I was pulling. Nobody thought to mention this for three weeks.",
     [["person",sarah],["system",clari],["process",pFcst],["process",pQBR]],[sarah]));
   C.push(cap(70,"Close week is real",
-    "Learned the hard way that nobody schedules anything in close week. John was unavailable for three days and I had put a working session in the middle of it. The forecast locks on the third working day.",
+    "Learned the hard way that nobody schedules anything in close week. Oscar was unavailable for three days and I had put a working session in the middle of it. The forecast locks on the third working day.",
     [["person",john],["process",pClose]],[john]));
-  C.push(cap(66,"Priya on the warehouse",
-    "Coffee with Priya. The Snowflake migration is done — Sam runs the pipelines and is the only person who can change a dbt model. If I want a clean bookings view that is not Salesforce, that is where it lives. Also: bus factor of one, and she knows it.",
+  C.push(cap(66,"Amy on the warehouse",
+    "Coffee with Amy. The Snowflake migration is done — Abed runs the pipelines and is the only person who can change a dbt model. If I want a clean bookings view that is not Salesforce, that is where it lives. Also: bus factor of one, and she knows it.",
     [["person",priya],["person",sam],["system",snow],["system",dbt],["project",jWare]],[priya]));
   C.push(cap(62,"Territory work is blocked",
-    "Tried to kick off territory realignment. Blocked — nobody can tell me who owns the account hierarchy in Salesforce. Mike thinks it used to be a Finance thing. I will follow up with Sarah on who can actually decide this.",
+    "Tried to kick off territory realignment. Blocked — nobody can tell me who owns the account hierarchy in Salesforce. Mike thinks it used to be a Finance thing. I will follow up with Peggy on who can actually decide this.",
     [["project",jTerr],["problem",bTerr],["person",mike],["person",sarah]],[mike]));
-  C.push(cap(58,"Nina on CPQ",
-    "Deal desk sync with Nina. Anything over 20% discount comes to her personally — Band 4, they call it. She is out for six weeks from November and there is no cover. This is going to hurt and nobody upstream seems to have noticed.",
+  C.push(cap(58,"Angela on CPQ",
+    "Deal desk sync with Angela. Anything over 20% discount comes to her personally — Band 4, they call it. She is out for six weeks from November and there is no cover. This is going to hurt and nobody upstream seems to have noticed.",
     [["person",nina],["system",cpq],["process",pDeal],["question",q2],["project",jCPQ]],[nina]));
-  C.push(cap(55,"Rosa is right about quotes",
-    "Rosa cornered me after the pipeline call. Non-standard quotes take four days. She has lost two deals to it this year. I checked with Marco — the bottleneck is not the process, it is that everything above Band 4 waits for Nina personally.",
+  C.push(cap(55,"Don is right about quotes",
+    "Don cornered me after the pipeline call. Non-standard quotes take four days. She has lost two deals to it this year. I checked with Dwight — the bottleneck is not the process, it is that everything above Band 4 waits for Angela personally.",
     [["person",rosa],["person",marco],["problem",bQuote],["project",jQuote],["person",nina]],[rosa,marco]));
   C.push(cap(51,"First QBR",
-    "Presented for the first time. Dana was right — Sarah reads the risk column first, and Gerald asked exactly one question: what changed since last quarter. I had the methodology slide ready and nobody wanted it.",
+    "Presented for the first time. Miranda was right — Peggy reads the risk column first, and Jack asked exactly one question: what changed since last quarter. I had the methodology slide ready and nobody wanted it.",
     [["person",sarah],["person",cro],["person",dana],["process",pQBR]],[sarah,cro,dana]));
   C.push(cap(47,"Partner revenue is a hole",
-    "Omar walked me through the partner motion. Indirect deals get attributed to whichever rep touched them last, so partner-sourced revenue is effectively double-counted. There is no model for this at all and it is in my job description.",
+    "Barney walked me through the partner motion. Indirect deals get attributed to whichever rep touched them last, so partner-sourced revenue is effectively double-counted. There is no model for this at all and it is in my job description.",
     [["person",omar],["problem",bAttr],["project",jPart],["process",pIntake]],[omar]));
-  C.push(cap(43,"Kate on renewals",
-    "Kate's team fixed the renewal date problem back in March — Raj supplied the signed dates and Sam loaded them. Worth remembering the pattern: contracts are the truth, Salesforce is a copy of the truth, and the copy drifts.",
+  C.push(cap(43,"Kim on renewals",
+    "Kim's team fixed the renewal date problem back in March — Saul supplied the signed dates and Abed loaded them. Worth remembering the pattern: contracts are the truth, Salesforce is a copy of the truth, and the copy drifts.",
     [["person",kate],["person",raj],["person",sam],["problem",bChurn],["project",jRen]],[kate]));
-  C.push(cap(40,"Bea on commissions",
-    "Bea reruns commissions by hand every quarter because of disputes. Everyone knows. It has been decided — not written down, just decided — that it is not worth fixing until the comp plan changes. Also: the comp plan and Workday disagree on headcount by about eleven people, which is a problem for territories.",
+  C.push(cap(40,"Ann on commissions",
+    "Ann reruns commissions by hand every quarter because of disputes. Everyone knows. It has been decided — not written down, just decided — that it is not worth fixing until the comp plan changes. Also: the comp plan and Workday disagree on headcount by about eleven people, which is a problem for territories.",
     [["person",bea],["problem",bComm],["project",jComp],["system",workday],["question",q7]],[bea]));
   C.push(cap(37,"Tom on the brand",
     "Tom explained the Vantage / Halden thing. Customers only ever say Vantage; internally everyone says Halden. ICX is a product family, not a product — I had been treating it as one thing in every document I have written so far.",
     [["person",tom],["info",iICX]],[tom]));
-  C.push(cap(34,"Wendell's leftovers",
-    "Went looking for Wendell's forecast rebuild. Half of it is in a Snowflake schema nobody has touched since March. I need to work out whether any of it is reusable before I build the same thing again — and nobody can tell me why he left.",
+  C.push(cap(34,"Walter's leftovers",
+    "Went looking for Walter's forecast rebuild. Half of it is in a Snowflake schema nobody has touched since March. I need to work out whether any of it is reusable before I build the same thing again — and nobody can tell me why he left.",
     [["person",prev],["system",snow],["project",jFcst],["question",q4]]));
-  C.push(cap(31,"Bram, politely immovable",
-    "First call with Bram about the EMEA integration. He agreed with everything and committed to nothing. Elke was more useful in five minutes afterwards than the whole call: they close on the 5th, we close on the 3rd, and Marguerite has already ruled that it stays that way until FY27.",
+  C.push(cap(31,"Chidi, politely immovable",
+    "First call with Chidi about the EMEA integration. He agreed with everything and committed to nothing. Eleanor was more useful in five minutes afterwards than the whole call: they close on the 5th, we close on the 3rd, and Lucille has already ruled that it stays that way until FY27.",
     [["person",bram],["person",elke],["problem",bEMEA],["project",jEMEA],["decision",dEMEA]],[bram,elke]));
   C.push(cap(28,"Bookings reconciliation kicked off",
-    "Sat down with John and compared three months by hand. The gap is not data quality — it is countersign timing. A deal signed on the 30th books in Salesforce in one month and in NetSuite in the next. That is the whole thing.",
+    "Sat down with Oscar and compared three months by hand. The gap is not data quality — it is countersign timing. A deal signed on the 30th books in Salesforce in one month and in NetSuite in the next. That is the whole thing.",
     [["person",john],["problem",bBook],["project",jBook],["decision",dRec]],[john]));
-  C.push(cap(25,"Marguerite, briefly",
-    "Two minutes with Marguerite in the lift. She asked when the bookings numbers will agree. I said I would come back to her with a date. I owe her that.",
+  C.push(cap(25,"Lucille, briefly",
+    "Two minutes with Lucille in the lift. She asked when the bookings numbers will agree. I said I would come back to her with a date. I owe her that.",
     [["person",cfo],["problem",bBook]],[cfo]));
   C.push(cap(22,"Corvid is still running",
-    "Gus mentioned in passing that the Corvid CRM is still live a year after the acquisition. It cannot be switched off until somebody answers a data retention question, which is with Raj, who is waiting on a policy that does not exist. Two projects are blocked behind one unanswered question.",
+    "Roy mentioned in passing that the Corvid CRM is still live a year after the acquisition. It cannot be switched off until somebody answers a data retention question, which is with Saul, who is waiting on a policy that does not exist. Two projects are blocked behind one unanswered question.",
     [["person",gus],["person",raj],["system",corvidCrm],["project",jCorvid],["project",jGov],["question",q6],["problem",bDup]],[gus]));
-  C.push(cap(19,"Jules and the CPQ build",
-    "Jules is a contractor and is doing the actual CPQ migration work. His contract ends in March. Gus has decided he stays until it lands, which is sensible and also means the migration has a contractor-shaped single point of failure.",
+  C.push(cap(19,"Jean-Ralphio and the CPQ build",
+    "Jean-Ralphio is a contractor and is doing the actual CPQ migration work. His contract ends in March. Roy has decided he stays until it lands, which is sensible and also means the migration has a contractor-shaped single point of failure.",
     [["person",jules],["person",gus],["project",jCPQ],["decision",dContract]],[jules]));
   C.push(cap(16,"No snapshots, anywhere",
-    "Asked Ada for the pipeline as of last Tuesday. There is no such thing. Everything is current-state; nothing is ever snapshotted. Nobody has run one since Wendell left. Priya thinks Snowflake could give us one for free, which would make this a two-day job instead of a project.",
+    "Asked Pam for the pipeline as of last Tuesday. There is no such thing. Everything is current-state; nothing is ever snapshotted. Nobody has run one since Walter left. Amy thinks Snowflake could give us one for free, which would make this a two-day job instead of a project.",
     [["person",ada],["person",priya],["problem",bBus],["question",q9],["question",q10],["system",snow]],[ada,priya]));
-  C.push(cap(13,"Jo on enablement",
-    "Jo runs onboarding and lives in Gong. Useful detail: Erin's team runs a Thursday forecast cadence, not the Wednesday one, which is why East always looks a week behind in my roll-up. That has probably been wrong in every number I have shown.",
+  C.push(cap(13,"Andy on enablement",
+    "Andy runs onboarding and lives in Gong. Useful detail: Joan's team runs a Thursday forecast cadence, not the Wednesday one, which is why East always looks a week behind in my roll-up. That has probably been wrong in every number I have shown.",
     [["person",jo],["person",erin],["system",gong],["process",pOnb],["process",pFcst]],[jo]));
-  C.push(cap(11,"Yuki and the flows",
-    "Yuki has been quietly fixing Salesforce flows that Mike wrote years ago. She is the second person who understands that system and nobody has noticed. Worth protecting.",
+  C.push(cap(11,"Maurice and the flows",
+    "Maurice has been quietly fixing Salesforce flows that Mike wrote years ago. She is the second person who understands that system and nobody has noticed. Worth protecting.",
     [["person",yuki],["person",mike],["system",sf]],[yuki]));
   C.push(cap(9,"Took the EMEA workstream",
-    "Dana handed me the EMEA integration workstream. It is the most political thing I own and the thing furthest from my job description, which I suspect is why it moved.",
+    "Miranda handed me the EMEA integration workstream. It is the most political thing I own and the thing furthest from my job description, which I suspect is why it moved.",
     [["person",dana],["project",jEMEA],["department",emea]],[dana]));
-  C.push(cap(7,"Hana on renewals",
-    "Hana walked me through the renewal motion. Tess does the analyst work now that Marcy has gone. The date problem is fixed but nobody has told Sales, so reps are still working from the old dates in their own spreadsheets.",
+  C.push(cap(7,"Tahani on renewals",
+    "Tahani walked me through the renewal motion. Cece does the analyst work now that Rachel has gone. The date problem is fixed but nobody has told Sales, so reps are still working from the old dates in their own spreadsheets.",
     [["person",hana],["person",tess],["person",gone],["process",pRen],["project",jRen]],[hana,tess]));
-  C.push(cap(5,"Felix on self-serve",
-    "Felix runs the self-serve billing on Stripe. It is small enough that Finance rounds it away, which means nobody is watching it grow. He thinks it doubles next year.",
+  C.push(cap(5,"Bertram on self-serve",
+    "Bertram runs the self-serve billing on Stripe. It is small enough that Finance rounds it away, which means nobody is watching it grow. He thinks it doubles next year.",
     [["person",felix],["system",stripe],["project",jSelf],["decision",dSelf]],[felix]));
-  C.push(cap(4,"Nadia on packaging",
-    "Nadia is rethinking packaging for FY26. If that lands it changes the discount bands, which changes CPQ, which changes what Jules is building right now. I do not think those two conversations have met.",
+  C.push(cap(4,"Liz on packaging",
+    "Liz is rethinking packaging for FY26. If that lands it changes the discount bands, which changes CPQ, which changes what Jean-Ralphio is building right now. I do not think those two conversations have met.",
     [["person",nadia],["project",jCPQ],["system",cpq],["person",jules]],[nadia]));
-  C.push(cap(3,"Luis flagged the hygiene duplication",
-    "Luis pointed out we have two pipeline hygiene reviews on the books doing the same thing. One is mine and one is his.",
+  C.push(cap(3,"Jim flagged the hygiene duplication",
+    "Jim pointed out we have two pipeline hygiene reviews on the books doing the same thing. One is mine and one is his.",
     [["person",luis],["project",jHyg]],[luis]));
-  C.push(cap(2,"Inés on the demo environment",
-    "Inés refreshed the demo data in September — it had been three years old. Nobody asked her to; she just did it. Filing this because it is the kind of thing that never gets credited.",
+  C.push(cap(2,"Felicity on the demo environment",
+    "Felicity refreshed the demo data in September — it had been three years old. Nobody asked her to; she just did it. Filing this because it is the kind of thing that never gets credited.",
     [["person",ines],["problem",bDemo]],[ines]));
   C.push(cap(1,"Standing back",
-    "Three months in. The pattern under all of this: every number has two sources and no owner. Bookings, headcount, renewal dates, pipeline history. Fixing the forecast is not a tooling problem, it is an ownership problem, and I should say that out loud to Dana before the next QBR.",
+    "Three months in. The pattern under all of this: every number has two sources and no owner. Bookings, headcount, renewal dates, pipeline history. Fixing the forecast is not a tooling problem, it is an ownership problem, and I should say that out loud to Miranda before the next QBR.",
     [["person",dana],["problem",bBook],["problem",bBus],["process",pQBR]]));
 
   /* ---- the relationships those notes established ---------------------------------------------- */
@@ -12273,11 +12273,11 @@ function loadSampleWork(iso){
 
   /* ---- what I already asked the map, so the Ask tab is not empty ------------------------------ */
   wAdd("asks",{opId:o.id,at:ago(20),q:"Who should I talk to about the bookings gap?",
-    a:"John Alvarez [p] has been working the reconciliation from the Finance side for months, and Mike Okafor [p] built the Salesforce reporting that produces the other number. Your notes say nobody has put them in a room together — that is the shortest path."});
+    a:"Oscar Martinez [p] has been working the reconciliation from the Finance side for months, and Mike Ehrmantraut [p] built the Salesforce reporting that produces the other number. Your notes say nobody has put them in a room together — that is the shortest path."});
   wAdd("asks",{opId:o.id,at:ago(12),q:"What am I likely to be blind to?",
-    a:"Three of your notes point at single points of failure — Ada rebuilding the roll-up by hand, Sam being the only person who can change a dbt model, and Nina personally approving everything above Band 4. Nina goes on leave in November and there is no cover recorded."});
+    a:"Three of your notes point at single points of failure — Pam rebuilding the roll-up by hand, Abed being the only person who can change a dbt model, and Angela personally approving everything above Band 4. Angela goes on leave in November and there is no cover recorded."});
   wAdd("asks",{opId:o.id,at:ago(4),q:"What is actually blocking the EMEA work?",
-    a:"Your notes give two things: the close-calendar difference, which Marguerite has already decided stays until FY27, and Bram, who your own note describes as agreeing in the meeting and changing nothing afterwards. Elke gave you more in five minutes than the call did."});
+    a:"Your notes give two things: the close-calendar difference, which Lucille has already decided stays until FY27, and Chidi, who your own note describes as agreeing in the meeting and changing nothing afterwards. Eleanor gave you more in five minutes than the call did."});
 
   /* ---- age everything so the timeline, growth chart and weekly numbers read like three months -- */
   const age=(d,list)=>list.forEach(r=>{ if(r) r.at=ago(d); });
@@ -12309,7 +12309,7 @@ function loadSampleWork(iso){
   age(3,[bDemo,jHygDup,mikeDup,tess]);
   wOf("bites",o.id).forEach((b,i)=>{ b.at=ago([73,77,43,37,70,58,66,51,73,43,31,4,51,22,66,62,37,2,55,31,5,16,84,6,40,3,13,43,77,5][i]||40); });
   wOf("infos",o.id).forEach((r,i)=>{ r.at=ago([37,73,77,73,58,51,70,22,37,16,58,31,16,51][i]||40); });
-  o.nextActionLabel="Give Marguerite a date for the bookings fix";
+  o.nextActionLabel="Give Lucille a date for the bookings fix";
   o.nextActionDate=iso(1);
 }
 

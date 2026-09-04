@@ -527,10 +527,30 @@ straight over it.
   dropped beats a one-line note. Each row offers **Update**, which opens a capture pre-seeded with
   "Update on X: " so the agent files it back against the same record.
 
-**The Work overview is a dashboard** (`workOverview`), in this order: `briefingCard` → `weekTiles` →
-`recapCard` → objectives → `circleCard` → `quietCard` → `paceCard` →
-`gaugesCard` → `actionTiles` → `growthCard` → count tiles → `worthKnowingCard` →
-`reconnectCard` → `changedCard` → `coverageCard` → open questions → recent notes → gaps → timeline.
+**The Work overview is a dashboard** (`workOverview`) and it is **six sections, not nineteen**:
+`briefingCard` + `recapCard` + `objectivesCard` (today) → `weekTiles` → **`peopleCard`** →
+**`looseEndsCard`** → **`mapHealthCard`** → `worthKnowingCard` + `reportBanner` + `recentNotesCard`.
+It grew one good idea at a time until it was ~10 phone screens and three questions were each being
+answered three ways — *who do I talk to* (`connectToday` + `circleCard` + `reconnectCard`), *how much
+do I know* (gauges + counts + coverage + pace + growth), *what went stale* (`quietCard` +
+`actionTiles` + gaps). **The rule for the merge: one card per question, leading with the answer,
+everything else one tap in** — the same `openDig` pattern the app already uses, so nothing was
+deleted, it moved from one scroll away to one tap away. Measured 8,545px → 4,871px at 390px wide.
+- **`peopleToday`/`peopleCard`** is one ranked list where **every row carries its own reason**.
+  `connectToday` already returned `{p,reasons[]}` and was being shown as a bare *number* in a week
+  tile while two other cards drew overlapping subsets of the same people. `rank` is the tier
+  (something outstanding > your circle > drifting) and it orders before reason-count, so "you said
+  you'd get back to them" always outranks "you haven't mentioned them lately".
+- **`looseEndsCard`** leads with the individual records (`quietThreads` already covers open problems,
+  projects *and* questions — which is what the separate "Open questions" section was) and keeps the
+  category counts as a chip row. `actionTiles` was split into **`actionItems`** (data) so the chips
+  reuse its routes; every chip is `data-dash="dig|…"`, so a test looking only at `[data-dig]` will
+  wrongly think those drill-downs vanished.
+- **`mapHealthCard`** keeps the five gauges on the page — they are the only measures here with a real
+  denominator — and **`openMapHealth`** absorbs counts, `paceCard`, `growthCard`, `coverageCard` and
+  `changedCard` into one modal, which is where you go once a gauge has told you something is thin.
+- The **timeline preview came off entirely**: there is a whole Timeline tab, and five rows of it here
+  was duplication rather than a summary.
 - **`deptColor` hands out hues by POSITION in the department list, not by hashing the name.** Hashing
 put four of eight departments on the same green, which makes the globe's legend a lie when the whole
 point is telling them apart; golden-angle steps keep twenty departments distinct. Cached per

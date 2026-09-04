@@ -1508,6 +1508,29 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .rs-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .rs-card-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
+/* ---- Consolidated overview: people rows, loose-end chips, map health ---- */
+.pt{display:flex;align-items:center;gap:8px;padding:2px}
+.pt-b{flex:1 1 auto;min-width:0;display:flex;align-items:flex-start;gap:10px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;cursor:pointer;color:inherit}
+.pt.hot .pt-b{border-color:rgba(207,114,115,.38)}
+.pt-b:hover{border-color:var(--accent3)}
+.pt-t{display:block;min-width:0;flex:1 1 auto}
+.pt-n{display:block;font-size:13.5px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-k{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--accent3)}
+.pt-w{font-size:12px;color:var(--muted);line-height:1.5}
+.pt-r{display:block;margin-top:3px}
+.pt-more{font-size:11px;color:var(--faint)}
+.le-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.le-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:12px;color:var(--muted);cursor:pointer;max-width:100%}
+.le-chip b{font-size:13.5px;font-weight:850}
+.le-chip.hot{border-color:rgba(207,114,115,.4)}
+.le-chip:hover{border-color:var(--accent3)}
+.mh-pace{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.mh-cell{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:inherit;min-width:0}
+.mh-cell b{display:block;font-size:19px;font-weight:850;line-height:1.1}
+.mh-cell span{display:block;font-size:11px;color:var(--faint);line-height:1.45;margin-top:3px}
+.mh-cell:hover{border-color:var(--accent3)}
+.mh-pace b{font-size:17px}
+@media(max-width:360px){.mh-pace{grid-template-columns:1fr}}
 /* ---- About me ---- */
 .me-meter{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 .me-meter-t{display:flex;align-items:baseline;gap:8px;font-size:12.5px;color:var(--muted);margin-bottom:8px}
@@ -1621,7 +1644,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v69 · 2026-09-04";
+const BUILD = "v70 · 2026-09-04";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -6580,7 +6603,7 @@ function paceCard(o){
 /* The tiles that are actually a to-do list. Post-hire the map has one real clock in it — how long
    things have been sitting — so that is what these count. A number with no age is just a count. */
 function ageDays(ts){ return ts? Math.max(0,Math.floor((Date.now()-ts)/86400000)) : 0; }
-function actionTiles(o){
+function actionItems(o){
   const qs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>a.at-b.at);
   const probs=wOf("problems",o.id).filter(p=>!/solved|accepted/i.test(p.status||"")).sort((a,b)=>a.at-b.at);
   const sys=wOf("systems",o.id).filter(s=>!s.ownerId);
@@ -6600,78 +6623,183 @@ function actionTiles(o){
   // only the near-certain ones nag from here; the rest live in Insights where you go to browse
   const dup=dupCount(o);
   tile(dup,"Look like duplicates","one record written down twice","act|dupes","#a874a0",dup>3);
-  if(!T.length) return "";
-  return `<div class="section-head"><h3>Worth doing something about</h3><div class="line"></div></div>
-    <div class="act-grid">${T.map(x=>`
-      <button class="act${x.urgent?" hot":""}" data-dash="${esc(x.act)}">
-        <span class="act-n" style="color:${cssCol(x.col)}">${esc(String(x.n))}</span>
-        <span class="act-l">${esc(x.label)}</span>
-        ${x.sub?`<span class="act-s">${esc(x.sub)}</span>`:""}
+  return T;
+}
+
+/* ==================== THE OVERVIEW, CONSOLIDATED ====================
+   This page grew one good idea at a time until it was nineteen sections and roughly ten phone
+   screens, and three questions were each being answered three different ways: **who should I talk
+   to** (`connectToday` + `circleCard` + `reconnectCard`), **how much do I know** (five gauges +
+   count tiles + coverage + pace + growth) and **what went stale** (`quietCard` + `actionTiles` +
+   the gaps list). Every one of them was right on the day it was added. Together they were a wall,
+   and design goal #1 here is "extremely easy to use".
+
+   The rule for the merge: ONE card per question, LEADING WITH THE ANSWER, everything else still
+   reachable by tapping in. Nothing is deleted — the drill-downs are the same `openDig` pattern the
+   rest of the app already uses, so every number that used to be on this page is now one tap away
+   rather than one scroll away. A name you can act on always beats a count of names, so the merged
+   cards lead with individual records and keep the category counts as a chip row underneath, which
+   is also what preserves every `data-dash` route the tiles used to own.
+
+   The timeline preview came off entirely: there is a whole Timeline tab, and five rows of it here
+   was duplication rather than a summary. */
+
+/* --- 1. PEOPLE — one ranked list where every row carries its own reason ---
+   `connectToday` already produced {person, reasons[]} and was being shown as a bare *number* in a
+   week tile while two other cards showed overlapping subsets of the same people. Now there is one
+   list. `rank` is the tier (something outstanding > your circle > drifting) and it decides order
+   before reason-count does, so "you said you'd get back to them" always outranks "you haven't
+   mentioned them in a while". */
+function peopleToday(o){
+  const out=new Map();
+  const push=(p,kind,why,rec,type,rank)=>{
+    if(!p||!personHere(p)||isMe(o,p)) return;
+    if(!out.has(p.id)) out.set(p.id,{p,reasons:[],rank:0});
+    const e=out.get(p.id);
+    if(!e.reasons.some(r=>r.kind===kind&&r.why===why)) e.reasons.push({kind,why,rec,type});
+    e.rank=Math.max(e.rank,rank);
+  };
+  connectToday(o).forEach(x=>x.reasons.forEach(r=>push(x.p,r.kind,r.why,r.rec,r.type,3)));
+  const m=myPlace(o);
+  if(m) [m.mgr].concat(m.reports||[]).filter(Boolean).forEach(p=>{
+    const last=(personInteractions(p)[0]||{}).at, gap=last?ageDays(last):null;
+    push(p, p===m.mgr?"Your manager":"Reports to you",
+      gap==null?"not in a note yet":`last came up ${gap===0?"today":gap+" days ago"}`, null,null,2);
+  });
+  reconnectPeople(o,8).forEach(x=>push(x.p,"Worth a catch-up",
+    `${Math.round(x.gap/86400000)} days quiet, after ${x.n} ${x.n===1?"note":"notes"}`,null,null,1));
+  return [...out.values()].sort((a,b)=>b.rank-a.rank||b.reasons.length-a.reasons.length);
+}
+function peopleCard(o){
+  const list=peopleToday(o); if(!list.length) return "";
+  const show=list.slice(0,4), hot=list.filter(x=>x.rank===3).length;
+  const row=x=>{
+    const r=x.reasons[0], extra=x.reasons.length-1;
+    return `<div class="pt${x.rank===3?" hot":""}">
+      <button class="pt-b" data-ent="person|${esc(x.p.id)}">
+        ${entIcoHTML("person",x.p)}
+        <span class="pt-t">
+          <span class="pt-n">${esc(x.p.name||"Someone")}</span>
+          <span class="pt-r"><span class="pt-k">${esc(r.kind)}</span> <span class="pt-w">${esc(r.why)}${extra>0?` <span class="pt-more">+${extra} more</span>`:""}</span></span>
+        </span>
+      </button>
+      ${r.rec&&r.type?`<button class="btn ghost sm" data-ent="${esc(r.type)}|${esc(r.rec.id)}">Open</button>`
+        :`<button class="btn ghost sm" data-qtcap="person|${esc(x.p.id)}">${I.note} Note</button>`}
+    </div>`;
+  };
+  return `<div class="section-head"><h3>People</h3><div class="line"></div>
+      ${hot?`<span class="tag" style="color:var(--bad);border-color:rgba(207,114,115,.4)">${hot} today</span>`:""}
+      ${list.length>show.length?`<button class="btn ghost sm" data-dig="connect">See all ${list.length}</button>`:""}</div>
+    <div class="quiet-list">${show.map(row).join("")}</div>`;
+}
+
+/* --- 2. LOOSE ENDS — the individual things first, the counts as chips underneath ---
+   `quietThreads` already ranks records by silence × how much you had invested, and it covers open
+   problems, projects and questions — which is exactly what the "Open questions" section and half
+   the action tiles were listing separately. So the records lead, `actionItems` becomes a chip row
+   (every `data-dash` route intact), and the computed gaps sit behind a button. */
+function looseEndsCard(o){
+  const quiet=quietThreads(o,3), acts=actionItems(o), gaps=knowledgeGaps(o);
+  const due=o.nextActionDate?daysUntil(o.nextActionDate):null;
+  const next=o.nextActionLabel?{label:o.nextActionLabel,due}:null;
+  if(!quiet.length&&!acts.length&&!gaps.length&&!next) return "";
+  let h=`<div class="section-head"><h3>Loose ends</h3><div class="line"></div>
+    <button class="btn ghost sm" data-dig="quiet">See all</button></div>`;
+  h+=`<div class="quiet-list">`;
+  if(next) h+=`<div class="qt${due!=null&&due<=0?" hot":""}">
+      <button class="qt-b" data-dash="open|${esc(o.id)}">
+        <span class="qt-days">${due==null?"·":due<0?Math.abs(due):due===0?"now":due}${due!=null&&due!==0?"<i>d</i>":""}</span>
+        <span class="qt-t"><span class="qt-n">${esc(String(next.label))}</span>
+          <span class="qt-m">${due==null?"your next step":due<0?"overdue":due===0?"due today":"your next step"}</span></span>
+      </button></div>`;
+  h+=quiet.map(x=>`<div class="qt">
+      <button class="qt-b" data-ent="${esc(x.type)}|${esc(x.rec.id)}">
+        <span class="qt-days">${x.days}<i>d</i></span>
+        <span class="qt-t"><span class="qt-n">${esc(entName(x.type,x.rec))}</span>
+          <span class="qt-m">${esc((ENT[x.type]||{}).label||x.type)} · quiet since ${esc(fmtDate(ymdOf(lastTouched(x.type,x.rec))))}${x.invested>1?` · ${x.invested} notes before that`:""}</span></span>
+      </button>
+      <button class="btn ghost sm" data-qtcap="${esc(x.type)}|${esc(x.rec.id)}">${I.note} Update</button>
+    </div>`).join("");
+  h+=`</div>`;
+  if(acts.length) h+=`<div class="le-chips">${acts.map(x=>`
+      <button class="le-chip${x.urgent?" hot":""}" data-dash="${esc(x.act)}">
+        <b style="color:${cssCol(x.col)}">${esc(String(x.n))}</b> ${esc(x.label)}
       </button>`).join("")}</div>`;
+  if(gaps.length) h+=`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">${gaps.length} gap${gaps.length===1?"":"s"} in your map →</button>`;
+  return h;
+}
+
+/* --- 3. HOW WELL YOU KNOW THE PLACE — gauges are the face, the rest is one tap in ---
+   The five gauges are the only measures here with a real denominator, so they stay on the page.
+   Counts, per-department coverage, pace, growth and "what changed" were five more sections saying
+   softer versions of the same thing; they move into one modal, which is where you go when the
+   gauge has already told you something is thin. */
+function mapHealthCard(o){
+  const g=gaugesCard(o); if(!g) return "";
+  const p=pace(o);
+  return g.replace('<div class="line"></div>','<div class="line"></div>')
+    + (p.total>=6&&p.day?`<div class="mh-pace">
+        <button class="mh-cell" data-dig="all-known"><b>${p.total}</b><span>things you know</span></button>
+        <button class="mh-cell" data-dig="week-added"><b>${p.week}</b><span>added this week${p.avg?` · ${p.trend>=0?"▲":"▼"} ${Math.abs(p.trend)}% vs ${p.avg}/wk`:""}</span></button>
+        <button class="mh-cell" data-act="map-health"><b>＋</b><span>counts, coverage &amp; growth</span></button>
+      </div>`:`<button class="btn ghost sm" data-act="map-health" style="margin-top:10px">Counts, coverage &amp; growth →</button>`);
+}
+function openMapHealth(o){
+  o=o||workOp(); if(!o) return;
+  const c=workCounts(o);
+  const tile=(n,l,d,go,col)=>`<button class="w-tile" ${go.slice(0,4)==="dig|"?`data-dig="${esc(go.slice(4))}"`:`data-wtab="${esc(go)}"`}><div class="n" style="color:${cssCol(col||"var(--txt)")}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></button>`;
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:8px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.map}</div>
+      <div style="min-width:0"><h2 style="margin:0;font-size:18px;font-weight:850">Your map, measured</h2>
+        <div style="font-size:12px;color:var(--faint)">Everything counted against what you've found so far</div></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button>
+    </div>
+    <div class="rs-sec">What's in the map</div>
+    <div class="w-tiles">
+      ${tile(c.people,"People","you've met","people")}
+      ${tile(c.departments,"Departments","","org","var(--warn)")}
+      ${tile(c.projects,"Projects","","projects")}
+      ${tile(c.problems,"Problems",c.openProblems+" open","dig|problems-open",c.openProblems?"var(--hot)":"")}
+      ${tile(c.systems,"Systems","","knowledge")}
+      ${tile(c.questions,"Questions",c.questions?"still open":"","dig|q-open",c.questions?"var(--warn)":"")}
+    </div>
+    ${paceCard(o)}
+    ${growthCard(o)}
+    ${coverageCard(o)}
+    ${changedCard(o)}`);
+}
+/* The 30/60/90 offer, which only exists on the days it exists. */
+function reportBanner(o){
+  const day=hireDay(o), due=[90,60,30].find(d=>day!=null&&day>=d);
+  if(!due) return "";
+  const have=wOf("reports",o.id).find(r=>r.day===due);
+  return `<div class="ai-box" style="border-color:rgba(78,163,129,.35);background:linear-gradient(160deg,rgba(78,163,129,.1),rgba(78,163,129,.05))">
+    <div class="ai-head" style="color:var(--good)">${I.trophy} ${due===90?"You've hit day 90":`Day ${due} is behind you`}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${due===90?"Time for your 90-day map — everything you've learned about how this place actually works. Nothing changes from here: your map stays exactly as it is and keeps growing.":`See what you learned in your first ${due} days, and what's still fuzzy.`}</div>
+    <button class="btn primary sm" data-report="${due}">${I.map} ${have?"Open":"Generate"} the ${due===90?"90-day map":`day-${due} review`}</button>
+  </div>`;
+}
+function recentNotesCard(o){
+  const c=workCounts(o);
+  const recent=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,4);
+  return `<div class="section-head"><h3>Recent notes</h3><div class="line"></div>${c.notes?`<span class="tag">${c.notes}</span>`:""}</div>`
+    + (recent.length
+      ? `<div class="card panel" style="padding:5px">${recent.map(cp=>entRow("capture",cp,{meta:(cp.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(cp.at)),tail:relDays(daysUntil(ymdOf(cp.at)))})).join("")}</div>`
+      : `<div class="card panel"><div class="ent-empty">Nothing captured yet.<br><br><button class="btn primary sm" data-act="capture">${I.plus} Capture what just happened</button></div></div>`);
 }
 function workOverview(o){
   maybeAutoObjectives(o);                       // the page should already be a briefing when it opens
-  const c=workCounts(o);
-  const tile=(n,l,d,go,col)=>`<button class="w-tile" ${go.slice(0,4)==="dig|"?`data-dig="${esc(go.slice(4))}"`:`data-wtab="${esc(go)}"`}><div class="n" style="color:${col||"var(--txt)"}">${n}</div><div class="l">${esc(l)}</div><div class="d">${esc(d||"")}</div></button>`;
-  // one line about today, then the dashboard, then what to do about it
-  let h=briefingCard(o);
-  h+=weekTiles(o);
+  let h="";
+  h+=briefingCard(o);        // 1. today: the line, where you left off, what to do about it
   h+=recapCard(o);
   h+=objectivesCard(o);
-  h+=circleCard(o);
-  h+=quietCard(o);
-  h+=paceCard(o);
-  h+=gaugesCard(o);
-  h+=actionTiles(o);
-  h+=growthCard(o);
-  h+=`<div class="section-head"><h3>What's in the map</h3><div class="line"></div></div>
-    <div class="w-tiles">
-    ${tile(c.people,"People","you've met","people")}
-    ${tile(c.departments,"Departments","","org","var(--warn)")}
-    ${tile(c.projects,"Projects","","projects")}
-    ${tile(c.problems,"Problems",c.openProblems+" open","dig|problems-open",c.openProblems?"var(--hot)":"")}
-    ${tile(c.systems,"Systems","","knowledge")}
-    ${tile(c.questions,"Questions",c.questions?"still open":"","dig|q-open",c.questions?"var(--warn)":"")}
-  </div>`;
-  h+=worthKnowingCard(o);
-
-  // a 30/60/90 report becomes available as you pass each mark
-  const day=hireDay(o);
-  const due=[90,60,30].find(d=>day!=null&&day>=d);
-  if(due){
-    const have=wOf("reports",o.id).find(r=>r.day===due);
-    h+=`<div class="ai-box" style="border-color:rgba(78,163,129,.35);background:linear-gradient(160deg,rgba(78,163,129,.1),rgba(78,163,129,.05))">
-      <div class="ai-head" style="color:var(--good)">${I.trophy} ${due===90?"You've hit day 90":`Day ${due} is behind you`}</div>
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">${due===90?"Time for your 90-day map — everything you've learned about how this place actually works. Nothing changes from here: your map stays exactly as it is and keeps growing.":`See what you learned in your first ${due} days, and what's still fuzzy.`}</div>
-      <button class="btn primary sm" data-report="${due}">${I.map} ${have?"Open":"Generate"} the ${due===90?"90-day map":`day-${due} review`}</button>
-    </div>`;
-  }
-
-  h+=reconnectCard(o);
-  h+=changedCard(o);
-  h+=coverageCard(o);
-
-  const openQs=wOf("questions",o.id).filter(q=>q.status==="Open").sort((a,b)=>b.at-a.at);
-  if(openQs.length){
-    h+=`<div class="section-head"><h3>Open questions</h3><div class="line"></div><span class="tag">${openQs.length}</span></div>
-      <div class="card panel" style="padding:5px">${openQs.slice(0,5).map(q=>entRow("question",q,{tail:`<button class="btn sm ghost" data-qstat="${q.id}|Answered" title="Mark answered">✓</button>`})).join("")}</div>`;
-  }
-
-  const recent=wOf("captures",o.id).sort((a,b)=>b.at-a.at).slice(0,4);
-  h+=`<div class="section-head"><h3>Recent notes</h3><div class="line"></div>${c.notes?`<span class="tag">${c.notes}</span>`:""}</div>`;
-  h+= recent.length
-    ? `<div class="card panel" style="padding:5px">${recent.map(cp=>entRow("capture",cp,{meta:(cp.entities||[]).map(e=>entLabel(e.t,e.id)).filter(Boolean).slice(0,4).join(" · ")||fmtDate(ymdOf(cp.at)),tail:relDays(daysUntil(ymdOf(cp.at)))})).join("")}</div>`
-    : `<div class="card panel"><div class="ent-empty">Nothing captured yet.<br><br><button class="btn primary sm" data-act="capture">${I.plus} Capture what just happened</button></div></div>`;
-
-  // Gaps are housekeeping, not a morning briefing — useful, but well below what to do today
-  const gaps=knowledgeGaps(o);
-  if(gaps.length){
-    h+=`<div class="section-head"><h3>Gaps in your map</h3><div class="line"></div><span class="tag">${gaps.length}</span></div>
-      <div class="card panel">${gaps.slice(0,3).map(gapHTML).join("")}
-      ${gaps.length>3?`<button class="btn ghost sm" data-act="work-gaps" style="margin-top:10px">See all ${gaps.length}</button>`:""}</div>`;
-  }
-
-  h+=`<div class="section-head"><h3>Timeline</h3><div class="line"></div></div><div class="card panel">${timelineHTML(o,5)}</div>`;
+  h+=weekTiles(o);           // 2. four questions with a right answer
+  h+=peopleCard(o);          // 3. who to talk to, and why
+  h+=looseEndsCard(o);       // 4. what is sitting there
+  h+=mapHealthCard(o);       // 5. how well you know the place
+  h+=worthKnowingCard(o);    // 6. the pile paying you back, then what you actually wrote
+  h+=reportBanner(o);
+  h+=recentNotesCard(o);
   return h;
 }
 /* ======================== FILTERABLE LISTS ========================
@@ -11409,6 +11537,7 @@ document.addEventListener("click",e=>{
     return; }
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="open-profile"){ openProfile(); return; }
+  if(act==="map-health"){ openMapHealth(); return; }
   if(act==="me-save"){ meSave(); return; }
   if(act==="me-from-resume"){ meSync(); meFromResume(); return; }
   if(act==="me-from-text"){ meFromText(); return; }

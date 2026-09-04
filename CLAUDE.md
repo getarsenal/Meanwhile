@@ -528,7 +528,7 @@ straight over it.
   "Update on X: " so the agent files it back against the same record.
 
 **The Work overview is a dashboard** (`workOverview`) and it is **six sections, not nineteen**:
-`briefingCard` + `recapCard` + `objectivesCard` (today) → `weekTiles` → **`peopleCard`** →
+`briefingCard` + `recapCard` + `objectivesCard` + **`dqCard`** (today) → `weekTiles` → **`peopleCard`** →
 **`looseEndsCard`** → **`mapHealthCard`** → `worthKnowingCard` + `reportBanner` + `recentNotesCard`.
 It grew one good idea at a time until it was ~10 phone screens and three questions were each being
 answered three ways — *who do I talk to* (`connectToday` + `circleCard` + `reconnectCard`), *how much
@@ -858,6 +858,33 @@ Surfaced in two places: a card in **Insights** (`globeFindings`) and an action t
 overview** once there are `same`/`likely` ones. That tile encodes `act|dupes`, a **fourth prefix**
 the `data-dash` handler has to know — see the note above about forgetting one.
 
+## THE ONE QUESTION A DAY (`dqCandidates` / `dailyQuestion` / `dqApply`)
+Everything else in this app waits to be asked. But it knows exactly where its own map is thin — a
+system named in four notes that nobody owns, a person you have talked to six times whose department
+you never wrote down — and that knowledge was only ever used to draw a gauge. **A gauge tells you a
+number is low; it does not get the number up.** One good question does, in about eight seconds, and
+it is the only part of the app that fills the map without you first deciding what to write about.
+**No AI is involved at any point** — which is what makes it safe at the top of the page. Every
+candidate names a real record with a genuinely empty field and carries the evidence for why it is
+worth asking (how many of your own notes mention it); the answer is written straight to the field it
+belongs to. Seven generators: owner for a system/project, department, reporting line, title,
+department head, project target date, and what has been tried on a stale problem.
+**Ranked by evidence, not age.** A system mentioned six times with no owner is a worse hole than one
+mentioned once — six mentions is the app telling you it matters while you still cannot say who to go
+to. `weight = ev*10 + bonus`, so one extra mention outranks any bonus; the bonus band (owner 8 …
+target 1) only breaks ties, because a missing owner is more actionable than a missing date at equal
+evidence. `DQ_MIN_EV` keeps it away from records written down once and never touched again — those
+are notes, not gaps.
+**`dqApply` resolves before it creates.** A name goes through the same `personMatch`/`canonThing`
+pair the capture agent uses, so answering "Michael" against a Mike you already have does not fork a
+second person; a department name reuses the department. It writes the field **and** the graph edge
+(OWNS / REPORTS_TO / WORKS_IN), because a pointer without an edge is invisible to the map. A date
+that isn't one is refused rather than stored.
+**Answered and skipped are both remembered** in `answered` (a `WORK_LISTS` array, so it syncs and
+exports), keyed by record+field. A question you have dealt with never comes back — an app that
+re-asks is one you stop reading. `dqCycle` ("ask me something else") is in memory only, so tomorrow
+starts fresh.
+
 ## ABOUT ME (`PROFILE_SECTIONS` / `meText` / `openProfile`)
 Everything else in the app is context about *companies*. This is the context about the **person**,
 and it is what the AI features were missing: the app knew a name and a headline, so every draft it
@@ -926,7 +953,8 @@ new test so the next rename doesn't.
 ## Data model
 `state = { opportunities:[], stages?:[], resume?:{file,text,data}, stories?:[], questions?:[], profile?:{name,headline}, scorecard?:{}, work?:{}, rev, meta }`
 - `state.work` (POST-HIRE, `W()`): `{ captures[], projects[], problems[], orgs[], departments[], systems[],
-  processes[], decisions[], questions[], links[], milestones[], reports[], asks[], objectives[] }` —
+  processes[], decisions[], questions[], links[], milestones[], reports[], asks[], objectives[],
+  dupskips[], answered[] }` —
   every record carries
   `{id, opId, at}`. **Note the name clash:** `state.questions` is the pre-hire Prep Bank question
   library; post-hire **open questions** are `state.work.questions`.

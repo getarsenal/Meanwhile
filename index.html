@@ -1508,6 +1508,18 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .rs-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .rs-card-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
+/* ---- One question a day ---- */
+.dq{background:linear-gradient(160deg,rgba(198,164,92,.12),rgba(198,164,92,.05));border:1px solid rgba(198,164,92,.34);border-radius:14px;padding:14px;margin-bottom:12px}
+.dq-k{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#c6a45c;margin-bottom:7px}
+.dq-q{font-size:15.5px;font-weight:800;line-height:1.4}
+.dq-w{font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:5px}
+.dq-row{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.dq-row input{flex:1 1 190px;min-width:0}
+.dq-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:9px}
+.dq-x{background:none;border:0;padding:0;font-size:11.5px;font-weight:700;color:var(--accent3);cursor:pointer}
+.dq-x:hover{text-decoration:underline}
+.dq-n{font-size:11px;color:var(--faint);margin-left:auto}
+@media(max-width:400px){.dq-n{margin-left:0;width:100%}}
 /* ---- Knowledge bites, surfaced on the record they are about ---- */
 .kb-strip{display:flex;flex-direction:column;gap:7px}
 .kb-b{display:block;width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);border-left:3px solid #5b9c97;border-radius:10px;padding:9px 11px;cursor:pointer;color:inherit}
@@ -1651,8 +1663,8 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v71 · 2026-09-04";
-const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips"];
+const BUILD = "v72 · 2026-09-04";
+const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
 const QUESTION_STATUS = ["Open","Answered","Dismissed"];
@@ -6654,6 +6666,119 @@ function actionItems(o){
   return T;
 }
 
+
+/* ======================= THE ONE QUESTION A DAY =======================
+   Everything else here waits to be asked. But the app knows precisely where its own map is thin —
+   a system named in four notes that nobody owns, a person you have talked to six times whose
+   department you never wrote down — and that knowledge was only ever used to draw a gauge. A gauge
+   tells you a number is low; it does not get the number up. One good question does, in about eight
+   seconds, and it is the only part of this app that fills the map without you deciding what to
+   write about.
+
+   THE RULE IS THE SAME AS EVERY OTHER POST-HIRE FEATURE: never invented. Each candidate names a
+   real record with a real hole in it, and carries the evidence for why it is worth asking — how
+   many of your own notes mention the thing. No AI is involved at any point: the questions are
+   computed, the answer is written straight to the field it belongs to. That is what makes it safe
+   to put at the top of the page.
+
+   Ranked by evidence, not age. A system mentioned six times with no owner is a worse hole than one
+   mentioned once, because six mentions is the app telling you it matters and you still cannot say
+   who to go to. `DQ_MIN_EV` keeps it from asking about records you wrote down once and never
+   touched again — those are not gaps, they are just notes.
+
+   Answers are remembered in `answered` (a WORK_LISTS array, so it syncs and exports) keyed by
+   record+field, and a skip is remembered exactly the same way. A question you have dealt with never
+   comes back — an app that re-asks is one you stop reading. */
+const DQ_MIN_EV = 1;          // a record has to appear in at least this many notes to be worth asking about
+let dqCycle = 0;              // "ask me something else", in memory only — tomorrow starts fresh
+function dqLog(o){ return wOf("answered",o.id); }
+function dqDone(o){ const m={}; dqLog(o).forEach(r=>{ if(r&&r.key) m[r.key]=r; }); return m; }
+function dqEvidence(type,id){ return evidenceFor(type,id).length; }
+function dqCandidates(o){
+  if(!o||!o.hired) return [];
+  const done=dqDone(o), out=[];
+  const ppl=(o.people||[]).filter(p=>personHere(p)&&!isMe(o,p));
+  const add=(type,rec,field,kind,q,why,bonus)=>{
+    const key=type+"|"+rec.id+"|"+field;
+    if(done[key]) return;
+    const ev=dqEvidence(type,rec.id);
+    if(ev<DQ_MIN_EV) return;
+    out.push({key,type,id:rec.id,field,kind,q,why,ev,weight:ev*10+(bonus||0)});
+  };
+  ["system","project"].forEach(t=>wOf(t==="system"?"systems":"projects",o.id)
+    .filter(r=>!r.ownerId&&!/complete|cancelled/i.test(r.status||""))
+    .forEach(r=>add(t,r,"ownerId","person",`Who owns ${entName(t,r)}?`,"nobody recorded as the owner",8)));
+  ppl.filter(p=>!p.deptId).forEach(p=>add("person",p,"deptId","department",`Which department is ${p.name} in?`,"no department recorded",6));
+  ppl.filter(p=>!personManager(p)).forEach(p=>add("person",p,"managerId","person",`Who does ${p.name} report to?`,"no reporting line recorded",4));
+  ppl.filter(p=>!String(p.title||"").trim()).forEach(p=>add("person",p,"title","text",`What is ${p.name}'s title?`,"no title recorded",2));
+  wOf("departments",o.id).filter(d=>!d.headId).forEach(d=>add("department",d,"headId","person",`Who runs ${d.name}?`,"no head recorded",4));
+  wOf("projects",o.id).filter(pr=>!pr.target&&!/complete|cancelled/i.test(pr.status||""))
+    .forEach(pr=>add("project",pr,"target","date",`When is ${pr.name} meant to land?`,"no target date recorded",1));
+  wOf("problems",o.id).filter(pb=>!/solved|accepted/i.test(pb.status||"")&&!String(pb.attempts||"").trim()&&ageDays(pb.at)>14)
+    .forEach(pb=>add("problem",pb,"attempts","text",`What has been tried on "${entName("problem",pb)}"?`,`open ${ageDays(pb.at)} days with nothing tried written down`,3));
+  return out.sort((a,b)=>b.weight-a.weight||a.key.localeCompare(b.key));
+}
+function dailyQuestion(o){
+  const list=dqCandidates(o);
+  if(!list.length) return null;
+  return list[dqCycle%list.length];
+}
+function dqRecord(o,c,answer,skipped){
+  wAdd("answered",{opId:o.id,key:c.key,type:c.type,rid:c.id,field:c.field,
+    answer:String(answer||"").slice(0,300),skipped:!!skipped,ymd:todayYMD()});
+}
+/* Writing the answer where it belongs is the whole point — a question that only files a note is a
+   worse version of Capture. A name resolves to a record you already have before it ever creates
+   one, through the same `personMatch`/`canonThing` pair the capture agent uses, so answering
+   "Miranda" does not fork a second Miranda. */
+function dqApply(o,c,raw){
+  const text=String(raw||"").trim(); if(!text) return false;
+  const rec = c.type==="person" ? (o.people||[]).find(p=>p.id===c.id) : wFind(ENT[c.type].list,c.id);
+  if(!rec) return false;
+  snapshotUndo("answering a question");
+  if(c.kind==="person"){
+    let p=(o.people||[]).find(x=>personMatch(x.name,text)>=0.75);
+    if(!p) p=createEnt("person",o.id,text,{});
+    if(!p) return false;
+    rec[c.field]=p.id;
+    if(c.field==="ownerId") addLink(o.id,"person",p.id,"OWNS",c.type,rec.id,0.95,null);
+    if(c.field==="managerId") addLink(o.id,"person",rec.id,"REPORTS_TO","person",p.id,0.95,null);
+    if(c.field==="headId") addLink(o.id,"person",p.id,"OWNS",c.type,rec.id,0.9,null);
+  } else if(c.kind==="department"){
+    let d=wOf("departments",o.id).find(x=>canonThing(x.name)===canonThing(text));
+    if(!d) d=createEnt("department",o.id,text,{});
+    if(!d) return false;
+    rec[c.field]=d.id;
+    addLink(o.id,"person",rec.id,"WORKS_IN","department",d.id,0.95,null);
+  } else if(c.kind==="date"){
+    const y=validYMD(text); if(!y){ toast("⚠ Needs a date"); return false; }
+    rec[c.field]=y;
+  } else {
+    rec[c.field]=text.slice(0,400);
+  }
+  rec.updatedAt=Date.now();
+  dqRecord(o,c,text,false);
+  save();
+  return true;
+}
+function dqCard(o){
+  const c=dailyQuestion(o); if(!c) return "";
+  const total=dqCandidates(o).length;
+  const input = c.kind==="date"
+    ? `<input id="dqIn" type="date" placeholder="YYYY-MM-DD"/>`
+    : `<input id="dqIn" type="text" autocomplete="off" placeholder="${esc(c.kind==="person"?"A name — an existing colleague or a new one":c.kind==="department"?"A department name":"In a few words")}"/>`;
+  return `<div class="dq">
+    <div class="dq-k">${I.question} One question</div>
+    <div class="dq-q">${esc(c.q)}</div>
+    <div class="dq-w">${esc(c.why)} · mentioned in ${c.ev} ${c.ev===1?"note":"notes"} · <span class="cite" data-ent="${esc(c.type)}|${esc(c.id)}">open the record</span></div>
+    <div class="dq-row">${input}<button class="btn primary sm" data-act="dq-save">${I.check} Save</button></div>
+    <div class="dq-acts">
+      <button class="dq-x" data-act="dq-skip">I don't know</button>
+      ${total>1?`<button class="dq-x" data-act="dq-next">Ask me something else</button>`:""}
+      <span class="dq-n">${total} ${total===1?"gap":"gaps"} it could ask about</span>
+    </div>
+  </div>`;
+}
 /* ==================== THE OVERVIEW, CONSOLIDATED ====================
    This page grew one good idea at a time until it was nineteen sections and roughly ten phone
    screens, and three questions were each being answered three different ways: **who should I talk
@@ -6821,6 +6946,7 @@ function workOverview(o){
   h+=briefingCard(o);        // 1. today: the line, where you left off, what to do about it
   h+=recapCard(o);
   h+=objectivesCard(o);
+  h+=dqCard(o);              // …and the one question that fills a hole the map actually has
   h+=weekTiles(o);           // 2. four questions with a right answer
   h+=peopleCard(o);          // 3. who to talk to, and why
   h+=looseEndsCard(o);       // 4. what is sitting there
@@ -11632,6 +11758,14 @@ document.addEventListener("click",e=>{
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="open-profile"){ openProfile(); return; }
   if(act==="map-health"){ openMapHealth(); return; }
+  if(act==="dq-save"){ const o=workOp(), c=o&&dailyQuestion(o), v=($("#dqIn")||{}).value||"";
+    if(!o||!c) return;
+    if(!String(v).trim()){ const i=$("#dqIn"); if(i) i.focus(); return; }
+    if(dqApply(o,c,v)){ dqCycle=0; render(); toast("Filed against "+entName(c.type,c.type==="person"?(o.people||[]).find(p=>p.id===c.id):wFind(ENT[c.type].list,c.id))+" ✓","",""); }
+    return; }
+  if(act==="dq-skip"){ const o=workOp(), c=o&&dailyQuestion(o); if(!o||!c) return;
+    dqRecord(o,c,"",true); dqCycle=0; save(); render(); return; }
+  if(act==="dq-next"){ dqCycle++; render(); return; }
   if(act==="me-save"){ meSave(); return; }
   if(act==="me-from-resume"){ meSync(); meFromResume(); return; }
   if(act==="me-from-text"){ meFromText(); return; }

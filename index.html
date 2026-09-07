@@ -196,17 +196,46 @@ label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-we
 .hero-mark{position:absolute;right:-36px;top:50%;transform:translateY(-50%);width:170px;height:170px;border-radius:42px;z-index:0;opacity:.06;pointer-events:none}
 @media(max-width:560px){ .hero-inner{padding:18px;gap:12px} .hc-num{font-size:50px} .hc-num.now{font-size:30px} .hc-num.clock{font-size:25px} .hero-name{font-size:20px} .hero-fav{width:40px!important;height:40px!important;flex-basis:40px!important} .hero-mark{width:128px;height:128px;right:-28px} }
 
-/* Branded launch splash (installed app only — see media query) */
-#splash{display:none;position:fixed;inset:0;z-index:9999;background:
-  radial-gradient(900px 520px at 50% 22%, rgba(94,106,210,.10), transparent 60%), var(--bg);
-  place-items:center;transition:opacity .45s ease,visibility .45s}
-#splash.hide{opacity:0;visibility:hidden;pointer-events:none}
-.sp-inner{display:flex;flex-direction:column;align-items:center;gap:13px;animation:sppop .55s cubic-bezier(.2,.7,.2,1)}
-#splash img{width:88px;height:88px;border-radius:23px;box-shadow:var(--shadow)}
-.sp-name{font-size:27px;font-weight:850;letter-spacing:-.02em;color:var(--txt)}
-.sp-tag{font-size:12.5px;color:var(--accent3);font-weight:600;letter-spacing:.05em}
-@keyframes sppop{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
-@media (display-mode:standalone){ #splash{display:grid} }
+/* ===================== THE ARRIVAL =====================
+   The first thing anyone sees, every open, installed or not. It is the login screen's own sky —
+   the same four brand violets over deep indigo — set in motion: the colours bloom out of the
+   centre, turn through most of a revolution, settle, and the mark resolves out of the swirl.
+
+   IT NEVER BLOCKS. `pointer-events:none` on the whole layer, so the app underneath is live from
+   the first frame and every test that clicks at 400ms is unaffected; any pointer or key press
+   fades it out early. An intro you cannot get past is a toll booth, and this app opens dozens of
+   times a day.
+
+   The paint lands before a single line of JS runs: the same indigo radial is the element's CSS
+   background, so there is no white flash while the script boots and no flash if canvas is
+   unavailable. `prefers-reduced-motion` gets that still frame and nothing else. */
+#splash{display:grid;position:fixed;inset:0;z-index:9999;overflow:hidden;place-items:center;
+  background:radial-gradient(120% 90% at 50% 8%, #1B1447 0%, #0E0B24 46%, #080715 100%);
+  transition:opacity .62s cubic-bezier(.4,0,.2,1),transform .62s cubic-bezier(.4,0,.2,1),visibility .62s;
+  pointer-events:none;-webkit-font-smoothing:antialiased}
+#splash.hide{opacity:0;visibility:hidden;transform:scale(1.07)}
+#splash.fast{transition-duration:.3s}
+#spCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;filter:blur(14px) saturate(1.18)}
+/* grain, or those gradients band into stripes on a cheap panel — the same trick the login sky uses */
+.sp-grain{position:absolute;inset:0;opacity:.055;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+.sp-vig{position:absolute;inset:0;background:radial-gradient(78% 60% at 50% 46%, rgba(0,0,0,0) 34%, rgba(4,3,12,.8) 100%)}
+.sp-inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:13px;text-align:center}
+/* the mark turns out of the swirl rather than appearing on top of it */
+#splash img{width:88px;height:88px;border-radius:23px;box-shadow:0 22px 60px -18px rgba(0,0,0,.8);
+  animation:spTurn 1200ms cubic-bezier(.16,.84,.3,1) 1180ms both}
+.sp-name{font-size:30px;font-weight:850;letter-spacing:-.03em;color:#fff;
+  animation:spRise 820ms cubic-bezier(.16,.84,.3,1) 1420ms both}
+.sp-tag{font-size:12px;font-weight:650;letter-spacing:.16em;text-transform:uppercase;color:#A6ABE6;
+  animation:spRise 820ms cubic-bezier(.16,.84,.3,1) 1560ms both}
+@keyframes spTurn{from{opacity:0;transform:rotate(-32deg) scale(.72)}to{opacity:1;transform:none}}
+@keyframes spRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#splash.still #spCanvas{display:none}
+#splash.still img,#splash.still .sp-name,#splash.still .sp-tag{animation:none;opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  #splash img,#splash .sp-name,#splash .sp-tag{animation:none;opacity:1;transform:none}
+  #splash{transition-duration:.2s}
+}
 /* brand mark in the mobile top bar (the desktop sidebar logo is hidden there) */
 .topbar-brand{display:none;width:38px;height:38px;border-radius:11px;flex:0 0 auto;cursor:pointer;transition:transform .12s}
 .topbar-brand:active{transform:scale(.9)}
@@ -1508,6 +1537,22 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rs-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent3);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .rs-card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .rs-card-h{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px}
+/* ---- View arrival: the page assembles instead of appearing ----
+   Only `opacity` and `translateY`, both compositor-only, and only on the direct children of
+   `.content` — animating deeper would fight the org chart's and the globe's own transforms.
+   The cascade is capped at eight steps: past that a stagger stops reading as choreography and
+   starts reading as lag, and the Work overview has more sections than that. */
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.content.vswap>*{animation:viewIn .40s cubic-bezier(.16,.84,.3,1) both}
+.content.vswap>*:nth-child(1){animation-delay:.00s}
+.content.vswap>*:nth-child(2){animation-delay:.035s}
+.content.vswap>*:nth-child(3){animation-delay:.07s}
+.content.vswap>*:nth-child(4){animation-delay:.105s}
+.content.vswap>*:nth-child(5){animation-delay:.14s}
+.content.vswap>*:nth-child(6){animation-delay:.175s}
+.content.vswap>*:nth-child(7){animation-delay:.21s}
+.content.vswap>*:nth-child(n+8){animation-delay:.245s}
+@media(prefers-reduced-motion:reduce){ .content.vswap>*{animation:none} }
 /* ---- One question a day ---- */
 .dq{background:linear-gradient(160deg,rgba(198,164,92,.12),rgba(198,164,92,.05));border:1px solid rgba(198,164,92,.34);border-radius:14px;padding:14px;margin-bottom:12px}
 .dq-k{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#c6a45c;margin-bottom:7px}
@@ -1574,11 +1619,16 @@ tbody td{padding:12px 14px;vertical-align:middle}
 </head>
 <body>
 <!-- Branded launch splash — only when running as an installed app (PWA/native); browser tabs skip it -->
-<div id="splash"><div class="sp-inner">
-  <img src="icon.png" alt="" width="88" height="88"/>
-  <div class="sp-name">Meanwhile</div>
-  <div class="sp-tag">Track · Prepare · Get hired</div>
-</div></div>
+<div id="splash">
+  <canvas id="spCanvas" aria-hidden="true"></canvas>
+  <div class="sp-grain" aria-hidden="true"></div>
+  <div class="sp-vig" aria-hidden="true"></div>
+  <div class="sp-inner">
+    <img src="icon.png" alt="" width="88" height="88"/>
+    <div class="sp-name">Meanwhile</div>
+    <div class="sp-tag">Track · Prepare · Get hired</div>
+  </div>
+</div>
 <div class="app">
   <!-- Sidebar -->
   <aside class="sidebar">
@@ -1663,7 +1713,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v72 · 2026-09-04";
+const BUILD = "v73 · 2026-09-07";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2784,6 +2834,17 @@ function profileScore(){
   return { done, total:fields.length, pct:Math.round(done/fields.length*100), missing:PROFILE_SECTIONS.filter(s=>!String(p[s.k]||"").trim()) };
 }
 function profileRich(){ return profileScore().done>=4; }
+/* Asked once and cached: `matchMedia` is cheap but this is read on every render, and the answer
+   does not change inside a session in any way that matters. */
+let _reduceMo=null;
+/* Declared HERE, above render(), not next to the boot code at the bottom of the file. `let` does
+   not hoist, render() runs during boot, and a read from above the declaration is a ReferenceError
+   that blanks the app — the sixth time this file has set that trap for itself. */
+let lastViewKey="";
+function reduceMotion(){
+  if(_reduceMo===null) _reduceMo=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  return _reduceMo;
+}
 function greeting(){ const h=new Date().getHours(); return h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
 function render(){
   // Bounce off Work only when the app is guessing. If you've said you're employed, Work stays put
@@ -2807,7 +2868,13 @@ function render(){
   if(view!=="globe"){ if(globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
     if(globePlay){ clearInterval(globePlay); globePlay=0; } }
   const c = $("#content");
-  c.className = "content"+(view==="pipeline"?" pad0":"");
+  /* Motion on ARRIVAL, never on update. `render()` runs on every save — a tick, a toast, a synced
+     pull — and a page whose cards re-animate each time you check something off is nauseating. So
+     the cascade is keyed to the view/tab you are actually looking at, and re-rendering the same
+     page repaints it in place. */
+  const vkey=view+"|"+(view==="work"?workTab:"")+"|"+(workOpId||"");
+  const swapped=vkey!==lastViewKey; lastViewKey=vkey;
+  c.className = "content"+(view==="pipeline"?" pad0":"")+(swapped&&!reduceMotion()?" vswap":"");
   if(view==="dashboard"){ c.innerHTML = renderDashboard(); armHeroCountdown(); }
   else { if(heroTimer){ clearInterval(heroTimer); heroTimer=null; } if(view==="pipeline"){ c.innerHTML=""; c.appendChild(renderPipeline()); }
   else if(view==="cards") c.innerHTML = renderCards();
@@ -3067,6 +3134,15 @@ function riskBanner(){
 }
 /* The one switch that decides what the whole app is for. Deliberately the first thing in
    Settings, and deliberately explicit rather than clever. */
+function motionBox(){
+  const off=!!devPrefs.noIntro;
+  return `<div class="ai-box" style="margin-top:14px">
+    <div class="ai-head">${I.spark} Opening sequence</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Meanwhile opens with a short animated title — the same one every time, on every device. It never blocks: the app is live underneath from the first frame and a tap or key press skips it.</div>
+    <label class="me-toggle"><input type="checkbox" id="mo-intro" ${off?"":"checked"} data-act="intro-toggle"/>
+      <span><b>Play it when the app opens</b><small>Switch it off and Meanwhile opens straight onto your data. Stored on this device only, so it never changes what anyone else sees.${reduceMotion()?" Your system is set to reduce motion, so a still frame is used regardless.":""}</small></span></label>
+  </div>`;
+}
 function modeBox(){
   const m=appMode(), emp=employers().length;
   return `<div class="ai-box" style="margin-top:14px">
@@ -10179,6 +10255,7 @@ function openSettings(){
   ${accountBox()}
 
   ${modeBox()}
+  ${motionBox()}
   ${aiIntegrationBox()}
   ${dataStatusBox()}
 
@@ -11758,6 +11835,7 @@ document.addEventListener("click",e=>{
   if(act==="profile-save"){ const p=getProfile(); if($("#profileName")) p.name=$("#profileName").value.trim(); if($("#profileHeadline")) p.headline=$("#profileHeadline").value.trim(); save(); render(); openSettings(); toast("Profile saved ✓"); return; }
   if(act==="open-profile"){ openProfile(); return; }
   if(act==="map-health"){ openMapHealth(); return; }
+  if(act==="intro-toggle"){ devPrefs.noIntro=!t.checked; saveDev(); toast(t.checked?"The opening sequence will play":"Meanwhile will open straight onto your data"); return; }
   if(act==="dq-save"){ const o=workOp(), c=o&&dailyQuestion(o), v=($("#dqIn")||{}).value||"";
     if(!o||!c) return;
     if(!String(v).trim()){ const i=$("#dqIn"); if(i) i.focus(); return; }
@@ -13567,9 +13645,109 @@ setTimeout(()=>{ migrateFilesToIDB().then(sweepOrphanFiles).catch(()=>{}); }, 12
 // ask the browser not to evict this origin — the photos in IndexedDB are what it would take first
 setTimeout(()=>{ askPersistentStorage(); }, 2500);
 absorbAsks();      // earlier builds filed read answers in the synced document; take them over
-// dismiss the branded launch splash (only visible when installed/standalone)
-(function(){ const s=document.getElementById("splash"); if(!s) return;
-  setTimeout(()=>{ s.classList.add("hide"); setTimeout(()=>s.remove(),500); }, 700); })();
+/* ===================== THE ARRIVAL =====================
+   Six brand-coloured blobs orbiting a common centre, rendered to a POSTAGE-STAMP buffer and drawn
+   up to full size. The upscale is the blur — a real `filter:blur(80px)` on a full-screen canvas
+   every frame is the difference between 60fps and 12fps on a phone, and nobody can tell which one
+   produced the picture once the grain is over it.
+
+   One revolution, eased in and out (`spEase`), is what makes it read as arriving somewhere rather
+   than looping: it accelerates out of stillness, carries the colours round, and comes to rest just
+   as the mark resolves. The blobs each turn at their own rate and direction (`sp`), so the field
+   never repeats — the same reason the login sky uses four separate drifts instead of one animated
+   gradient.
+
+   Composite is `lighter`, so where two violets cross they bloom instead of occluding. That is the
+   whole trick behind the look; on `source-over` the same six blobs read as flat overlapping discs. */
+function spBoot(){
+  const el=document.getElementById("splash"); if(!el) return;
+  if(devPrefs&&devPrefs.noIntro){ el.remove(); return; }
+  const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let done=false, raf=0;
+  const finish=(fast)=>{
+    if(done) return; done=true;
+    if(raf) cancelAnimationFrame(raf);
+    if(fast) el.classList.add("fast");
+    el.classList.add("hide");
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, fast?340:700);
+  };
+  // any input gets you past it, and the app underneath has been live the whole time
+  const skip=()=>finish(true);
+  window.addEventListener("pointerdown",skip,{once:true,passive:true});
+  window.addEventListener("keydown",skip,{once:true});
+
+  const cv=document.getElementById("spCanvas");
+  if(reduce||!cv||!cv.getContext){ el.classList.add("still"); setTimeout(()=>finish(false),reduce?600:1100); return; }
+  const ctx=cv.getContext("2d"); if(!ctx){ el.classList.add("still"); setTimeout(()=>finish(false),1100); return; }
+
+  /* c = colour, r = orbit radius, a = starting angle, sp = own turn rate, w = blob size.
+     The last entry barely leaves the middle: without it the six orbiting blobs open a black hole
+     at the centre during the bloom and the whole thing reads as a doughnut rather than a swirl.
+     It also leaves the soft glow the mark later sits on. */
+  const BLOBS=[
+    {c:[108, 92,231], r:.62, a:0.00, sp: 1.00, w:.44, al:1.00},
+    {c:[142,124,247], r:.52, a:1.05, sp:-0.74, w:.38, al:0.72},
+    {c:[183, 98,214], r:.46, a:2.10, sp: 0.58, w:.34, al:0.66},
+    {c:[ 68, 51,168], r:.70, a:3.14, sp:-1.06, w:.48, al:1.00},
+    {c:[ 94,106,210], r:.40, a:4.19, sp: 0.88, w:.31, al:0.80},
+    {c:[201,167,240], r:.34, a:5.24, sp:-0.50, w:.25, al:0.42},
+    {c:[124,108,238], r:.07, a:2.60, sp: 0.42, w:.34, al:0.34}
+  ];
+  const T_END=2500, TURNS=Math.PI*2*0.86;
+  const buf=document.createElement("canvas"), bx=buf.getContext("2d");
+  let bw=0,bh=0;
+  const size=()=>{
+    const w=Math.max(1,window.innerWidth), h=Math.max(1,window.innerHeight);
+    cv.width=Math.max(2,Math.round(w*0.42)); cv.height=Math.max(2,Math.round(h*0.42));
+    const s=Math.min(190/Math.max(w,h),1);
+    bw=buf.width=Math.max(2,Math.round(w*s)); bh=buf.height=Math.max(2,Math.round(h*s));
+  };
+  size(); window.addEventListener("resize",size,{passive:true});
+  const easeOut=t=>1-Math.pow(1-t,3);
+  const spEase =t=>t<.5? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;   // accelerate, then come to rest
+  const t0=performance.now();
+
+  const frame=(now)=>{
+    if(done) return;
+    const t=Math.min(1,(now-t0)/T_END);
+    const bloom=easeOut(Math.min(1,t/0.30));      // out of the centre
+    const spin =spEase(t)*TURNS;                  // one revolution, arriving rather than looping
+    const calm =1-0.22*easeOut(Math.max(0,(t-0.62)/0.38));
+
+    bx.globalCompositeOperation="source-over";
+    bx.fillStyle="#080715"; bx.fillRect(0,0,bw,bh);
+    bx.globalCompositeOperation="lighter";
+    // orbit on each axis independently, or a 21:9 monitor gets a tall column of colour with dark
+    // gutters either side — the field has to fill whatever shape the window is
+    // Cap each orbit by the SHORT edge as well as its own: on a 390x844 phone an unclamped
+    // vertical orbit throws the blobs to the top and bottom and leaves a thin, sparse field.
+    const m=Math.min(bw,bh), ox=Math.min(bw*0.46,m*0.62), oy=Math.min(bh*0.46,m*0.62);
+    for(const b of BLOBS){
+      const ang=b.a+spin*b.sp;
+      const x=bw/2+Math.cos(ang)*ox*b.r*bloom, y=bh/2+Math.sin(ang)*oy*b.r*bloom;
+      const R=Math.max(1,m*b.w*(0.62+0.46*bloom)*calm);
+      // `lighter` ACCUMULATES, so per-blob alpha has to stay low or six of them stack into a white
+      // lens flare and the brand indigo is gone. Each carries its own weight: the deep violets do
+      // the work, the pale lavender only lifts the edges.
+      const g=bx.createRadialGradient(x,y,0,x,y,R);
+      const a=0.50*bloom*(b.al||1);
+      g.addColorStop(0,`rgba(${b.c[0]},${b.c[1]},${b.c[2]},${a})`);
+      g.addColorStop(0.45,`rgba(${b.c[0]},${b.c[1]},${b.c[2]},${a*0.42})`);
+      g.addColorStop(1,`rgba(${b.c[0]},${b.c[1]},${b.c[2]},0)`);
+      bx.fillStyle=g; bx.beginPath(); bx.arc(x,y,R,0,6.2832); bx.fill();
+    }
+    ctx.globalCompositeOperation="source-over";
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.drawImage(buf,0,0,cv.width,cv.height);
+
+    if(t>=1){ finish(false); return; }
+    raf=requestAnimationFrame(frame);
+  };
+  raf=requestAnimationFrame(frame);
+  // a tab restored from bfcache, or one that was never focused, must not sit on a frozen splash
+  setTimeout(()=>finish(false), T_END+1400);
+}
+spBoot();
 let wasMobile=isMobile();
 window.addEventListener("resize",()=>{ const m=isMobile(); if(m!==wasMobile){ wasMobile=m; render(); } });
 </script>

@@ -858,6 +858,44 @@ Surfaced in two places: a card in **Insights** (`globeFindings`) and an action t
 overview** once there are `same`/`likely` ones. That tile encodes `act|dupes`, a **fourth prefix**
 the `data-dash` handler has to know — see the note above about forgetting one.
 
+## THE ARRIVAL (`spBoot`, `#splash`)
+The first thing anyone sees, **every open** — cold load, reload, a fresh browser session, installed
+or in a tab. It is the login screen's own sky set in motion: the same four brand violets over deep
+indigo, bloomed out of the centre, turned through most of one revolution, settled, with the mark
+resolving out of the swirl.
+**It never blocks.** `pointer-events:none` on the whole layer, so the app underneath is live from
+the first frame — `elementFromPoint` at the centre of the screen returns the app, not the splash —
+and every suite that clicks at 400ms is unaffected. Any pointer or key press fades it early. An
+intro you cannot get past is a toll booth, and this app opens dozens of times a day.
+**Rendered small, drawn up.** Six orbiting blobs plus one that barely leaves the middle go to a
+~190px buffer which is then scaled to the canvas: **the upscale is the blur.** A real
+`filter:blur(80px)` on a full-screen canvas every frame is the difference between 60fps and 12fps on
+a phone, and once the grain is over it nobody can tell which one made the picture. The seventh,
+central blob is not decoration — without it the six orbiting ones open a black hole at the centre
+during the bloom and the whole thing reads as a doughnut.
+**`lighter` accumulates**, which is the entire look (crossing violets bloom instead of occluding)
+and also the entire hazard: at the first attempt six blobs at 0.92 alpha stacked into a white lens
+flare with no brand colour left in it. Per-blob alpha is 0.50 with an `al` weight each.
+**Orbits are capped by the short edge** as well as their own axis, or a 390×844 phone throws the
+blobs to the top and bottom and leaves a thin sparse field, while a 21:9 monitor gets a tall column
+with dark gutters.
+**One revolution, eased in and out** (`spEase`) is what makes it read as *arriving* rather than
+looping — it accelerates out of stillness and comes to rest exactly as the mark resolves.
+The CSS background is the same indigo radial, so the paint lands **before a line of JS runs**: no
+white flash while the script boots, and the right picture if canvas is unavailable.
+`prefers-reduced-motion` gets that still frame and nothing else. `devPrefs.noIntro` (Settings →
+Opening sequence, `motionBox`) switches it off per device.
+
+## VIEW ARRIVAL (`lastViewKey`, `.content.vswap`)
+The page assembles instead of appearing: direct children of `.content` rise and fade in on a capped
+eight-step cascade. **Motion on arrival, never on update** — `render()` runs on every save (a tick, a
+toast, a synced pull) and a page whose cards re-animate each time you check something off is
+nauseating, so the class is keyed to `view|workTab|workOpId` and re-rendering the same page repaints
+it in place. `opacity` and `translateY` only, both compositor-only, and only on direct children —
+animating deeper fights the org chart's and the globe's own transforms. `lastViewKey` is declared
+**above `render()`**, not with the boot code at the bottom: `let` does not hoist, `render()` runs
+during boot, and that is the sixth time this file has set that trap for itself.
+
 ## THE ONE QUESTION A DAY (`dqCandidates` / `dailyQuestion` / `dqApply`)
 Everything else in this app waits to be asked. But it knows exactly where its own map is thin — a
 system named in four notes that nobody owns, a person you have talked to six times whose department

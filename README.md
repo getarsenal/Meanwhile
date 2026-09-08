@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="logo.png" alt="Meanwhile — Track. Prepare. Get hired." width="360"/>
+  <img src="logo.png" alt="Meanwhile — Capture. Organize. Ask." width="360"/>
 </p>
 
 <h1 align="center">Meanwhile</h1>
-<p align="center"><i>From getting hired to knowing how the company works.</i></p>
+<p align="center"><i>Capture &middot; Organize &middot; Ask &mdash; raw notes become a map of the company you work at.</i></p>
 
 A single-file, offline-friendly app that follows you through the whole thing.
 

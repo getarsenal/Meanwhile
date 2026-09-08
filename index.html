@@ -1662,7 +1662,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   <div class="sp-inner">
     <img src="icon.png" alt="" width="88" height="88"/>
     <div class="sp-name">Meanwhile</div>
-    <div class="sp-tag">Track · Prepare · Get hired</div>
+    <div class="sp-tag">Capture · Organize · Ask</div>
   </div>
 </div>
 <div class="app">
@@ -1749,7 +1749,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v74 · 2026-09-08";
+const BUILD = "v75 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -3354,7 +3354,7 @@ function emptyState(){
   return `<div class="empty welcome">
     <div class="big brand"><img src="icon.png" alt="Meanwhile" width="84" height="84"/></div>
     <h3>${name?`Welcome, ${esc(name.split(" ")[0])}`:"Welcome to Meanwhile"}</h3>
-    <p style="max-width:400px">Track every company, prep with AI, and — once you're hired — keep the map of how the place actually works.</p>
+    <p style="max-width:400px">Capture what you hear — a name, a system, a rule nobody wrote down. Meanwhile files it, connects it to everything else, and hands you back a map of how the place actually works. Before you join, and long after.</p>
     <div class="welcome-feats">
       ${step({act:"smart-paste",icon:I.ai,primary:1,title:"Paste a job link",sub:"A posting, recruiter email or invite becomes a role you just review"})}
       ${step({act:"add",icon:I.briefcase,title:"Add a role by hand",sub:"Company, stage, contacts and notes"})}
@@ -10063,7 +10063,7 @@ function authGateNeeded(force){
   return true;
 }
 function authTagline(){
-  if(!authReady()) return "Track the search, then map the company you land at.";
+  if(!authReady()) return "Capture what you hear, let it organize itself, then ask it anything.";
   return (state.opportunities||[]).length
     ? "Sign in and this device's notes follow you everywhere."
     : "Everything you write, on every device you sign in to.";
@@ -13658,7 +13658,7 @@ function googleCalEventUrl(ev){
 /* ============================ BOOT ============================ */
 // register a tiny inline manifest so Android shows "Install"
 try{
-  const mani={name:"Meanwhile",short_name:"Meanwhile",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+  const mani={name:"Meanwhile",short_name:"Meanwhile",description:"Capture · Organize · Ask — raw notes become a map of the company you work at.",display:"standalone",background_color:"#0a0b0e",theme_color:"#0a0b0e",start_url:".",icons:[{src:"icon-192.png",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"icon-512.png",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
   const link=document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(new Blob([JSON.stringify(mani)],{type:"application/manifest+json"})); document.head.appendChild(link);
 }catch(e){}
 // register the service worker for true offline (web/PWA); harmless when opened via file://

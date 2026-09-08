@@ -1123,6 +1123,15 @@ Day to day, verify in a real browser via the preview tools:
    assertions and `preview_inspect` instead of screenshots. Favicons fall back to colored initials.
 
 ## Branding
+**The line is `Capture · Organize · Ask`** (splash `.sp-tag`, the manifest description, README, and
+said longhand on the sign-in gate via `authTagline`). It replaced *Track · Prepare · Get hired*,
+which was wrong twice over: it described only the pre-hire half — the half a spreadsheet can do —
+and it stopped at the exact moment this product stops being ordinary, which also told a room of
+already-employed people the app was not for them. The three words are the workflow and they are the
+app's **own** vocabulary: Capture and Ask are literally the two FABs, and Organize is the machinery
+between them (extract → `resolveEnt` → the link graph). Keep any future line describing the
+*transformation*; the outcome-and-category lines all tested flat.
+
 The Meanwhile mark (a person kicking back in an office chair, periwinkle on a dark indigo squircle)
 is the app identity. Assets at repo root:
 `icon.png` (256, transparent — favicon + sidebar/topbar/empty-state img), `apple-touch-icon.png`,

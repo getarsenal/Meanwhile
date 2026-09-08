@@ -1165,6 +1165,23 @@ live within ~1 minute. Phones cache hard — hard-refresh to see changes.
   handed back the previous rejection.
 
 ## Accounts & cloud sync (the user's own Supabase project)
+**`DEFAULT_PROJECT` IS FILLED IN, and it must stay that way.** A new user's whole setup is an email
+and a password — nothing else, ever. Asking anyone for a project URL or an API key is the failure
+this exists to prevent, and it *is* a failure: `haveDefaultProject()` needs **both** fields, so a
+blank `key` silently unhid the entire "One-time setup" block on the sign-in screen for months while
+the URL sat there looking configured.
+The shipped key is a **new-style `sb_publishable_…`**, not a legacy `anon` JWT, and three places
+already handle that difference: `bearerFor()` sends it as `apikey` only (presenting a non-JWT as a
+bearer is its own 401), `keyProblem()` accepts the `sb_publishable_` prefix without introspecting
+it, and it **rejects `sb_secret_` outright with an explanation** — that one bypasses RLS and would
+hand every user's vault to anyone reading the page source. `refFromKey()` returns "" for a
+publishable key, which only matters when inferring a URL from a pasted key, and the build supplies
+the URL.
+The sync status label reads **"Not signed in"** when a project is available (`authReady()`) and only
+falls back to "Not connected" when there genuinely isn't one — the old unconditional wording told
+people the app was not set up when the only step left was signing in.
+
+
 Sign-in is email + password with optional TOTP 2FA, and the vault row is owned by the account.
 The app stores project URL + anon key + the session in localStorage per device. **No Supabase keys,
 sync codes, passwords or tokens belong in this repo.** Setup SQL is the `SYNC_SQL` constant in

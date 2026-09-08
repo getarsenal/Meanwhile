@@ -1749,7 +1749,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v75 · 2026-09-08";
+const BUILD = "v76 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2467,7 +2467,7 @@ function vaultErr(status,txt){
    Leave them empty and nothing changes: the app keeps asking each device, as before.
    A project configured ON the device always wins over this, so anyone can point their own copy
    somewhere else without touching the code. */
-const DEFAULT_PROJECT = { url: "https://cngufzdyyikbmcmqvibj.supabase.co", key: "" };
+const DEFAULT_PROJECT = { url: "https://cngufzdyyikbmcmqvibj.supabase.co", key: "sb_publishable_AL6TqP2qJ_wWjktQ9G7jeg_ouLVgzla" };
 function haveDefaultProject(){ return !!(DEFAULT_PROJECT.url && DEFAULT_PROJECT.key); }
 function loadSync(){
   const s=readLS(SYNC_KEY, SYNC_KEY_OLD);
@@ -2506,7 +2506,12 @@ function updateSyncUI(msg){
     // "Synced ✓" must mean the cloud actually has this. If it doesn't, say so — under
     // last-write-wins, whether your edits are up there is the only number that matters.
     const behind = syncState==="idle" && unsyncedEdits();
-    const map={off:"Not connected",idle:behind?"Not uploaded yet":"Synced ✓",saving:"Saving…",pulling:"Checking cloud…",error:"⚠ "+(msg||"Sync error")};
+    // "Not connected" was written when a device might genuinely have no project. Now the build
+    // ships one, so `off` means exactly one thing to a normal user — nobody has signed in yet —
+    // and the old wording read as "this app is not set up", which is the wrong thing to make
+    // someone believe when the only step left is an email and a password.
+    const offLbl = authReady() ? "Not signed in" : "Not connected";
+    const map={off:offLbl,idle:behind?"Not uploaded yet":"Synced ✓",saving:"Saving…",pulling:"Checking cloud…",error:"⚠ "+(msg||"Sync error")};
     lbl.textContent=map[syncState]||"";
     lbl.style.color = (syncState==="error"||behind)?(behind?"var(--warn)":"var(--bad)"):syncState==="idle"?"var(--good)":"var(--muted)";
   }

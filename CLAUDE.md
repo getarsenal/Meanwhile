@@ -1095,8 +1095,21 @@ edit/delete work. Don't create rounds/people without ids.
   (the Upcoming timeline) rather than letting the card shave it. Where insetting would break
   alignment — a month label must stay over the dates it labels — make the positioned element a
   zero-width anchor and shift only the text inside it (`.tl-tick` / `.tl-tick.at-start|.at-end`).
+- **A checkbox is not a text field.** The base rule is a bare `input,select,textarea{width:100%;
+  padding:11px 12px;border:…}` selector, so it also hit every checkbox — and inside a flex row a
+  checkbox at `width:100%` eats the whole line, leaving the label beside it at **width 0**, which
+  renders it one character per line down a 2,300px column. `.keysync` got away with it by setting an
+  explicit `width:16px`; `.me-toggle` set only `flex:0 0 auto`, whose `flex-basis:auto` defers to
+  `width` — so About Me and Settings → Opening sequence both shipped collapsed. Fixed once, at the
+  root: `input[type=checkbox],input[type=radio]` opts out of the field styling and carries its own
+  16px box and `accent-color`. **The layout suites structurally could not see this** — they assert
+  `scrollWidth <= innerWidth`, and a one-character-wide column overflows nothing. `tog.mjs` checks
+  the shape instead: for every checkbox in the app, the box stays box-sized and the label beside it
+  keeps the rest of the row. Verified by reverting the fix and watching it fail 12×.
 - **Mobile = no horizontal scrolling, ever.** Pipeline stacks vertically on mobile; the table
   becomes `renderRoleCards()`. Test that `document.documentElement.scrollWidth <= innerWidth`.
+  But note the rule above: *vertical* collapse is invisible to that test — a box that gets too
+  little width fails by growing downward, silently.
 - Respect iOS safe areas (`env(safe-area-inset-*)`) for top bar / bottom nav / drawer.
 - Keep it dependency-free and single-file. No CDN scripts, no npm at runtime.
 - Stages: the active pipeline stages are user-editable (`state.stages`); the closed buckets

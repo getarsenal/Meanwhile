@@ -47,7 +47,17 @@ input,select,textarea{
   width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);
   border-radius:var(--radius-sm);padding:11px 12px;outline:none;transition:border .15s,box-shadow .15s;
 }
+/* A checkbox is not a text field. The rule above is a bare `input` selector, so without this it
+   hands every checkbox width:100% + 11px padding + a border: inside a flex row the box then eats
+   the whole line and the label beside it collapses to one character per line. That shipped twice
+   (.keysync got away with it by setting an explicit width; .me-toggle did not), so it's fixed here
+   rather than at each call site. */
+input[type=checkbox],input[type=radio]{
+  width:16px;height:16px;flex:0 0 16px;padding:0;border:none;background:none;
+  border-radius:0;accent-color:var(--accent);cursor:pointer;
+}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(94,106,210,.18)}
+input[type=checkbox]:focus,input[type=radio]:focus{box-shadow:0 0 0 3px rgba(94,106,210,.28)}
 textarea{resize:vertical;min-height:80px;line-height:1.55}
 label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-weight:600;letter-spacing:.02em}
 .scroll::-webkit-scrollbar{width:10px;height:10px}
@@ -1681,8 +1691,8 @@ body.splashing #authGate .ag-bloom{animation-play-state:paused}
 .me-sec textarea{width:100%;min-height:0}
 .me-priv{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0 4px}
 .me-toggle{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
-.me-toggle input{margin-top:2px;flex:0 0 auto}
-.me-toggle span{display:block;min-width:0}
+.me-toggle input{margin-top:2px}
+.me-toggle span{display:block;flex:1 1 auto;min-width:0}
 .me-toggle b{display:block;font-size:13px;font-weight:750}
 .me-toggle small{display:block;font-size:11.5px;color:var(--faint);line-height:1.55;margin-top:3px}
 </style>
@@ -1783,7 +1793,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v77 · 2026-09-08";
+const BUILD = "v78 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];

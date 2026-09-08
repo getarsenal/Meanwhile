@@ -535,6 +535,9 @@ tbody td{padding:12px 14px;vertical-align:middle}
     color:var(--faint);font-size:10px;font-weight:700;flex:1 1 0;min-width:0;overflow:hidden;
     white-space:nowrap;text-overflow:ellipsis}
   .mnav svg{width:21px;height:21px;flex:0 0 auto}
+  /* The label is centred inside a flex column, so `overflow:hidden` on the parent shaved it at
+     BOTH ends — "Upcoming" read as "Jpcoming". Ellipsis has to live on the label itself. */
+  .mnav span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   @media(max-width:359px){ .mnav{font-size:9px;padding:5px 2px} .mnav svg{width:19px;height:19px} }
   .mnav.active{color:var(--accent3)}
   .drawer{width:100vw}
@@ -658,9 +661,17 @@ tbody td{padding:12px 14px;vertical-align:middle}
    second primary button competing with it. */
 .fab-ask{bottom:84px;background:linear-gradient(150deg,#2f7d6b,#3f9b7f);
   box-shadow:0 12px 30px -8px rgba(63,155,127,.55),0 2px 6px rgba(0,0,0,.4)}
+/* On a phone the two labelled pills are ~150px wide and sit permanently over the first line of
+   whatever you are reading — on a 320px screen they covered the backup banner's own buttons and
+   the day ring. Circles are the platform convention, cover a third of the area, and lose nothing:
+   Capture is also the topbar action on Work and Ask is also a tab. `aria-label` carries the name
+   that the hidden `<span>` used to. */
 @media(max-width:860px){
-  .fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));padding:13px 17px;font-size:14px}
-  .fab-ask{bottom:calc(130px + env(safe-area-inset-bottom))}
+  .fab{right:16px;bottom:calc(74px + env(safe-area-inset-bottom));
+    width:54px;height:54px;padding:0;gap:0;justify-content:center}
+  .fab>span{display:none}
+  .fab svg{width:23px;height:23px}
+  .fab-ask{bottom:calc(140px + env(safe-area-inset-bottom))}
 }
 
 /* ---- where you left off ---- */
@@ -669,6 +680,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   text-transform:uppercase;color:var(--accent3);flex-wrap:wrap}
 .rc-head svg{width:13px;height:13px}
 .rc-all{margin-left:auto;background:none;border:none;color:var(--accent3);font:inherit;font-size:11px;
+  min-height:34px;padding-left:8px;padding-right:2px;
   font-weight:800;letter-spacing:.04em;text-transform:none;cursor:pointer;padding:2px 6px;border-radius:6px;white-space:nowrap}
 .rc-all:hover{background:var(--panel2);color:var(--txt)}
 .rc-line{font-size:14px;color:var(--muted);margin-top:8px}
@@ -877,7 +889,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rep-q{font-size:11.5px;color:var(--muted);line-height:1.5;max-width:100%}
 .rep-q b{color:var(--txt);font-weight:800}
 /* citations sit shoulder to shoulder in one line, so they need to look like separate things */
-.rep-q .cite{display:inline-block;max-width:100%;margin:2px 4px 2px 0;padding:3px 9px;border-radius:999px;
+.rep-q .cite{display:inline-block;max-width:100%;margin:2px 4px 2px 0;padding:8px 11px;border-radius:999px;
   background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line);font-size:11px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 .rep-w{font-size:10.5px;color:var(--faint);line-height:1.4;max-width:100%}
@@ -901,6 +913,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .ow-mins{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;color:var(--faint);font-weight:700;white-space:nowrap}
 .ow-mins svg{width:11px;height:11px}
 .ow-add{background:none;border:none;color:var(--accent3);font:inherit;font-size:10.5px;font-weight:800;
+  min-height:32px;
   cursor:pointer;padding:2px 6px;border-radius:6px;white-space:nowrap;margin-left:auto}
 .ow-add:hover{background:var(--panel2);color:var(--txt)}
 .ow-on{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;color:var(--good);margin-left:auto;white-space:nowrap}
@@ -1203,7 +1216,9 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .evd .e{font-size:11px;font-weight:700;color:var(--accent3);background:rgba(94,106,210,.12);border:1px solid rgba(94,106,210,.25);border-radius:8px;padding:3px 8px;cursor:pointer}
 .evd .e:hover{background:rgba(94,106,210,.22)}
 .ai-answer{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 14px;font-size:13.5px;line-height:1.72;color:var(--txt);white-space:pre-wrap;max-height:420px;overflow:auto;margin-bottom:10px}
-.cite{color:var(--accent3);font-weight:700;cursor:pointer}
+/* Vertical padding on an INLINE element grows the hit box without touching the line box, so a
+   citation chip inside prose becomes thumb-sized at no cost to the typography. */
+.cite{color:var(--accent3);font-weight:700;cursor:pointer;padding:9px 0}
 .cite:hover{text-decoration:underline}
 
 .who-card{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:9px}
@@ -1494,8 +1509,11 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .obj-list{display:flex;flex-direction:column;gap:2px}
 .obj-row{display:flex;gap:11px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}
 .obj-row:last-child{border-bottom:0}
-.obj-cb{flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:6px;border:1.5px solid var(--line2);
+.obj-cb{position:relative;flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:6px;border:1.5px solid var(--line2);
   background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;transition:.14s}
+/* A 20px box is right for the eye and wrong for a thumb. The halo extends the TAP area to 36px
+   without changing anything you can see — growing the box itself would unbalance the row. */
+.obj-cb::before{content:"";position:absolute;inset:-8px;border-radius:10px}
 .obj-cb svg{width:13px;height:13px}
 .obj-cb:hover{border-color:var(--accent)}
 .obj-cb.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -1507,7 +1525,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .obj-cites{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;align-items:center}
 /* these are references, not prose — without a pill they run together into one sentence */
 .obj-cites::before{content:"from";font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
-.obj-cites .cite{display:inline-block;max-width:100%;padding:3px 9px;border-radius:999px;
+.obj-cites .cite{display:inline-block;max-width:100%;padding:8px 11px;border-radius:999px;
   background:var(--panel);border:1px solid var(--line);font-size:11.5px;font-weight:700;color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:.14s}
 .obj-cites .cite:hover{border-color:var(--accent);color:var(--accent3)}
@@ -1574,7 +1592,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .dq-row{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
 .dq-row input{flex:1 1 190px;min-width:0}
 .dq-acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:9px}
-.dq-x{background:none;border:0;padding:0;font-size:11.5px;font-weight:700;color:var(--accent3);cursor:pointer}
+.dq-x{background:none;border:0;padding:7px 0;min-height:32px;font-size:11.5px;font-weight:700;color:var(--accent3);cursor:pointer}
 .dq-x:hover{text-decoration:underline}
 .dq-n{font-size:11px;color:var(--faint);margin-left:auto}
 @media(max-width:400px){.dq-n{margin-left:0;width:100%}}
@@ -1726,7 +1744,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v73 · 2026-09-07";
+const BUILD = "v74 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2946,8 +2964,8 @@ function renderFab(){
   const want = employers().length>0;
   let fab=document.getElementById("captureFab"), ask=document.getElementById("askFab");
   if(!want){ if(fab) fab.remove(); if(ask) ask.remove(); return; }
-  if(!ask){ ask=el(`<button class="fab fab-ask" id="askFab" data-act="ask-fab" title="Ask Meanwhile about this company">${I.spark}<span>Ask</span></button>`); document.body.appendChild(ask); }
-  if(!fab){ fab=el(`<button class="fab" id="captureFab" data-act="capture" title="Capture what just happened">${I.plus}<span>Capture</span></button>`); document.body.appendChild(fab); }
+  if(!ask){ ask=el(`<button class="fab fab-ask" id="askFab" data-act="ask-fab" aria-label="Ask Meanwhile" title="Ask Meanwhile about this company">${I.spark}<span>Ask</span></button>`); document.body.appendChild(ask); }
+  if(!fab){ fab=el(`<button class="fab" id="captureFab" data-act="capture" aria-label="Capture a note" title="Capture what just happened">${I.plus}<span>Capture</span></button>`); document.body.appendChild(fab); }
 }
 
 function activeCount(){ return state.opportunities.filter(o=>stage(o.status).active && o.status!=="wishlist").length; }

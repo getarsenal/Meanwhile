@@ -147,7 +147,7 @@ you paste into a new AI chat to prep for interviews.
   **`[hidden]{display:none!important}` is load-bearing**: rows are `display:flex`, which beats the
   UA's `[hidden]` rule, so without it the filter marks every row hidden and nothing moves. A test
   that asserts `el.hidden` rather than computed `display` will not catch that.
-- `emptyState()` is the first screen: four **tappable** rows (`.wf` buttons, each with a `data-act`)
+- `emptyState()` is the first screen: five **tappable** rows (`.wf` buttons, each with a `data-act`)
   rather than tiles that only describe features — paste a link, add by hand, connect AI, add résumé.
   The last two tick themselves off (`.wf.done`) once `aiEngine()` is live / a résumé exists.
   On mobile the topbar keeps to one row via `.vt-wrap{flex:1 1 0}` + `.vt-txt` ellipsis, the view
@@ -885,6 +885,32 @@ The CSS background is the same indigo radial, so the paint lands **before a line
 white flash while the script boots, and the right picture if canvas is unavailable.
 `prefers-reduced-motion` gets that still frame and nothing else. `devPrefs.noIntro` (Settings →
 Opening sequence, `motionBox`) switches it off per device.
+
+## PHONE FIRST (what a mobile audit turned up)
+`mob.mjs` in the scratchpad drives three real phone viewports (320/390/430, touch, 3× DPR) across
+every view, every work tab and five modals. It is stricter than the layout suites and found things
+they were never asked about:
+- **The two FABs are circles on a phone**, not labelled pills. At 320 the pills were ~150px wide and
+  sat permanently over the backup banner's own *Later* and *Turn on sync* buttons; at 390 they
+  covered the first line of the briefing. Circles are the platform convention, cover a third of the
+  area, and lose nothing — Capture is also the topbar action on Work and Ask is also a tab. The
+  hidden `<span>` label moved to `aria-label`.
+- **A centred nav label was being shaved at BOTH ends** — "Upcoming" read as "Jpcoming". `.mnav` had
+  `overflow:hidden;text-overflow:ellipsis`, but the label is centred inside a flex column, so the
+  ellipsis has to live **on the label itself**, not the parent.
+- **Tap targets.** 20–26px controls were everywhere the eye wanted them small and the thumb didn't:
+  the objectives checkbox, *Add to my day*, *See all*, the citation chips, the daily question's
+  *I don't know*. Two tricks do this without touching the visuals: a transparent `::before` halo
+  (`inset:-8px`) grows the **tap** area of `.obj-cb` while the box stays 20px, and **vertical padding
+  on an inline element** grows `.cite`'s hit box without touching the line box. `.obj-cites .cite`
+  and `.rep-q .cite` are `inline-block` pills, so they needed their own padding — the generic inline
+  trick doesn't reach them and their own rule wins on specificity.
+- Known and accepted: on a **320px** phone the Capture circle overlaps the day ring at one scroll
+  position. Any fixed button overlaps something eventually; everything actionable is clear.
+**A probe that flags `scrollWidth > clientWidth` is measuring `text-overflow:ellipsis`, not a bug** —
+and the clipping is usually done by an ANCESTOR (a tab strip is `overflow-x:auto`, the aurora/tint
+layers are deliberately oversized inside a clipping parent), so walk up before calling it a spill.
+Three quarters of that audit's first run was the probe being wrong, not the app.
 
 ## VIEW ARRIVAL (`lastViewKey`, `.content.vswap`)
 The page assembles instead of appearing: direct children of `.content` rise and fade in on a capped

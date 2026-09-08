@@ -1509,11 +1509,8 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .obj-list{display:flex;flex-direction:column;gap:2px}
 .obj-row{display:flex;gap:11px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line)}
 .obj-row:last-child{border-bottom:0}
-.obj-cb{position:relative;flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:6px;border:1.5px solid var(--line2);
+.obj-cb{flex:0 0 20px;width:20px;height:20px;margin-top:1px;border-radius:6px;border:1.5px solid var(--line2);
   background:transparent;color:transparent;display:grid;place-items:center;cursor:pointer;transition:.14s}
-/* A 20px box is right for the eye and wrong for a thumb. The halo extends the TAP area to 36px
-   without changing anything you can see — growing the box itself would unbalance the row. */
-.obj-cb::before{content:"";position:absolute;inset:-8px;border-radius:10px}
 .obj-cb svg{width:13px;height:13px}
 .obj-cb:hover{border-color:var(--accent)}
 .obj-cb.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -1584,6 +1581,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .content.vswap>*:nth-child(7){animation-delay:.21s}
 .content.vswap>*:nth-child(n+8){animation-delay:.245s}
 @media(prefers-reduced-motion:reduce){ .content.vswap>*{animation:none} }
+/* A control can be right for the eye at 20px and wrong for a thumb. `.tap-halo` grows the TAP
+   area with a transparent pseudo-element while the visible box stays exactly as designed —
+   growing the box itself would unbalance the row it sits in.
+   It is NAMED because it deliberately paints outside its own box, and the containment suite is
+   right to police exactly that; the name is how it tells an intentional hit area apart from
+   content genuinely escaping, the same contract `.wov-bloom` has for decoration. Reusable. */
+.tap-halo{position:relative}
+.tap-halo::before{content:"";position:absolute;inset:-8px;border-radius:10px}
 /* ---- One question a day ---- */
 .dq{background:linear-gradient(160deg,rgba(198,164,92,.12),rgba(198,164,92,.05));border:1px solid rgba(198,164,92,.34);border-radius:14px;padding:14px;margin-bottom:12px}
 .dq-k{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#c6a45c;margin-bottom:7px}
@@ -6005,7 +6010,7 @@ function objectivesCard(o){
       const onList = o.nextActionLabel===it.do;
       return `
       <div class="obj-row${it.done?" done":""}">
-        <button class="obj-cb${it.done?" on":""}" data-objdone="${it.id}" aria-label="Mark done">${I.check}</button>
+        <button class="obj-cb tap-halo${it.done?" on":""}" data-objdone="${it.id}" aria-label="Mark done">${I.check}</button>
         <div class="obj-b">
           <div class="obj-when"><span class="ow-tag" style="color:${cssCol(w.col)};border-color:${cssCol(w.col)}44">${esc(w.label)}</span>
             <span class="ow-mins">${I.clock}${it.mins||30} min</span>

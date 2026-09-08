@@ -900,11 +900,16 @@ they were never asked about:
   ellipsis has to live **on the label itself**, not the parent.
 - **Tap targets.** 20–26px controls were everywhere the eye wanted them small and the thumb didn't:
   the objectives checkbox, *Add to my day*, *See all*, the citation chips, the daily question's
-  *I don't know*. Two tricks do this without touching the visuals: a transparent `::before` halo
-  (`inset:-8px`) grows the **tap** area of `.obj-cb` while the box stays 20px, and **vertical padding
-  on an inline element** grows `.cite`'s hit box without touching the line box. `.obj-cites .cite`
-  and `.rep-q .cite` are `inline-block` pills, so they needed their own padding — the generic inline
-  trick doesn't reach them and their own rule wins on specificity.
+  *I don't know*. Two tricks do this without touching the visuals: **`.tap-halo`** — a reusable
+  transparent `::before` at `inset:-8px` — grows the tap area while the visible box stays exactly as
+  designed, and **vertical padding on an inline element** grows `.cite`'s hit box without touching
+  the line box. `.obj-cites .cite` and `.rep-q .cite` are `inline-block` pills, so they needed their
+  own padding — the generic inline trick doesn't reach them and their own rule wins on specificity.
+  **`.tap-halo` is named, not anonymous.** It deliberately paints outside its own box, the
+  containment suite is right to police exactly that, and the name is how it tells an intentional hit
+  area apart from content genuinely escaping — the same contract `.wov-bloom` has for decoration. It
+  is in that suite's `EXEMPT` list. Doing this with a bare `.obj-cb::before` failed the suite 108
+  times, and the fix was to name the mechanism rather than teach the suite to ignore a bug shape.
 - Known and accepted: on a **320px** phone the Capture circle overlaps the day ring at one scroll
   position. Any fixed button overlaps something eventually; everything actionable is clear.
 **A probe that flags `scrollWidth > clientWidth` is measuring `text-overflow:ellipsis`, not a bug** —

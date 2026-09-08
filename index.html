@@ -707,23 +707,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .rc-p:hover{border-color:var(--line2)}
 .rc-p .ent-ico{width:20px;height:20px;flex:0 0 20px;border-radius:7px;font-size:9px}
 
-/* ---- your manager and your reports ---- */
-.circ-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:11px;margin-bottom:18px}
-.circ{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
-.circ-h{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;padding:0;
-  cursor:pointer;color:var(--txt);font:inherit;text-align:left;min-width:0}
-.circ-h .ent-ico{width:32px;height:32px;flex:0 0 32px;border-radius:10px;font-size:12px}
-.ci-b{min-width:0}
-.ci-n{display:block;font-size:13.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ci-r{display:block;font-size:10.5px;color:var(--faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.circ-list{display:flex;flex-direction:column;gap:5px;margin-top:11px}
-.circ-i{display:flex;align-items:center;gap:8px;width:100%;background:var(--panel2);border:1px solid var(--line);
-  border-radius:9px;padding:7px 9px;cursor:pointer;color:var(--txt);font:inherit;text-align:left;transition:.12s;min-width:0}
-.circ-i:hover{border-color:var(--line2)}
-.ci-d{width:7px;height:7px;border-radius:50%;flex:0 0 7px}
-.ci-t{flex:1 1 0;min-width:0;font-size:11.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ci-a{flex:0 0 auto;font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
-.circ-none{font-size:11.5px;color:var(--faint);margin-top:10px;line-height:1.5}
 
 /* ---- gone quiet ---- */
 .quiet-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
@@ -1028,14 +1011,6 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .wov-glegend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--faint);margin-top:9px}
 .wov-glegend b{color:var(--muted);font-weight:750}
 
-.wov-faces{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.wov-faces::-webkit-scrollbar{display:none}
-.wov-face{flex:0 0 78px;width:78px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;
-  padding:11px 7px 9px;text-align:center;cursor:pointer;transition:.14s}
-.wov-face:hover{border-color:var(--line2);transform:translateY(-2px)}
-.wov-face .ent-ico{width:36px;height:36px;flex:0 0 36px;border-radius:12px;font-size:13px;margin:0 auto}
-.wov-face .fn{font-size:11px;font-weight:750;color:var(--txt);margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wov-face .fd{font-size:10px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .wov-cov{display:flex;flex-direction:column;gap:9px}
 .wov-crow{display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:10px;padding:4px 6px;transition:.12s;min-width:0}
@@ -1793,7 +1768,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v78 · 2026-09-08";
+const BUILD = "v79 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -6364,18 +6339,6 @@ function reconnectPeople(o,limit){
     .map(x=>Object.assign(x,{score:(x.gap/86400000)*Math.log(1+x.n)}))
     .sort((a,b)=>b.score-a.score).slice(0,limit||8);
 }
-function reconnectCard(o){
-  const list=reconnectPeople(o,8);
-  if(list.length<2) return "";
-  return `<div class="section-head"><h3>Worth a catch-up</h3><div class="line"></div><span class="tag">${list.length}</span></div>
-    <div class="card panel">
-      <div class="sect-note" style="margin:0 2px 11px">People who helped you early on and haven't come up in your notes lately.</div>
-      <div class="wov-faces">${list.map(x=>`<div class="wov-face" data-ent="person|${esc(x.p.id)}">
-        ${entIcoHTML("person",x.p)}
-        <div class="fn">${esc((x.p.name||"?").split(/\s+/)[0])}</div>
-        <div class="fd">${Math.round(x.gap/86400000)}d ago</div></div>`).join("")}</div>
-    </div>`;
-}
 
 /* Where your knowledge actually is. A department you've written nothing about is not a department
    you understand, and that is the useful thing this can tell you that a count can't. */
@@ -6769,46 +6732,7 @@ function circleOpen(o,person){
   wOf("projects",o.id).filter(p=>/blocked/i.test(p.status||"")).forEach(p=>{ if(touches("project",p)) open.push({type:"project",rec:p}); });
   return open.sort((a,b)=>(a.rec.at||0)-(b.rec.at||0)).slice(0,4);
 }
-function circleCard(o){
-  const m=myPlace(o); if(!m) return "";
-  let list=[];
-  if(m.mgr) list.push({p:m.mgr,rel:"your manager",boss:true});
-  m.reports.forEach(p=>list.push({p,rel:"reports to you"}));
-  if(!list.length) return "";
-  // work out what's open BEFORE choosing who to show: the people with something outstanding are
-  // the point of this card, and four cards of "nothing on record" is just furniture
-  list=list.map(x=>{
-    const open=circleOpen(o,x.p);
-    const last=(personInteractions(x.p)[0]||{}).at;
-    return Object.assign({},x,{open,gap:last?ageDays(last):null});
-  }).sort((a,b)=>
-      (b.boss?1:0)-(a.boss?1:0) ||                         // your manager always leads
-      b.open.length-a.open.length ||                       // then whoever has the most outstanding
-      (b.gap==null?9999:b.gap)-(a.gap==null?9999:a.gap)    // then whoever you've left longest
-    ).slice(0,4);
-  const cards=list.map(x=>{
-    const open=x.open, gap=x.gap;
-    return `<div class="circ">
-      <button class="circ-h" data-ent="person|${esc(x.p.id)}">
-        ${entIcoHTML("person",x.p)}
-        <span class="ci-b"><span class="ci-n">${esc(x.p.name)}</span>
-          <span class="ci-r">${esc(x.rel)}${gap!=null?` · last spoke ${gap===0?"today":gap+"d ago"}`:" · never in a note"}</span></span>
-      </button>
-      ${open.length
-        ? `<div class="circ-list">${open.map(y=>`<button class="circ-i" data-ent="${esc(y.type)}|${esc(y.rec.id)}">
-            <span class="ci-d" style="background:${cssCol((ENT[y.type]||{}).col)}"></span>
-            <span class="ci-t">${esc(entName(y.type,y.rec))}</span>
-            <span class="ci-a">${ageDays(y.rec.at)}d</span></button>`).join("")}</div>`
-        : `<div class="circ-none">${gap==null
-              ? "You've never written a note about them — start there."
-              : gap>10 ? `Nothing open on record, but you haven't spoken in ${gap} days.`
-              : "Nothing open on record."}</div>`}
-    </div>`;
-  }).join("");
-  return `<div class="section-head"><h3>Your manager and your reports</h3><div class="line"></div>
-      <span class="tag">unresolved</span></div>
-    <div class="circ-grid">${cards}</div>`;
-}
+
 /* What you started and stopped. Ranked by how long it has been silent against how much you had
    already put into it, so a thread you worked for a week and dropped beats a one-line note. */
 function quietThreads(o,limit){
@@ -7087,9 +7011,18 @@ function dqCard(o){
    and design goal #1 here is "extremely easy to use".
 
    The rule for the merge: ONE card per question, LEADING WITH THE ANSWER, everything else still
-   reachable by tapping in. Nothing is deleted — the drill-downs are the same `openDig` pattern the
+   reachable by tapping in. No ANSWER is lost — the drill-downs are the same `openDig` pattern the
    rest of the app already uses, so every number that used to be on this page is now one tap away
-   rather than one scroll away. A name you can act on always beats a count of names, so the merged
+   rather than one scroll away.
+
+   Two renderers WERE deleted, and only once `peopleCard` was shown to answer their questions in
+   full: `circleCard` ("your manager and your reports") and `reconnectCard` ("worth a catch-up").
+   The merge had left both defined but called from nowhere, which is worse than either keeping or
+   removing them. `peopleToday` covers both — it pushes manager and reports at rank 2, the whole of
+   `reconnectPeople` at rank 1, and `connectToday` (which still uses `circleOpen`) at rank 3, so
+   every row carries its own reason; `digSpec`'s `stale-people` still opens the full drifting list.
+   Their two helpers, `circleOpen` and `reconnectPeople`, are very much alive — do not follow the
+   renderers out. A name you can act on always beats a count of names, so the merged
    cards lead with individual records and keep the category counts as a chip row underneath, which
    is also what preserves every `data-dash` route the tiles used to own.
 

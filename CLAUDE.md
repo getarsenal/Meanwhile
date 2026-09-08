@@ -517,10 +517,11 @@ straight over it.
   hours ago, otherwise yesterday. **`lastSeenAtBoot` is read ONCE at load**: `render()` stamps
   `devPrefs.lastSeen` while you sit there, so reading it live would collapse the window to nothing
   and the card would always say "yesterday".
-- `circleCard`/`circleOpen` — *your manager and your reports*, each with what is open and touching
-  them (problems, questions, blocked projects, via the graph) and how long since you last spoke.
-  Sorted manager-first, then whoever has the most outstanding, then whoever you've left longest;
-  capped at four, because four cards of "nothing on record" is furniture.
+- `circleOpen` — what is open and touching a person (problems, questions, blocked projects, via
+  the graph). It used to draw its own *your manager and your reports* card (`circleCard`); the v70
+  consolidation replaced that with `peopleCard` but left the renderer defined and called from
+  nowhere, so **`circleCard` has now been deleted** and `circleOpen` feeds `connectToday` source
+  (c) instead. Manager and reports still reach the page — `peopleToday` pushes them at rank 2.
 - `quietCard`/`quietThreads` — *what you started and stopped*. `lastTouched()` is the newest of the
   record's own timestamps and the newest note citing it; anything silent under six days isn't quiet
   yet. Ranked by silence × how much you'd already invested, so a thread you worked for a week and
@@ -534,8 +535,15 @@ It grew one good idea at a time until it was ~10 phone screens and three questio
 answered three ways — *who do I talk to* (`connectToday` + `circleCard` + `reconnectCard`), *how much
 do I know* (gauges + counts + coverage + pace + growth), *what went stale* (`quietCard` +
 `actionTiles` + gaps). **The rule for the merge: one card per question, leading with the answer,
-everything else one tap in** — the same `openDig` pattern the app already uses, so nothing was
-deleted, it moved from one scroll away to one tap away. Measured 8,545px → 4,871px at 390px wide.
+everything else one tap in** — the same `openDig` pattern the app already uses, so no *answer* was
+lost, it moved from one scroll away to one tap away. Measured 8,545px → 4,871px at 390px wide.
+**Two renderers were left stranded by that merge and have since been deleted**: `circleCard` and
+`reconnectCard` were still defined but called from nowhere, which is worse than either keeping or
+removing them. They went only once `peopleToday` was shown to answer both questions in full (manager
+and reports at rank 2, the whole of `reconnectPeople` at rank 1, `connectToday` at rank 3, every row
+carrying its own reason) and `digSpec`'s `stale-people` still opened the full drifting list. **Their
+helpers `circleOpen` and `reconnectPeople` are alive and must not follow them** — `reconnectPeople`
+alone has five callers.
 - **`peopleToday`/`peopleCard`** is one ranked list where **every row carries its own reason**.
   `connectToday` already returned `{p,reasons[]}` and was being shown as a bare *number* in a week
   tile while two other cards drew overlapping subsets of the same people. `rank` is the tier
@@ -581,9 +589,10 @@ department list, because it is called once per node per frame.
   must stay round can't be used** — the endpoint is a vertical tick, not a circle, which would
   stretch into an ellipse. `var()` goes in a `style=""` attribute, never a presentation attribute.
   Hidden below 3 records: a two-point line is decoration, not information.
-- `reconnectPeople()`/`reconnectCard()` — people you're drifting from, ranked by gap × log(1+contacts)
-  so five conversations that stopped outrank a name mentioned once. Skips you and anyone `personHere`
-  says has left. Needs ≥2 or it doesn't render.
+- `reconnectPeople()` — people you're drifting from, ranked by gap × log(1+contacts) so five
+  conversations that stopped outrank a name mentioned once. Skips you and anyone `personHere` says
+  has left. Its own card (`reconnectCard`) is gone; it now surfaces as the rank-1 "Worth a catch-up"
+  rows in `peopleCard`, the `stale-people` drill-down, and `actionItems`.
 - `deptCoverage()`/`coverageCard()` — how much you actually know per department (people×2 + notes +
   records), bars in `deptColor()`. A department that's nearly blank is flagged, which is the thing a
   count can't tell you.

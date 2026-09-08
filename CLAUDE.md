@@ -876,6 +876,11 @@ running the length of each wire and a little jitter across it so it reads as a c
 dot on a rail. **The same hop map dims everything else**, so the highlight and the animation agree
 by construction rather than by two lists kept in step.
 
+**The switch costs a phone a row of header, and that matters.** At 320px the globe header was
+already four rows of controls; adding a fifth drifted the last one down into the fixed FABs and
+`mob.mjs` caught it. Under 560px the switch shrinks and shares its row with the find box, which
+gives back more height than the switch cost.
+
 **Fullscreen** is `uni-full` → `requestFullscreen` on `#glStage`, with `:fullscreen` CSS taking the
 stage to the whole screen. **Ships** are `UNI_SHIPS` — a Treasure Planet solar skiff, a dart, a
 hauler, a ringship — drawn third-person in canvas, banking with the smoothed turn rate

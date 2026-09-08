@@ -815,6 +815,36 @@ something the DOM should be asked to do.
   canvas — no image to load, so it works offline and on first paint. It plays on **arrival, not on
   every render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
 
+## THE GLOBE AS A TOOL — filtering and connecting (`globeOnly` / `globeLinked` / `globeLinkPick`)
+The map was something you looked at. These three make it something you use.
+**`globeOnly` is "show only these", not "hide that".** The legend used to hide one type per click,
+which is the wrong way round at twelve types — seeing just your problems took eleven clicks. The
+set is empty by default (everything shows) and each chip adds its type, so problems is one click
+and problems + people is two.
+**`globeLinked` ("Only connected") is the other half of the question**, and its rule is
+**CROSS-TYPE whenever two or more kinds are picked**. A symmetric "has any visible neighbour" test
+looked right and was wrong: people are heavily linked to *each other* (reports-to, works-with), so
+on a problems + people lens **37 of 44 people survived by knowing another person** when the question
+was who is on those problems. With one kind picked there is no other type to cross to, so it falls
+back to "joined to anything else you can see". Demo numbers: 200 nodes → 11, four problems and the
+seven people on them.
+**Filter changes update the chrome IN PLACE (`globeChrome`) and must never call `render()`.** The
+old hide-chip only toggled a CSS class, so the rAF loop picked it up on its next frame; routing the
+new filters through `render()` tore the canvas and its loop down mid-frame, which threw on a
+half-built graph and cost most of the frame rate. `globeVisible` also has a **fast path** — with no
+filter active it is the same three cheap checks it always was, because it runs once per node per
+frame and the unfiltered map must cost exactly what it did before filtering existed. The
+connected-set cache key is **compared field by field, never built as a string**: `[...globeOnly]
+.sort().join()` on 15,000 calls a second is its own performance bug.
+**Connecting two records** (`globeLinkPick`/`globeLinkSave`): select one, press connect, click the
+other, choose the relationship. Until now the only way to add an edge was to write a note that
+happened to mention both — fine for what you learn, useless for what you already know. It refuses a
+self-link and junk ids, snapshots for undo, and writes at 0.95 confidence because you said it
+yourself. The layout signature counts links, so the new arc appears without a reload.
+**A note on that suite's fps assertion**: an absolute floor was measuring the container's software
+rasteriser, not the app — it failed identically on an unchanged build, so it could no longer detect
+a regression. It now compares the 250-node map against a small one measured in the same run.
+
 ## THE DUPLICATE CHECKER (`dupScan` / `openDupes`)
 Records arrive typed by hand, extracted from a note and read off a photo, and each route spells the
 same thing differently. `resolveEnt` catches what it can at the moment of writing, but it only ever

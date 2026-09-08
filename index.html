@@ -845,6 +845,14 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gl-chip i{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
 .gl-chip b{color:var(--faint);font-weight:800}
 .gl-chip.off{opacity:.36}
+.gl-chip.on{border-color:var(--accent);background:rgba(94,106,210,.16);opacity:1}
+.gl-chip.on b{color:var(--accent3)}
+.gl-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+.gl-f-lab{font-size:12px;color:var(--muted);font-weight:700;margin-right:2px}
+.gl-p-link{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:10px;padding:9px 11px;
+  border-radius:10px;border:1px dashed var(--accent);background:rgba(94,106,210,.12);font-size:12px;font-weight:700;color:var(--accent3)}
+.gl-link-pair{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--line)}
 .gl-chip:hover{border-color:var(--line2)}
 .gl-findings{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .gl-sec{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 15px;min-width:0}
@@ -1775,7 +1783,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v76 · 2026-09-08";
+const BUILD = "v77 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -5070,7 +5078,16 @@ function globeInsights(g){
   return {hubs,bridges,suggest:sug.slice(0,8),islands,nb};
 }
 /* --- the view -------------------------------------------------------------------------------- */
-let globeG=null, globeSig="", globeSel=null, globeHide=new Set(), globeSuggest=false;
+let globeG=null, globeSig="", globeSel=null, globeSuggest=false;
+/* FILTERING, and why it is "only these" rather than "hide that". The legend used to hide one type
+   per click, which is the wrong way round at twelve types: seeing just your problems took eleven
+   clicks. `globeOnly` is an empty set by default (everything shows) and each chip adds its type,
+   so "problems" is one click and "problems and people" is two.
+   `globeLinked` is the other half of the question — with problems and people showing you still see
+   every person in the company, and what you asked for was the people ON those problems. It drops
+   anything with no VISIBLE neighbour, so the two together answer it exactly. */
+let globeOnly=new Set(), globeLinked=false;
+let globeLinkFrom=null;        // mid-connection: the next node you click completes the link
 let globeRAF=0, globeCam={yaw:0.6,pitch:-0.22,zoom:1}, globeSpin=true, globeIntroAt=0;
 /* Three lenses onto the same sphere. None of them re-lays it out: things fade in and out of a map
    that stays where you left it, which reads as the rest going quiet rather than the world moving. */
@@ -5135,7 +5152,9 @@ function renderGlobe(){
   const counts={}, dcounts={};
   g.nodes.forEach(n=>{ counts[n.t]=(counts[n.t]||0)+1; if(n.dept) dcounts[n.dept]=(dcounts[n.dept]||0)+1; });
   const chip=t=>{ const c=counts[t]; if(!c) return "";
-    return `<button class="gl-chip${globeHide.has(t)?" off":""}" data-glhide="${esc(t)}">
+    const on=globeOnly.has(t), dim=globeOnly.size&&!on;
+    return `<button class="gl-chip${on?" on":""}${dim?" off":""}" data-glonly="${esc(t)}"
+      aria-pressed="${on?"true":"false"}" title="${on?"Stop showing only":"Show only"} ${esc(ENT[t].plural.toLowerCase())}">
       <i style="background:${cssCol((ENT[t]||{}).col||"#888")}"></i>${esc(ENT[t].plural)} <b>${c}</b></button>`; };
   const dchip=id=>`<button class="gl-chip" data-glsel="${esc("department|"+id)}">
       <i style="background:${cssCol(deptColor(id))}"></i>${esc(clip(entLabel("department",id)||"—",22))} <b>${dcounts[id]}</b></button>`;
@@ -5147,7 +5166,7 @@ function renderGlobe(){
   const span=globeSpan(g);
   return `<div class="gl-head">
       <div class="gl-title"><h2>${esc(o.company)}</h2>
-        <div class="gl-sub">${globeMine||globeTime?`showing ${shown} of ${g.nodes.length}`:`${g.nodes.length} things you know`} · ${g.edges.length} connections · ${linked} of them joined up</div></div>
+        <div class="gl-sub">${globeMine||globeTime||globeOnly.size||globeLinked?`showing ${shown} of ${g.nodes.length}`:`${g.nodes.length} things you know`} · ${g.edges.length} connections · ${linked} of them joined up</div></div>
       <div class="gl-acts">
         <input type="search" class="gl-find-q" id="glQ" placeholder="Find on the map…" value="${esc(globeQuery)}" data-glq="1" autocomplete="off"/>
         <button class="btn ghost sm" data-act="globe-reset">Recentre</button>
@@ -5169,6 +5188,12 @@ function renderGlobe(){
         value="${globeTime||span.max}" data-gltime="1" aria-label="Show the map as it was on this date"/>
       <span class="gl-tlab" id="glTLab">${globeTime?esc(fmtDate(ymdOf(globeTime))):"today"}</span>
     </div>`:""}
+    ${globeColor==="dept"?"":`<div class="gl-filter">
+      <span class="gl-f-lab">${globeOnly.size?`Showing ${[...globeOnly].map(t=>esc(ENT[t].plural.toLowerCase())).join(" + ")}`:"Showing everything"}</span>
+      <button class="btn ghost sm${globeLinked?" on":""}" data-act="globe-linked"
+        title="${globeOnly.size>=2?"Keeps only the ones joined to each other across the kinds you picked":"Hides anything with no visible connection"}">${globeLinked?"✓ ":""}Only connected</button>
+      <button class="btn ghost sm" data-act="globe-allkinds"${globeOnly.size||globeLinked?"":" hidden"}>Clear filter</button>
+    </div>`}
     <div class="gl-legend">${legend}</div>
     ${globeFindings(g,ins)}`;
 }
@@ -5241,11 +5266,55 @@ function globeGlow(col){
   globeGlowCache.set(col,c);
   return c;
 }
-function globeVisible(n){
-  if(globeHide.has(n.t)) return false;
+function globeBaseVisible(n){
+  if(globeOnly.size&&!globeOnly.has(n.t)) return false;
   if(globeTime&&(n.rec.at||0)>globeTime) return false;
   if(globeMine&&globeG&&globeG.scope&&!globeG.scope.has(n.key)) return false;
   return true;
+}
+/* "Only connected" needs to know about a node's NEIGHBOURS, which `globeVisible` cannot answer on
+   its own — and it is called once per node per frame, so it is memoised against the filter state
+   rather than walked 200 times at 60fps. */
+/* The cache key is COMPARED FIELD BY FIELD, never built as a string. `globeVisible` is called once
+   per node per frame — at 250 nodes and 60fps that is 15,000 calls a second, and building
+   `[...globeOnly].sort().join()` on each of them took a 250-node map from 60fps to 12. The set
+   itself only changes when a filter does, so a version counter plus four scalars settles it with
+   no allocation at all. */
+let _glVisVer=0, _glVis={ver:-1,linked:null,time:null,mine:null,sig:null,set:null};
+function globeVisKeys(g){
+  if(_glVis.set && _glVis.ver===_glVisVer && _glVis.linked===globeLinked && _glVis.time===(globeTime||0)
+     && _glVis.mine===!!globeMine && _glVis.sig===globeSig) return _glVis.set;
+  const base=new Set();
+  g.nodes.forEach(n=>{ if(globeBaseVisible(n)) base.add(n.key); });
+  /* CROSS-TYPE when two or more kinds are picked. A symmetric "has any visible neighbour" test
+     looked right and was wrong: people are heavily linked to EACH OTHER (reports-to, works-with),
+     so on a problems+people lens 37 of 44 people survived by knowing another person, and the
+     question being asked was who is on those problems. With one kind picked there is no other
+     type to cross to, so it falls back to "joined to anything else you can see". */
+  const cross = globeOnly.size>=2;
+  const out = globeLinked
+    ? new Set([...base].filter(k=>{
+        const me=g.byKey[k]; if(!me) return false;
+        return [...(g.ins.nb[k]||[])].some(x=>{
+          if(!base.has(x)) return false;
+          const other=g.byKey[x];
+          return other ? (cross ? other.t!==me.t : true) : false;
+        });
+      }))
+    : base;
+  _glVis={ver:_glVisVer,linked:globeLinked,time:globeTime||0,mine:!!globeMine,sig:globeSig,set:out};
+  return out;
+}
+function globeFiltersChanged(){ _glVisVer++; _glVis.set=null; }
+function globeVisible(n){
+  // FAST PATH, and it is the common one: with no type filter and no connected-only, the answer is
+  // three cheap checks and there is no reason to build or consult a Set at all. This is called
+  // once per node per frame, so the unfiltered map must cost exactly what it did before filtering
+  // existed.
+  if(!globeOnly.size && !globeLinked) return globeBaseVisible(n);
+  const g=globeG;
+  if(!g||!g.ins||!g.ins.nb) return globeBaseVisible(n);
+  return globeVisKeys(g).has(n.key);
 }
 function armGlobe(){
   const cv=document.getElementById("glCanvas"), stage=document.getElementById("glStage");
@@ -5729,9 +5798,83 @@ function globePick(pt){
   return best;
 }
 function globeHit(pt){
+  if(globeLinkFrom){
+    const hit=globePick(pt);
+    if(hit&&hit.key!==globeLinkFrom){ globeLinkPick(hit.key); return; }
+    if(!hit){ globeLinkFrom=null; globeSelect(globeSel); return; }   // a miss means you changed your mind
+  }
   const o=workOp(); if(!o||!globeG) return;
   const n=globePick(pt);
   globeSelect(n?n.key:null);
+}
+/* Connecting two records from the map. The graph is the thing this view is FOR, and until now the
+   only way to add an edge was to write a note that happened to mention both — fine for what you
+   learn, useless for what you already know. You pick one, press connect, click the other, and say
+   what the relationship is. `addLink` dedups and the layout signature counts links, so the new arc
+   appears on the next frame without a reload. */
+function globeLinkPick(toKey){
+  const g=globeG, o=workOp();
+  const from=g&&g.byKey[globeLinkFrom], to=g&&g.byKey[toKey];
+  globeLinkFrom=null;
+  if(!o||!from||!to||from.key===to.key){ globeSelect(toKey); return; }
+  const opts=REL_TYPES.filter(r=>r!=="MENTIONS");
+  openEditor(`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--grad);display:grid;place-items:center">${I.link}</div>
+      <div style="min-width:0"><h2 style="margin:0;font-size:17px;font-weight:850">Connect these</h2>
+        <div style="font-size:12px;color:var(--faint)">This becomes a real link on the map</div></div>
+      <button class="x-btn" data-act="cancel-editor" style="margin-left:auto">${I.x}</button></div>
+    <div class="gl-link-pair">
+      <span class="chip" style="border-color:${cssCol(globeNodeColor(from))}55">${esc(clip(from.name,30))}</span>
+      <b style="color:var(--faint)">→</b>
+      <span class="chip" style="border-color:${cssCol(globeNodeColor(to))}55">${esc(clip(to.name,30))}</span>
+    </div>
+    <div class="form-row" style="margin-top:12px"><label>How are they related?</label>
+      <select id="glRel">${opts.map(r=>`<option value="${esc(r)}"${r==="RELATES_TO"?" selected":""}>${esc(from.name.slice(0,18))} ${esc(REL_LABEL[r])} ${esc(to.name.slice(0,18))}</option>`).join("")}</select></div>
+    <div class="modal-actions"><button class="btn ghost" data-act="cancel-editor">Cancel</button>
+      <button class="btn primary" data-act="glink-save" data-glinkpair="${esc(from.key+"::"+to.key)}">${I.check} Connect</button></div>`);
+}
+function globeLinkSave(pair){
+  const o=workOp(); const g=globeG; if(!o||!g) return;
+  const [a,b]=String(pair||"").split("::");
+  const from=g.byKey[a], to=g.byKey[b];
+  const rel=((document.getElementById("glRel")||{}).value)||"RELATES_TO";
+  if(!from||!to||!REL_TYPES.includes(rel)){ toast("⚠ Couldn't connect those"); return; }
+  snapshotUndo("connecting two records");
+  addLink(o.id,from.t,from.id,rel,to.t,to.id,0.95,null);
+  save(); closeEditor(); globeFiltersChanged(); render();
+  toast(clip(from.name,20)+" "+REL_LABEL[rel]+" "+clip(to.name,20)+" ✓","","Undo");
+}
+/* Filters update the page IN PLACE and never call render(). The old hide-chip only toggled a CSS
+   class, so the rAF loop picked the change up on its next frame; routing the new filters through
+   render() tore down the canvas and its loop mid-frame, which threw on a half-built graph and cost
+   most of the frame rate on a 250-node map. The draw loop already reads `globeVisible` every
+   frame — all the chrome has to do is agree with it. */
+function globeChrome(){
+  const g=globeG; if(!g) return;
+  document.querySelectorAll("[data-glonly]").forEach(el=>{
+    const on=globeOnly.has(el.dataset.glonly);
+    el.classList.toggle("on",on);
+    el.classList.toggle("off",globeOnly.size>0&&!on);
+    el.setAttribute("aria-pressed",on?"true":"false");
+  });
+  const lab=document.querySelector(".gl-f-lab");
+  if(lab) lab.textContent = globeOnly.size
+    ? "Showing "+[...globeOnly].map(t=>(ENT[t]||{}).plural||t).map(x=>x.toLowerCase()).join(" + ")
+    : "Showing everything";
+  const lk=document.querySelector('[data-act="globe-linked"]');
+  if(lk){ lk.classList.toggle("on",globeLinked); lk.textContent=(globeLinked?"✓ ":"")+"Only connected";
+    lk.title = globeOnly.size>=2 ? "Keeps only the ones joined to each other across the kinds you picked"
+                                 : "Hides anything with no visible connection"; }
+  const clr=document.querySelector('[data-act="globe-allkinds"]');
+  if(clr) clr.hidden = !(globeOnly.size||globeLinked);
+  const sub=document.querySelector(".gl-sub");
+  if(sub){
+    const shown=g.nodes.filter(globeVisible).length;
+    const linked=g.nodes.filter(n=>n.deg>0).length;
+    sub.textContent=(globeMine||globeTime||globeOnly.size||globeLinked
+      ? `showing ${shown} of ${g.nodes.length}` : `${g.nodes.length} things you know`)
+      +` · ${g.edges.length} connections · ${linked} of them joined up`;
+  }
 }
 function globeSelect(key){
   globeSel=key||null;
@@ -5751,7 +5894,10 @@ function globeSelect(key){
         <i style="background:${cssCol(globeNodeColor(x))}"></i>
         <span>${esc(clip(x.name,34))}</span><em>${esc(ENT[x.t].label)}</em></button>`).join("")}</div>`
       :`<div class="gl-p-none">Nothing links to this yet. Mention it in a note and the map will join it up.</div>`}
-    <button class="btn primary sm" style="width:100%;margin-top:10px" data-ent="${esc(n.t)}|${esc(n.id)}">Open ${esc(ENT[n.t].label.toLowerCase())}</button>`;
+    ${globeLinkFrom===key
+      ? `<div class="gl-p-link">Now click what this connects to.<button class="btn ghost sm" data-act="globe-link-cancel">Cancel</button></div>`
+      : `<button class="btn ghost sm" style="width:100%;margin-top:10px" data-act="globe-link-start">${I.link} Connect to something…</button>`}
+    <button class="btn primary sm" style="width:100%;margin-top:8px" data-ent="${esc(n.t)}|${esc(n.id)}">Open ${esc(ENT[n.t].label.toLowerCase())}</button>`;
 }
 /* ============================ WORK VIEW (90-day mode / My Company) ============================ */
 const WORK_TABS=[["overview","Overview"],["people","People"],["org","Departments"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
@@ -11743,7 +11889,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glhide],[data-dupmerge],[data-dupswap],[data-dupskip],[data-dupconv]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glonly],[data-glinkpair],[data-dupmerge],[data-dupswap],[data-dupskip],[data-dupconv]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -12208,9 +12354,14 @@ document.addEventListener("click",e=>{
   if(t.dataset.glsel){ globeSelect(t.dataset.glsel); globeSpin=false;
     const st=document.getElementById("glStage"); if(st) st.scrollIntoView({block:"center",behavior:"smooth"});
     const b=document.querySelector('[data-act="globe-spin"]'); if(b) b.textContent="Spin"; return; }
-  if(t.dataset.glhide!==undefined){ const ty=t.dataset.glhide;
-    if(globeHide.has(ty)) globeHide.delete(ty); else globeHide.add(ty);
-    t.classList.toggle("off",globeHide.has(ty)); return; }
+  if(t.dataset.glonly!==undefined){ const ty=t.dataset.glonly;
+    if(globeOnly.has(ty)) globeOnly.delete(ty); else globeOnly.add(ty);
+    globeFiltersChanged(); globeChrome(); return; }
+  if(act==="globe-linked"){ globeLinked=!globeLinked; globeFiltersChanged(); globeChrome(); return; }
+  if(act==="globe-allkinds"){ globeOnly.clear(); globeLinked=false; globeFiltersChanged(); globeChrome(); return; }
+  if(act==="globe-link-start"){ globeLinkFrom=globeSel; globeSelect(globeSel); return; }
+  if(act==="globe-link-cancel"){ globeLinkFrom=null; globeSelect(globeSel); return; }
+  if(t.dataset.glinkpair!==undefined){ globeLinkSave(t.dataset.glinkpair); return; }
   if(t.dataset.mpprep){ closeEditor(); openMeetingPrep(t.dataset.mpprep); return; }
   if(t.dataset.mp){ const id=t.dataset.mp; mpSel=mpSel.includes(id)?mpSel.filter(x=>x!==id):mpSel.concat(id);
     const topic=(document.getElementById("mpTopic")||{}).value||"";

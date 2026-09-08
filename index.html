@@ -1380,6 +1380,32 @@ tbody td{padding:12px 14px;vertical-align:middle}
 @keyframes agDrift2{from{transform:translate3d(0,0,0) scale(1.08)}to{transform:translate3d(-6vmax,7vmax,0) scale(.94)}}
 @keyframes agDrift3{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-8vmax,-6vmax,0) scale(1.16)}}
 @keyframes agDrift4{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(6vmax,-5vmax,0) scale(.96)}}
+/* On a phone this sky cost 21fps — four ~490px layers each blurred by 62px, re-rasterised every
+   frame at 3x DPR. It never showed up before because the gate almost never appeared: with no
+   project baked into the build there was nothing to sign in to. The moment DEFAULT_PROJECT was
+   completed this became the FIRST screen anyone sees, on the slowest device they own.
+   Blur cost scales with the blurred AREA, so shrinking the blooms buys far more than softening
+   the blur: 62px→30px alone only reached 29fps, while smaller-and-softer reaches 53 and keeps all
+   four layers and their drift. Desktop keeps the lush version — it has the GPU for it. */
+/* The splash covers the gate completely, so animating the sky underneath it is work nobody can
+   see — and on a phone the two together cost more than either alone. */
+body.splashing #authGate .ag-bloom{animation-play-state:paused}
+/* Phone-only trims to the arrival, worth ~8fps between them and invisible at these sizes: a
+   full-screen `mix-blend-mode` makes the compositor blend every pixel every frame, and the
+   canvas is already blurred by being upscaled from a 190px buffer, so the CSS blur on top of it
+   is a second full-screen filter pass for very little. The grain STAYS — without it these
+   gradients band into stripes on a cheap panel, which is the whole reason it is there. */
+@media(max-width:760px){
+  .sp-grain{mix-blend-mode:normal;opacity:.04}
+  #spCanvas{filter:blur(6px) saturate(1.18)}
+}
+@media(max-width:760px){
+  #authGate .ag-bloom{filter:blur(30px)}
+  #authGate .b1{width:36vmax;height:36vmax;left:-10vmax;top:-13vmax}
+  #authGate .b2{width:30vmax;height:30vmax;right:-9vmax;top:-6vmax}
+  #authGate .b3{width:33vmax;height:33vmax;right:-11vmax;bottom:-15vmax}
+  #authGate .b4{width:28vmax;height:28vmax;left:-8vmax;bottom:-12vmax}
+}
 /* grain, or those gradients band into stripes on a cheap panel — this is what sells it */
 #authGate .ag-grain{position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -1425,15 +1451,15 @@ tbody td{padding:12px 14px;vertical-align:middle}
 #authGate .ag-go:hover{filter:brightness(1.07);box-shadow:0 16px 32px -12px rgba(124,106,247,1)}
 #authGate .ag-go:active{transform:translateY(1px)}
 #authGate .ag-go[disabled]{opacity:.6;cursor:default;filter:none}
-#authGate .ag-alt{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:13px}
-#authGate .ag-link{background:none;border:0;padding:0;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.72);
+#authGate .ag-alt{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:7px}
+#authGate .ag-link{background:none;border:0;padding:8px 0;min-height:34px;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.72);
   cursor:pointer;transition:color .14s}
 #authGate .ag-link:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
 #authGate .ag-err{color:#FFAFAF;font-size:12.5px;font-weight:700;line-height:1.5;margin:11px 0 0;min-height:0}
 #authGate .ag-err:empty{display:none}
 #authGate .ag-foot{margin-top:20px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.44);
   animation:agRise .6s ease .34s both;line-height:1.6}
-#authGate .ag-foot button{background:none;border:0;padding:0;font-weight:700;color:rgba(255,255,255,.78);
+#authGate .ag-foot button{background:none;border:0;padding:8px 4px;min-height:34px;font-weight:700;color:rgba(255,255,255,.78);
   cursor:pointer;font-size:12.5px}
 #authGate .ag-foot button:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
 #authGate .ag-proj{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.11);
@@ -1444,7 +1470,7 @@ tbody td{padding:12px 14px;vertical-align:middle}
   color:#fff;font-size:12px;font-weight:700;cursor:pointer}
 #authGate .ag-fix:hover{background:rgba(255,255,255,.2)}
 #authGate .ag-build{margin-top:10px;font-size:11px;color:rgba(255,255,255,.3)}
-#authGate .ag-build button{background:none;border:0;padding:0;font-size:11px;font-weight:700;
+#authGate .ag-build button{background:none;border:0;padding:8px 4px;min-height:32px;font-size:11px;font-weight:700;
   color:rgba(255,255,255,.5);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 #authGate .ag-build button:hover{color:rgba(255,255,255,.8)}
 #authGate .ag-note{margin-top:14px;padding:10px 12px;border-radius:11px;font-size:12px;line-height:1.55;
@@ -13703,6 +13729,7 @@ absorbAsks();      // earlier builds filed read answers in the synced document; 
 function spBoot(){
   const el=document.getElementById("splash"); if(!el) return;
   if(devPrefs&&devPrefs.noIntro){ el.remove(); return; }
+  document.body.classList.add("splashing");
   const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let done=false, raf=0;
   const finish=(fast)=>{
@@ -13710,6 +13737,7 @@ function spBoot(){
     if(raf) cancelAnimationFrame(raf);
     if(fast) el.classList.add("fast");
     el.classList.add("hide");
+    document.body.classList.remove("splashing");
     setTimeout(()=>{ if(el.parentNode) el.remove(); }, fast?340:700);
   };
   // any input gets you past it, and the app underneath has been live the whole time

@@ -824,6 +824,73 @@ something the DOM should be asked to do.
   canvas — no image to load, so it works offline and on first paint. It plays on **arrival, not on
   every render** (`globeIntroAt`), and `prefers-reduced-motion` skips it and the idle spin entirely.
 
+## INSIGHTS: THE UNIVERSE — the map you fly through (`uniOn` and the slider)
+The globe is the map seen from OUTSIDE: everything on one surface, two drags from any point. The
+universe is the same graph seen from INSIDE — a holographic galaxy you fly through. **Both ship, on
+purpose**, and the header carries a two-position slider (`uniSwitchHTML`, `data-act="uni-globe"` /
+`"uni-universe"`, remembered in `devPrefs.uniMode`) rather than a toggle button, because these are
+two *places*, not a setting. Nothing was taken away to add this: the globe kept every control it had.
+The globe is still the faster tool; the universe is the one that makes the *shape* of the place
+legible — a department you have barely been inside is visibly a dim star a long way off, and work
+that crosses two departments visibly hangs in the dark between two suns.
+
+**The astronomy is read off your own records, never decorated on.** `uniLayout(g)`:
+- the **core** is the corporate stack (`org`), stacked in y by how far up `parentId` goes;
+- a **star** is a department, on a golden-angle spiral through the disc (`UNI_CORE`→`UNI_DISC`) —
+  but a department nested in another (`parentId`) orbits its parent instead of taking its own place,
+  because that is what the nesting means;
+- a **planet** is a team, orbiting its department; a **moon** is a person, orbiting their team, or
+  their department directly when no team is recorded (which is most people in month one);
+- a **belt object** is a record touching exactly one department — it orbits that star;
+- a **waypoint** is a record whose connections reach into **two or more** departments. It is placed
+  at the centroid of the stars it reaches between and lifted off the disc. That is the whole point:
+  the work that crosses the org is what a list cannot show, and here it is literally the thing
+  hanging in the gap. `n.uSpan` records how many it touches, `n.uWay` marks it.
+Positions are deterministic (`uniRand` — an FNV hash of the id, never `Math.random`), so the galaxy
+does not reshuffle on every rebuild, and `uniBuild` caches against the globe's own `globeSig` so
+flipping between the two modes never re-lays either out.
+
+**THE CAMERA CONVENTION IS THE OPPOSITE OF THE GLOBE'S, and they must never share a field.** Here
+the camera has a position and looks down its own +z, so **positive view z is IN FRONT** and
+`z <= UNI_NEAR` is behind you and culled. The globe uses `s=FOV/(FOV+z)` where **negative** z is
+near. The globe writes `_z`; the universe writes `_vz`; nothing reads both. Getting the inverse
+rotation wrong is the live hazard — world→camera negates the *angle*, and `cos(-a)` is `cos(a)`, so
+writing `Math.cos(-yaw)`/`Math.sin(-yaw)` for both terms flips the sine twice and spins the world
+the wrong way. It shipped that way for one run and put all 200 nodes behind the camera. The test
+that catches it is three lines: a point in front must have positive view z, one behind negative,
+right +x and up +y.
+
+**Drift is the default, flight is a mode.** With nobody flying, the camera orbits the galaxy on a
+slow arc looking inward (`uniStep`'s drift branch — the bearing to the origin from
+`(sin d·r, h, −cos d·r)` is `−d`, and getting that `+π` pointed the camera into empty space with the
+whole galaxy behind it). So arriving at Insights shows you the map, not a cockpit you have to learn.
+**Fly** (`uniSetFly`) hands over WASD to move, arrows to turn, space/C for up and down, shift to
+boost, Esc to stop; `uniKeyDown` bails unless you are on the map AND flying AND not in a field, and
+`window.blur` clears the keys so alt-tab cannot leave the throttle open. Wheel is *thrust*, not zoom
+— there is no zoom in here, only how fast you are going. Velocity is damped and capped (`UNI_MAXV`).
+Clicking a node eases the camera to a standoff in front of it (`uniFlyTo`).
+
+**The electric pulse** (`uniSetRipple`/`uniHops`): selecting something BFS-labels the graph by hop
+count out to `UNI_HOP_MAX`, and the charge lights hop 1, then 2, then 3, a beat apart, with a bead
+running the length of each wire and a little jitter across it so it reads as a charge rather than a
+dot on a rail. **The same hop map dims everything else**, so the highlight and the animation agree
+by construction rather than by two lists kept in step.
+
+**Fullscreen** is `uni-full` → `requestFullscreen` on `#glStage`, with `:fullscreen` CSS taking the
+stage to the whole screen. **Ships** are `UNI_SHIPS` — a Treasure Planet solar skiff, a dart, a
+hauler, a ringship — drawn third-person in canvas, banking with the smoothed turn rate
+(`uniLook`), and picking one puts you in the cockpit. `devPrefs.uniShip` remembers it.
+
+**Things that had to be got right and would silently look wrong:** the glow sprite is its own
+160px cache with a power falloff (`uniStarSprite`), because the globe's 64px one blown up to a
+400px corona banded into rings and read as a flat orange disc; the corona multipliers are small
+(`4.2` for a star) or they swallow the map; `uniNodeColor` gives a department **and its teams** that
+department's own colour, since a star *is* a department and 13 identical orange suns is not a galaxy;
+labels are ranked **department → org → team → everything else** before distance, so the names you
+navigate by claim their space first; and while flying, the bottom-centre of the frame is reserved so
+a label is never painted across the craft. The camera stands well above the plane (`pitch −0.60`) —
+a disc seen edge-on is a line, which is exactly what the first attempt drew.
+
 ## THE GLOBE AS A TOOL — filtering and connecting (`globeOnly` / `globeLinked` / `globeLinkPick`)
 The map was something you looked at. These three make it something you use.
 **`globeOnly` is "show only these", not "hide that".** The legend used to hide one type per click,

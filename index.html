@@ -759,6 +759,36 @@ tbody td{padding:12px 14px;vertical-align:middle}
   overflow:hidden;background:radial-gradient(120% 100% at 50% 0%,#171a2b 0%,#0c0e15 60%,#08090d 100%);
   border:1px solid var(--line);touch-action:none;cursor:grab;contain:paint}
 .gl-stage:active{cursor:grabbing}
+/* ---- the universe: the map you fly through, alongside the globe you turn ---- */
+/* A two-position slider rather than a toggle button, because these are two PLACES, not a setting
+   that is on or off — the knob slides under whichever half is live. */
+.uni-switch{position:relative;display:inline-flex;flex:0 0 auto;background:var(--bg2);
+  border:1px solid var(--line);border-radius:999px;padding:3px;isolation:isolate}
+.uni-sw{position:relative;z-index:1;border:0;background:none;color:var(--muted);font:inherit;
+  font-size:11.5px;font-weight:750;padding:5px 13px;border-radius:999px;cursor:pointer;
+  transition:color .18s;white-space:nowrap;min-height:30px}
+.uni-sw.on{color:#fff}
+.uni-knob{position:absolute;z-index:0;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);
+  border-radius:999px;background:linear-gradient(180deg,#6b75d6,#5560c9);
+  box-shadow:0 3px 12px -4px rgba(94,106,210,.9);transition:transform .26s cubic-bezier(.4,1.3,.5,1)}
+.uni-knob.r{transform:translateX(100%)}
+.uni-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 9px}
+.uni-ships{display:inline-flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.uni-ship{background:var(--bg2);border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;
+  transition:.14s;max-width:100%;min-height:30px}
+.uni-ship:hover{border-color:var(--line2);color:var(--txt)}
+.uni-ship.on{border-color:var(--accent2);color:var(--accent3);
+  background:linear-gradient(180deg,rgba(94,106,210,.18),rgba(94,106,210,.06))}
+/* Flying wants room, so the stage is taller in universe mode — and in fullscreen it is the screen. */
+.gl-stage.uni{height:min(74vh,660px);cursor:grab;
+  background:radial-gradient(130% 110% at 50% 40%,#141830 0%,#0a0c16 55%,#05060a 100%)}
+.gl-stage.uni:fullscreen{height:100%;width:100%;border-radius:0;border:0}
+.gl-stage.uni:-webkit-full-screen{height:100%;width:100%;border-radius:0;border:0}
+@media(max-width:560px){
+  .uni-ships{margin-left:0;width:100%}
+  .gl-stage.uni{height:min(62vh,520px)}
+}
 #glCanvas{display:block;width:100%;height:100%}
 .gl-hint{position:absolute;left:0;right:0;bottom:9px;text-align:center;font-size:10.5px;
   color:rgba(255,255,255,.34);pointer-events:none;padding:0 12px}
@@ -1768,7 +1798,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v79 · 2026-09-08";
+const BUILD = "v80 · 2026-09-08";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2926,6 +2956,8 @@ function render(){
     $("#viewSub").innerHTML = `Filtered to <b>${esc(activeFilter.label)}</b> · <span data-act="clear-filter" style="cursor:pointer;color:var(--accent2);font-weight:700">clear ✕</span>`;
   else $("#viewSub").innerHTML = "";
   if(view!=="globe"){ if(globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
+    if(uniRAF){ cancelAnimationFrame(uniRAF); uniRAF=0; }
+    if(uniFly) uniSetFly(false);
     if(globePlay){ clearInterval(globePlay); globePlay=0; } }
   const c = $("#content");
   /* Motion on ARRIVAL, never on update. `render()` runs on every save — a tick, a toast, a synced
@@ -2941,7 +2973,7 @@ function render(){
   else if(view==="calendar") c.innerHTML = renderCalendar();
   else if(view==="work"){ c.innerHTML = renderWork(); if(workTab==="org") setTimeout(armWorkGraph,0); }
   else if(view==="insights") c.innerHTML = renderInsights();
-  else if(view==="globe"){ c.innerHTML = renderGlobe(); setTimeout(armGlobe,0); } }
+  else if(view==="globe"){ c.innerHTML = renderGlobe(); setTimeout(uniOn?armUniverse:armGlobe,0); } }
   // stamped AFTER the overview is built, so the recap describes the gap you actually left
   if(view==="work"&&workTab==="overview"){ const n=Date.now();
     if(!devPrefs.lastSeen||n-devPrefs.lastSeen>60000){ devPrefs.lastSeen=n; saveDev(); } }
@@ -5153,17 +5185,19 @@ function renderGlobe(){
       <div class="gl-title"><h2>${esc(o.company)}</h2>
         <div class="gl-sub">${globeMine||globeTime||globeOnly.size||globeLinked?`showing ${shown} of ${g.nodes.length}`:`${g.nodes.length} things you know`} · ${g.edges.length} connections · ${linked} of them joined up</div></div>
       <div class="gl-acts">
+        ${uniSwitchHTML()}
         <input type="search" class="gl-find-q" id="glQ" placeholder="Find on the map…" value="${esc(globeQuery)}" data-glq="1" autocomplete="off"/>
-        <button class="btn ghost sm" data-act="globe-reset">Recentre</button>
-        <button class="btn ghost sm${globeSpin?" on":""}" data-act="globe-spin">${globeSpin?"Pause":"Spin"}</button>
+        ${uniOn?"":`<button class="btn ghost sm" data-act="globe-reset">Recentre</button>
+        <button class="btn ghost sm${globeSpin?" on":""}" data-act="globe-spin">${globeSpin?"Pause":"Spin"}</button>`}
         <button class="btn ghost sm${globeColor==="dept"?" on":""}" data-act="globe-color">${globeColor==="dept"?"By department":"By type"}</button>
         <button class="btn ghost sm${globeMine?" on":""}" data-act="globe-mine"${g.scope?"":" disabled title=\"Put yourself on the map first — People tab\""}>My corner</button>
         <button class="btn ghost sm${globeSuggest?" on":""}" data-act="globe-suggest">Possible links</button>
       </div>
     </div>
-    <div class="gl-stage" id="glStage">
+    ${uniBarHTML()}
+    <div class="gl-stage${uniOn?" uni":""}" id="glStage">
       <canvas id="glCanvas"></canvas>
-      <div class="gl-hint" id="glHint">Drag to turn it · scroll to zoom · click a point to explore it · double-click to open</div>
+      <div class="gl-hint" id="glHint">${uniOn?esc(uniHint()):"Drag to turn it · scroll to zoom · click a point to explore it · double-click to open"}</div>
       <div class="gl-tip" id="glTip" hidden></div>
       <div class="gl-panel" id="glPanel" hidden></div>
     </div>
@@ -5883,6 +5917,816 @@ function globeSelect(key){
       ? `<div class="gl-p-link">Now click what this connects to.<button class="btn ghost sm" data-act="globe-link-cancel">Cancel</button></div>`
       : `<button class="btn ghost sm" style="width:100%;margin-top:10px" data-act="globe-link-start">${I.link} Connect to something…</button>`}
     <button class="btn primary sm" style="width:100%;margin-top:8px" data-ent="${esc(n.t)}|${esc(n.id)}">Open ${esc(ENT[n.t].label.toLowerCase())}</button>`;
+}
+/* ============================ INSIGHTS: THE UNIVERSE (flight mode) ============================
+   The globe above is the map seen from OUTSIDE: everything you know arranged on one surface you
+   turn in your hands. This is the same graph seen from INSIDE — a holographic galaxy you fly
+   through, where the org's own shape becomes the astronomy.
+
+   Both exist on purpose (`uniOn`, the slider in the header). The globe is the faster tool: every
+   point is on screen at once and two drags reach any of them. The universe is the one that makes
+   the shape of the place legible — a department you have barely been inside is visibly a dim star
+   a long way off, and the work that crosses two departments is visibly out in the dark between
+   them. Neither is a replacement for the other, so nothing was taken away to add this.
+
+   WHAT THE ASTRONOMY MEANS — it is not decoration, every rule is read off your own records:
+     · the CORE is the corporate stack (`org`), stacked by how far up the lineage it sits
+     · a STAR is a department; a department nested inside another orbits its parent instead of
+       taking its own place in the disc
+     · a PLANET is a team, orbiting the department it belongs to
+     · a MOON is a person, orbiting their team — or their department directly when no team is
+       recorded, which is most people early on
+     · a BELT object is a record (project, problem, system, decision, question, info, bite) that
+       belongs to exactly one department: it orbits that star, further out than the people
+     · a WAYPOINT is a record whose connections reach into TWO OR MORE departments. It is placed
+       out in the gap at the centre of the departments it touches, which is the whole point — the
+       work that crosses the org is the work that is hard to see in a list, and here it is
+       literally the thing hanging in the space between two suns.
+
+   Hand-rolled like every other chart in this file: no three.js, no CDN, one <canvas>.
+
+   CAMERA CONVENTION, AND IT IS THE OPPOSITE OF THE GLOBE'S. Here the camera has a position and
+   looks down its own +z, so **positive view-space z is IN FRONT** and anything at z <= UNI_NEAR is
+   behind you and culled. The globe uses `s = FOV/(FOV+z)` where NEGATIVE z is near, and getting
+   that backwards there once made every click select from the hemisphere behind you. So the two
+   never share a field: the globe writes `_z`, the universe writes `_vz`, and nothing reads both. */
+
+const UNI_CORE=190, UNI_DISC=1150, UNI_THICK=210;   // the galaxy: inner clearance, radius, how flat
+const UNI_TEAM_R=52, UNI_MOON_R=15, UNI_BELT_R=118; // orbit radii: teams round a star, people round
+                                                    // a team, single-department records further out
+const UNI_NEAR=14, UNI_FOV=900;                     // near plane, and focal length in pixels
+const UNI_FAR=5200;                                 // past this a point is not worth drawing
+const UNI_SHIPS=[
+  ["skiff","Solar skiff","A little boat under a bright sail. Slow to turn, lovely to look at."],
+  ["dart","Dart","All engine and no cargo. Turns on the spot."],
+  ["hauler","Hauler","Blunt, twin-engined, unhurried. You are not in a rush."],
+  ["ring","Ringship","A pod inside a spinning ring. Barely a ship at all."],
+];
+let uniOn=false;            // universe instead of the classic globe
+let uniFly=false;           // flight controls engaged (otherwise it drifts on its own)
+let uniShip="skiff";
+let uniCam={x:0,y:1850,z:-2500,yaw:0,pitch:-0.60};
+let uniVel={x:0,y:0,z:0};
+let uniLook={yaw:0,pitch:0};        // smoothed turn rate, which is what banks the ship
+let uniKeys=new Set();
+let uniRAF=0, uniIntroAt=0, uniSig="", uniDrift=0;
+let uniRipple=null;         // {from, t0} — the electric pulse running out along the strands
+let uniHops=null;           // hop count from the selected node, for the pulse and the highlight
+let uniGoto=null;           // {x,y,z} the camera is easing toward after a selection
+let uniHover=null, uniHoverXY=null;
+let uniStatus="";           // one line of HUD text, set by whatever just happened
+
+function uniPrefsLoad(){
+  uniOn=!!devPrefs.uniMode;
+  if(devPrefs.uniShip&&UNI_SHIPS.some(s=>s[0]===devPrefs.uniShip)) uniShip=devPrefs.uniShip;
+}
+/* A deterministic 0..1 from an id, so the same record lands in the same place every time. Math.random
+   here would make the galaxy reshuffle on every rebuild, which is exactly as disorienting as it
+   sounds. */
+function uniRand(s,salt){
+  let h=2166136261;
+  const str=String(s||"")+"|"+(salt||"");
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+  return ((h>>>0)%100000)/100000;
+}
+/* ---- the layout: turn the org chart into astronomy ------------------------------------------- */
+function uniLayout(g){
+  const GOLD=Math.PI*(3-Math.sqrt(5));
+  const set=(n,x,y,z)=>{ n.ux=x; n.uy=y; n.uz=z; };
+  const depts=g.nodes.filter(n=>n.t==="department");
+  const deptById={}; depts.forEach(d=>deptById[d.id]=d);
+
+  /* the corporate stack at the centre: a parent company sits above the division inside it, so the
+     core reads as a column rather than a clump. Depth is walked with a cycle guard, because two
+     orgs pointing at each other is a typo someone can actually make. */
+  const orgs=g.nodes.filter(n=>n.t==="org");
+  const odepth=o=>{ let d=0,cur=o.rec,seen=new Set([o.id]);
+    while(cur&&cur.parentId&&!seen.has(cur.parentId)&&d<12){ seen.add(cur.parentId); d++; cur=entGet("org",cur.parentId); }
+    return d; };
+  orgs.forEach((o,i)=>{
+    const d=odepth(o), a=i*GOLD;
+    set(o, Math.cos(a)*(26+d*20), 190-d*95, Math.sin(a)*(26+d*20));
+  });
+
+  /* departments. A root department takes a place in the disc — golden angle for the bearing, and a
+     radius that grows with the square root of its index so the inner ones do not pile up. A NESTED
+     department (FP&A inside Finance) does not get its own place in the disc; it orbits its parent,
+     which is what the nesting means. */
+  const isRoot=d=>!(d.rec.parentId&&deptById[d.rec.parentId]);
+  const roots=depts.filter(isRoot), kids=depts.filter(d=>!isRoot(d));
+  roots.forEach((d,i)=>{
+    const a=i*GOLD, f=roots.length>1?i/(roots.length-1):0;
+    const rad=UNI_CORE+Math.pow(f,0.62)*(UNI_DISC-UNI_CORE);
+    set(d, Math.cos(a)*rad, (uniRand(d.id,"y")-0.5)*UNI_THICK, Math.sin(a)*rad);
+  });
+  // children after roots, and re-run so a department nested two deep still finds its parent placed
+  for(let pass=0;pass<3;pass++) kids.forEach((d,i)=>{
+    const p=deptById[d.rec.parentId]; if(!p||p.ux===undefined||d.ux!==undefined) return;
+    const a=uniRand(d.id,"a")*Math.PI*2;
+    set(d, p.ux+Math.cos(a)*300, p.uy+(uniRand(d.id,"y")-0.5)*120, p.uz+Math.sin(a)*300);
+  });
+  depts.forEach((d,i)=>{ if(d.ux===undefined){          // an orphaned parentId still needs a home
+    const a=i*GOLD; set(d, Math.cos(a)*UNI_DISC*1.1, (uniRand(d.id,"y")-0.5)*UNI_THICK, Math.sin(a)*UNI_DISC*1.1); } });
+
+  /* teams orbit their department, spread evenly round it and tilted a little so the system is not
+     a flat dinner plate seen edge-on from the disc. */
+  const teamsOf={};
+  g.nodes.filter(n=>n.t==="team").forEach(t=>{ const k=t.rec.deptId||"none"; (teamsOf[k]=teamsOf[k]||[]).push(t); });
+  Object.keys(teamsOf).forEach(k=>{
+    const star=deptById[k], list=teamsOf[k];
+    list.forEach((t,i)=>{
+      const a=(i/list.length)*Math.PI*2+uniRand(k,"t"), rad=UNI_TEAM_R*(1+i*0.34);
+      const tilt=(uniRand(t.id,"tilt")-0.5)*0.7;
+      const bx=Math.cos(a)*rad, bz=Math.sin(a)*rad;
+      if(star) set(t, star.ux+bx, star.uy+bz*Math.sin(tilt)+18, star.uz+bz*Math.cos(tilt));
+      else set(t, Math.cos(a)*UNI_DISC*1.25, (uniRand(t.id,"y")-0.5)*UNI_THICK, Math.sin(a)*UNI_DISC*1.25);
+    });
+  });
+
+  /* people are moons: round their team when they have one, round their department when they don't
+     (which is most of the map in the first month), and out in a halo when they have neither. */
+  const byHost={};
+  g.nodes.filter(n=>n.t==="person").forEach(p=>{
+    const host=(p.rec.teamId&&g.byKey["team|"+p.rec.teamId]) || (p.rec.deptId&&deptById[p.rec.deptId]) || null;
+    const k=host?host.key:"~none";
+    (byHost[k]=byHost[k]||{host,list:[]}).list.push(p);
+  });
+  Object.keys(byHost).forEach(k=>{
+    const {host,list}=byHost[k];
+    list.forEach((p,i)=>{
+      const a=(i/Math.max(1,list.length))*Math.PI*2+uniRand(k,"p");
+      if(!host){                                   // nobody's moon: a slow outer halo
+        const rad=UNI_DISC*1.45+uniRand(p.id,"r")*260;
+        set(p, Math.cos(a)*rad, (uniRand(p.id,"y")-0.5)*UNI_THICK*1.6, Math.sin(a)*rad);
+        return;
+      }
+      const onTeam=host.t==="team";
+      const rad=(onTeam?UNI_MOON_R:UNI_TEAM_R*0.62)*(1+Math.floor(i/8)*0.5)+(onTeam?0:14);
+      const lift=(uniRand(p.id,"l")-0.5)*(onTeam?14:34);
+      set(p, host.ux+Math.cos(a)*rad, host.uy+lift, host.uz+Math.sin(a)*rad);
+    });
+  });
+
+  /* the records. Which departments does this thing actually touch? Its own field first, then the
+     departments of everything it is connected to. One department and it belongs to that system, so
+     it joins the belt. Two or more and it is the connective tissue — it goes out in the gap at the
+     centre of the stars it reaches between, lifted off the disc so the strands to it are visible
+     rather than lost among the planets. */
+  const RECORD=n=>n.t!=="person"&&n.t!=="team"&&n.t!=="department"&&n.t!=="org";
+  const recs=g.nodes.filter(RECORD);
+  const beltAt={};
+  recs.forEach(n=>{
+    const touched=new Set();
+    if(n.rec.deptId&&deptById[n.rec.deptId]) touched.add(n.rec.deptId);
+    [...(g.ins&&g.ins.nb?(g.ins.nb[n.key]||[]):[])].forEach(k=>{
+      const m=g.byKey[k]; if(!m) return;
+      const d=m.t==="department"?m.id:m.dept;
+      if(d&&deptById[d]) touched.add(d);
+    });
+    n.uSpan=touched.size;
+    const list=[...touched];
+    if(list.length>=2){                              // WAYPOINT — out in the dark between them
+      let x=0,y=0,z=0;
+      list.forEach(id=>{ const d=deptById[id]; x+=d.ux; y+=d.uy; z+=d.uz; });
+      const j=uniRand(n.id,"w");
+      set(n, x/list.length+(j-0.5)*150, y/list.length+(uniRand(n.id,"wy")-0.5)*120+70,
+             z/list.length+(uniRand(n.id,"wz")-0.5)*150);
+      n.uWay=true;
+      return;
+    }
+    const star=list.length===1?deptById[list[0]]:null;
+    if(!star){                                       // knows nobody: the far halo
+      const a=uniRand(n.id,"a")*Math.PI*2, rad=UNI_DISC*1.6+uniRand(n.id,"r")*380;
+      set(n, Math.cos(a)*rad, (uniRand(n.id,"y")-0.5)*UNI_THICK*2, Math.sin(a)*rad);
+      return;
+    }
+    const i=(beltAt[star.id]=(beltAt[star.id]||0)+1)-1;   // BELT — orbiting the one that owns it
+    const a=i*GOLD+uniRand(star.id,"b"), rad=UNI_BELT_R*(1+Math.floor(i/10)*0.42);
+    set(n, star.ux+Math.cos(a)*rad, star.uy+(uniRand(n.id,"y")-0.5)*46, star.uz+Math.sin(a)*rad);
+  });
+  g.nodes.forEach(n=>{ if(n.ux===undefined) set(n,0,0,0); });
+}
+/* Built and cached against the same signature the globe uses, so flipping between the two modes
+   never re-lays either of them out and the map stays exactly where you left it. */
+function uniBuild(o){
+  const g=globeBuild(o);
+  if(uniSig!==globeSig||g.nodes.some(n=>n.ux===undefined)){ uniLayout(g); uniSig=globeSig; }
+  return g;
+}
+/* ---- camera ---------------------------------------------------------------------------------- */
+function uniView(p,c){
+  const dx=p.ux-c.x, dy=p.uy-c.y, dz=p.uz-c.z;
+  const cy=Math.cos(c.yaw), sy=Math.sin(c.yaw);
+  const x=dx*cy-dz*sy, z1=dx*sy+dz*cy;
+  const cp=Math.cos(c.pitch), sp=Math.sin(c.pitch);
+  const y=dy*cp-z1*sp, z=dy*sp+z1*cp;
+  return {x,y,z};                                   // z > 0 is IN FRONT — see the note above
+}
+function uniHome(){
+  uniCam={x:0,y:1850,z:-2500,yaw:0,pitch:-0.60};
+  uniVel={x:0,y:0,z:0}; uniGoto=null; uniDrift=0;
+}
+/* Fly to a node: stop short of it along the line the camera is already on, so arriving does not
+   put you inside the star. */
+function uniFlyTo(n){
+  if(!n||n.ux===undefined) return;
+  const back=Math.max(110,190-(n.deg||0)*4);
+  const yaw=uniCam.yaw, pitch=uniCam.pitch;
+  uniGoto={ x:n.ux-Math.sin(yaw)*Math.cos(pitch)*back,
+            y:n.uy-Math.sin(pitch)*back,
+            z:n.uz-Math.cos(yaw)*Math.cos(pitch)*back, look:n };
+}
+/* ---- the electric pulse ---------------------------------------------------------------------- */
+/* Selecting something sends a charge out along the strands: hop 1 lights, then hop 2, then hop 3,
+   each with a bead running the length of the wire. Hops are BFS from the selected node and are
+   also what dims everything else, so the highlight and the animation agree by construction. */
+const UNI_HOP_MS=190, UNI_HOP_MAX=3;
+function uniSetRipple(key){
+  uniRipple=null; uniHops=null;
+  const g=globeG; if(!key||!g||!g.byKey[key]) return;
+  const hops={}; hops[key]=0;
+  let front=[key];
+  for(let d=1;d<=UNI_HOP_MAX&&front.length;d++){
+    const next=[];
+    front.forEach(k=>[...(g.ins.nb[k]||[])].forEach(x=>{ if(hops[x]===undefined){ hops[x]=d; next.push(x); } }));
+    front=next;
+  }
+  uniHops=hops;
+  uniRipple={from:key,t0:performance.now()};
+}
+/* ---- drawing --------------------------------------------------------------------------------- */
+/* The globe's 64px glow blown up to a 400px corona banded into visible rings and read as a flat
+   orange disc, not a star. This one is 160px with a power falloff, so the edge dissolves instead
+   of ending. Cached per colour for the life of the page, same as the globe's. */
+const uniGlowCache=new Map();
+function uniStarSprite(col){
+  let c=uniGlowCache.get(col);
+  if(c) return c;
+  c=document.createElement("canvas"); c.width=c.height=160;
+  const g=c.getContext("2d");
+  const gr=g.createRadialGradient(80,80,0,80,80,80);
+  for(let i=0;i<=10;i++){ const t=i/10;
+    gr.addColorStop(t,globeRGBA(col,Math.pow(1-t,2.6))); }
+  g.fillStyle=gr; g.fillRect(0,0,160,160);
+  uniGlowCache.set(col,c);
+  return c;
+}
+/* A star IS a department, so in the universe a department and its team both take that department's
+   colour — which is what makes one solar system tell itself apart from the next. People already
+   worked this way in `globeNodeColor`; records keep their type colour, and the "By department"
+   toggle still overrides the lot. */
+function uniNodeColor(n){
+  if(globeColor==="dept") return globeNodeColor(n);
+  if(n.t==="department") return deptColor(n.id);
+  if(n.t==="team"&&n.rec.deptId) return deptColor(n.rec.deptId);
+  return globeNodeColor(n);
+}
+
+function uniDrawShip(ctx,W,H,now){
+  if(!uniFly||uniShip==="none") return;
+  const bank=Math.max(-0.5,Math.min(0.5,uniLook.yaw*9));
+  const rise=Math.max(-16,Math.min(16,uniLook.pitch*-160));
+  const cx=W/2, cy=H*0.83+rise;
+  const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
+  const thr=Math.min(1,sp/26);
+  ctx.save();
+  ctx.translate(cx,cy); ctx.rotate(bank); ctx.scale(2.1,2.1*0.92);
+  // a little light off the hull, so the craft reads against the map rather than in front of it
+  const halo=uniStarSprite("#8f9cd8");
+  ctx.globalAlpha=0.16; ctx.drawImage(halo,-52,-46,104,104); ctx.globalAlpha=1;
+  const glow=(x,y,r,c,a)=>{ const s=uniStarSprite(c); ctx.globalAlpha=a; ctx.drawImage(s,x-r,y-r,r*2,r*2); ctx.globalAlpha=1; };
+  const hull="rgba(226,232,252,.98)", edge="rgba(150,164,214,.95)";
+  ctx.lineJoin="round";
+  if(uniShip==="skiff"){
+    // a little boat under a bright sail — the one the whole look is borrowed from
+    ctx.fillStyle=hull; ctx.beginPath();
+    ctx.moveTo(-26,4); ctx.quadraticCurveTo(0,16,26,4); ctx.quadraticCurveTo(0,10,-26,4); ctx.fill();
+    ctx.strokeStyle=edge; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(0,3); ctx.lineTo(0,-30); ctx.stroke();
+    const sg=ctx.createLinearGradient(0,-34,0,-4);
+    sg.addColorStop(0,"rgba(255,228,170,.85)"); sg.addColorStop(1,"rgba(255,190,110,.20)");
+    ctx.fillStyle=sg; ctx.beginPath();
+    ctx.moveTo(0,-31); ctx.quadraticCurveTo(30,-20,20,-2); ctx.quadraticCurveTo(8,-10,0,-31); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,-31); ctx.quadraticCurveTo(-30,-20,-20,-2); ctx.quadraticCurveTo(-8,-10,0,-31); ctx.fill();
+    glow(0,8,24,"#ffb45e",0.25+0.5*thr);
+  } else if(uniShip==="dart"){
+    ctx.fillStyle=hull; ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(19,14); ctx.lineTo(0,7); ctx.lineTo(-19,14); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle=edge; ctx.lineWidth=1.2; ctx.stroke();
+    glow(-9,14,13,"#8fb6ff",0.3+0.6*thr); glow(9,14,13,"#8fb6ff",0.3+0.6*thr);
+  } else if(uniShip==="hauler"){
+    ctx.fillStyle=hull; ctx.fillRect(-15,-16,30,28);
+    ctx.strokeStyle=edge; ctx.lineWidth=1.2; ctx.strokeRect(-15,-16,30,28);
+    ctx.fillStyle="rgba(150,162,205,.9)"; ctx.fillRect(-25,-4,10,16); ctx.fillRect(15,-4,10,16);
+    ctx.fillStyle="rgba(120,180,255,.5)"; ctx.fillRect(-9,-12,18,7);
+    glow(-20,14,12,"#7fd2ff",0.3+0.55*thr); glow(20,14,12,"#7fd2ff",0.3+0.55*thr);
+  } else {
+    ctx.strokeStyle="rgba(180,192,235,.85)"; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.ellipse(0,0,26,11+6*Math.sin(now/420),0,0,7); ctx.stroke();
+    ctx.fillStyle=hull; ctx.beginPath(); ctx.ellipse(0,2,8,6,0,0,7); ctx.fill();
+    glow(0,8,16,"#a9b4ff",0.28+0.5*thr);
+  }
+  ctx.restore();
+}
+/* The arrival. The rings the globe uses, drawn with more of them and more detail, then COLLAPSED to
+   a single point and blown out into the galaxy — every node flying from the middle to where it
+   belongs, with the strands snapping in behind them. */
+const UNI_INTRO_MS=2600, UNI_COLLAPSE=0.46, UNI_BLOOM=0.56;
+function uniDrawIntro(ctx,W,H,t,now){
+  const cx=W/2, cy=H/2;
+  const R=Math.min(W,H)*0.33;
+  if(t<UNI_COLLAPSE){
+    const k=t/UNI_COLLAPSE;
+    const stand=Math.min(1,k*1.6);
+    const spin=now/1000;
+    const shrink=k>0.72?1-Math.pow((k-0.72)/0.28,1.7):1;   // the last third pulls it all inward
+    ctx.save(); ctx.translate(cx,cy);
+    for(let i=0;i<7;i++){
+      const f=i/6;
+      const rr=R*(0.34+f*0.72)*shrink;
+      const tilt=(0.12+f*1.05)*stand;
+      const rate=(0.5+f*0.85)*(i%2?-1:1);
+      const a=spin*rate;
+      const ry=rr*Math.abs(Math.sin(tilt))+1;
+      ctx.save(); ctx.rotate(f*0.5*stand);
+      // the band itself, then a brighter index line on every third ring
+      ctx.strokeStyle=`rgba(${168+f*60},${180+f*40},255,${(0.42+0.34*f)*stand})`;
+      ctx.lineWidth=i%3===0?1.8:1.05;
+      ctx.beginPath(); ctx.ellipse(0,0,rr,ry,a*0.35,0,7); ctx.stroke();
+      if(i%3===0){
+        ctx.strokeStyle=`rgba(214,226,255,${0.26*stand})`; ctx.lineWidth=3.2;
+        ctx.beginPath(); ctx.ellipse(0,0,rr,ry,a*0.35,0,7); ctx.stroke();
+      }
+      // graduations round the band — a plain circle turning about its own normal reads as nothing
+      // at all, so the marks are what make the rotation visible
+      const ticks=24+i*6;
+      for(let s2=0;s2<ticks;s2++){
+        const th=a+s2/ticks*Math.PI*2;
+        const co=Math.cos(th), si=Math.sin(th);
+        const ex=co*rr, ey=si*ry;
+        const major=s2%6===0;
+        ctx.globalAlpha=(0.45+0.55*co)*stand;
+        if(major){
+          // a real graduation, struck inward off the band
+          ctx.strokeStyle="rgba(226,234,255,.92)"; ctx.lineWidth=1.3;
+          ctx.beginPath(); ctx.moveTo(co*(rr-7),si*(ry-7*(ry/rr||1))); ctx.lineTo(ex,ey); ctx.stroke();
+        } else {
+          ctx.fillStyle="rgba(168,182,242,.8)";
+          ctx.beginPath(); ctx.arc(ex,ey,1.15,0,7); ctx.fill();
+        }
+      }
+      // eight spokes to the hub, so the rings read as one instrument rather than loose hoops
+      if(i%2===0){
+        ctx.globalAlpha=0.16*stand;
+        ctx.strokeStyle="rgba(180,194,255,.9)"; ctx.lineWidth=0.7;
+        for(let s3=0;s3<8;s3++){ const th=a+s3/8*Math.PI*2;
+          ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(th)*rr,Math.sin(th)*ry); ctx.stroke(); }
+      }
+      ctx.globalAlpha=1; ctx.restore();
+    }
+    // the hub the whole instrument is built around
+    const hub=uniStarSprite("#c9d6ff"), hr=16+26*stand;
+    ctx.globalAlpha=0.30+0.45*stand; ctx.drawImage(hub,-hr,-hr,hr*2,hr*2); ctx.globalAlpha=1;
+    ctx.restore();
+    // the point everything is about to come out of
+    const heat=Math.pow(Math.max(0,k-0.62)/0.38,2);
+    if(heat>0){
+      const s=uniStarSprite("#dfe6ff"), rr=26+heat*150;
+      ctx.globalAlpha=Math.min(1,heat*1.2); ctx.drawImage(s,cx-rr,cy-rr,rr*2,rr*2); ctx.globalAlpha=1;
+    }
+    return;
+  }
+  if(t<UNI_BLOOM){                                  // the flash across the cut
+    const k=(t-UNI_COLLAPSE)/(UNI_BLOOM-UNI_COLLAPSE);
+    const s=uniStarSprite("#ffffff"), rr=180+k*Math.max(W,H);
+    ctx.globalAlpha=(1-k)*0.9; ctx.drawImage(s,cx-rr,cy-rr,rr*2,rr*2); ctx.globalAlpha=1;
+  }
+}
+function armUniverse(){
+  const cv=document.getElementById("glCanvas"), stage=document.getElementById("glStage");
+  if(!cv||!stage) return;
+  const o=workOp(); if(!o) return;
+  const g=uniBuild(o);
+  const ctx=cv.getContext("2d");
+  const reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W=0,H=0,DPR=1;
+  const fit=()=>{
+    const r=stage.getBoundingClientRect();
+    DPR=Math.min(2,window.devicePixelRatio||1);
+    W=Math.max(120,r.width); H=Math.max(160,r.height);
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+    cv.style.width=W+"px"; cv.style.height=H+"px";
+  };
+  fit();
+  if(uniRAF) cancelAnimationFrame(uniRAF);
+  const introDur=reduce?0:UNI_INTRO_MS;
+  let t0=performance.now();
+  if(!uniIntroAt||performance.now()-uniIntroAt>60000) uniIntroAt=t0; else t0=uniIntroAt;
+  let last=performance.now();
+  const proj=[];
+
+  const draw=now=>{
+    const dt=Math.min(64,now-last); last=now;
+    const intro=introDur?Math.min(1,(now-t0)/introDur):1;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W,H);
+    globeStars(ctx,W,H,now);
+    if(intro<UNI_BLOOM){ uniDrawIntro(ctx,W,H,intro,now); uniRAF=requestAnimationFrame(draw); return; }
+    const born=Math.min(1,(intro-UNI_BLOOM)/(1-UNI_BLOOM));
+    if(intro<1) uniDrawIntro(ctx,W,H,intro,now);
+
+    /* ---- move the camera ---- */
+    uniStep(dt/16.6,reduce);
+    const cam=uniCam;
+    const cxp=W/2, cyp=H/2;
+
+    /* ---- project ---- */
+    proj.length=0;
+    g.nodes.forEach(n=>{
+      n._vis=globeVisible(n);
+      if(!n._vis) return;
+      const v=uniView(n,cam);
+      n._vz=v.z;
+      if(v.z<=UNI_NEAR||v.z>UNI_FAR){ n._on=false; return; }
+      const s=UNI_FOV/v.z;
+      const sx=cxp+v.x*s, sy=cyp-v.y*s;
+      n._sx=sx; n._sy=sy; n._s=s; n._on=true;
+      // everything born flies out of the middle on arrival
+      if(born<1){ n._sx=cxp+(sx-cxp)*born; n._sy=cyp+(sy-cyp)*born; }
+      if(sx<-260||sx>W+260||sy<-260||sy>H+260) return;
+      proj.push(n);
+    });
+
+    const sel=globeSel&&g.byKey[globeSel]?globeSel:null;
+    const hov=uniHover&&g.byKey[uniHover]?uniHover:null;
+    const q=norm(globeQuery||"");
+    const hitQ=n=>!q||q.split(" ").filter(Boolean).every(w=>norm(n.name).includes(w)||norm(ENT[n.t].label).includes(w));
+    const focus=sel||hov;
+    const hops=(sel&&uniHops)?uniHops:null;
+    const lit=n=>{
+      if(q) return hitQ(n);
+      if(!focus) return true;
+      if(hops) return hops[n.key]!==undefined;
+      return n.key===focus||(globeG.ins.nb[focus]||new Set()).has(n.key);
+    };
+    // how far the charge has travelled, in hops
+    const pulse=uniRipple?(now-uniRipple.t0)/UNI_HOP_MS:-1;
+
+    /* ---- strands, far first ---- */
+    const arcs=[];
+    g.edges.forEach(e=>{
+      if(!e.a._on||!e.b._on) return;
+      arcs.push({e,z:(e.a._vz+e.b._vz)/2});
+    });
+    if(globeSuggest) g.ins.suggest.forEach(s=>{
+      if(!s.a._on||!s.b._on) return;
+      arcs.push({e:{a:s.a,b:s.b,kind:"suggest",n:1},z:(s.a._vz+s.b._vz)/2});
+    });
+    arcs.sort((a,b)=>b.z-a.z);
+    const keep=arcs.length>GLOBE_ARC_MAX?arcs.slice(arcs.length-GLOBE_ARC_MAX):arcs;
+    ctx.lineCap="round";
+    keep.forEach(({e})=>{
+      const on=lit(e.a)&&lit(e.b);
+      if(!on&&focus&&keep.length>220) return;
+      const a=e.a, b=e.b;
+      const near=Math.min(a._vz,b._vz);
+      const fade=Math.max(0,Math.min(1,1-(near-UNI_NEAR)/UNI_FAR));
+      let alpha=(on?0.30:0.05)*fade*born;
+      let col=e.kind==="suggest"?"#e8c47a":e.kind==="collab"?"#7fd2ff":"#7f89c8";
+      // the pulse: an edge one hop further out lights a beat later, and a bead runs its length
+      let bead=-1;
+      if(hops&&pulse>=0){
+        const h=Math.min(hops[a.key]===undefined?99:hops[a.key], hops[b.key]===undefined?99:hops[b.key]);
+        if(h<99){
+          const local=pulse-h;
+          if(local>=0&&local<2.4){
+            const heat=local<1?local:Math.max(0,1-(local-1)/1.4);
+            alpha=Math.min(1,alpha+heat*0.75);
+            col="#cfe0ff";
+            if(local<1) bead=local;
+          }
+        }
+      }
+      if(alpha<=0.012) return;
+      ctx.strokeStyle=globeRGBA(col,alpha);
+      ctx.lineWidth=(on?1.25:0.75)*(e.kind==="collab"?1.5:1);
+      if(e.kind==="suggest"){ ctx.setLineDash([4,5]); } else ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(a._sx,a._sy); ctx.lineTo(b._sx,b._sy); ctx.stroke();
+      ctx.setLineDash([]);
+      if(bead>=0){
+        // a little jitter across the wire, so it reads as a charge rather than a dot on a rail
+        const j=Math.sin(now/40+a._sx)*2.2*(1-Math.abs(bead-0.5)*2);
+        const nx=-(b._sy-a._sy), ny=(b._sx-a._sx);
+        const nl=Math.hypot(nx,ny)||1;
+        const bx=a._sx+(b._sx-a._sx)*bead+nx/nl*j;
+        const by=a._sy+(b._sy-a._sy)*bead+ny/nl*j;
+        const s=uniStarSprite("#eaf1ff"), r=7;
+        ctx.globalAlpha=0.85; ctx.drawImage(s,bx-r,by-r,r*2,r*2); ctx.globalAlpha=1;
+        ctx.fillStyle="rgba(255,255,255,.95)";
+        ctx.beginPath(); ctx.arc(bx,by,1.7,0,7); ctx.fill();
+      }
+    });
+
+    /* ---- bodies, far first ---- */
+    proj.sort((a,b)=>b._vz-a._vz);
+    proj.forEach(n=>{
+      const on=lit(n);
+      const s=n._s;
+      const big=n.t==="department"?11:n.t==="org"?9:n.t==="team"?5.6:n.t==="person"?3.4:3.0;
+      let r=big*s*1.7;
+      r=Math.max(0.55,Math.min(58,r));
+      const col=uniNodeColor(n);
+      const dist=Math.max(0,Math.min(1,1-n._vz/UNI_FAR));
+      let a=(on?1:0.10)*(0.30+0.70*dist)*born;
+      if(hops&&pulse>=0){
+        const h=hops[n.key];
+        if(h!==undefined){ const local=pulse-h;
+          if(local>=0&&local<1.6) a=Math.min(1,a+(1-local/1.6)*0.6); }
+      }
+      if(a<=0.02) return;
+      // stars and waypoints carry a corona; a moon is just a point of light
+      if((n.t==="department"||n.t==="org"||n.uWay||n.deg>3)&&on){
+        const sprite=uniStarSprite(col), R2=Math.min(190,r*(n.t==="department"?4.2:n.t==="org"?3.6:2.6));
+        ctx.globalAlpha=Math.min(1,(n.t==="department"?0.30:n.t==="org"?0.26:0.15)*a);
+        ctx.drawImage(sprite,n._sx-R2,n._sy-R2,R2*2,R2*2);
+        ctx.globalAlpha=1;
+      }
+      ctx.fillStyle=globeRGBA(col,Math.min(1,a+0.12));
+      ctx.beginPath(); ctx.arc(n._sx,n._sy,r,0,7); ctx.fill();
+      if(on&&r>2){ ctx.fillStyle=`rgba(255,255,255,${0.30+0.45*dist})`;
+        ctx.beginPath(); ctx.arc(n._sx,n._sy,r*0.44,0,7); ctx.fill(); }
+      if(n.key===globeSel||n.key===uniHover||n.id===g.me){
+        ctx.strokeStyle=n.key===globeSel?"#fff":n.key===uniHover?"rgba(255,255,255,.72)":"#ffd479";
+        ctx.lineWidth=n.key===globeSel?1.9:1.4;
+        ctx.beginPath(); ctx.arc(n._sx,n._sy,r+5,0,7); ctx.stroke();
+      }
+      n._r=r;
+    });
+
+    /* ---- names ---- */
+    ctx.font="600 11px -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
+    ctx.textAlign="center";
+    const want=proj.filter(n=>{
+      if(n._vz>UNI_FAR*0.55) return false;
+      if(focus||globeQuery) return lit(n);
+      return n.t==="department"||n.t==="org"||(n.t==="team"&&n._vz<900)||n._vz<420;
+    }).sort((a,b)=>{
+      // rank before distance: the stars are what you navigate by, so they get the space first and
+      // a person's name is only dropped in favour of the department it sits inside
+      const rank=x=>x.t==="department"?0:x.t==="org"?1:x.t==="team"?2:3;
+      return rank(a)-rank(b)||a._vz-b._vz;
+    }).slice(0,focus||globeQuery?26:20);
+    // while flying, the craft owns the bottom-centre of the frame — a label painted across it
+    // reads as damage to the ship
+    const taken=[];
+    if(uniFly&&uniShip!=="none") taken.push({x:W/2-110,y:H*0.83-72,w:220,h:150});
+    want.forEach(n=>{
+      const txt=clip(n.name,22);
+      const w=ctx.measureText(txt).width+10, h=15;
+      const x=n._sx-w/2, y=n._sy+(n._r||3)+5;
+      if(taken.some(r=>x<r.x+r.w+3&&x+w+3>r.x&&y<r.y+r.h+2&&y+h+2>r.y)) return;
+      taken.push({x,y,w,h});
+      ctx.fillStyle="rgba(10,11,14,.76)"; ctx.fillRect(x,y,w,h);
+      ctx.fillStyle=n.t==="department"?"rgba(255,236,200,.96)":"rgba(255,255,255,.92)";
+      ctx.fillText(txt,n._sx,y+11);
+    });
+
+    uniDrawShip(ctx,W,H,now);
+    uniHUD(ctx,W,H);
+    uniRAF=requestAnimationFrame(draw);
+  };
+  uniRAF=requestAnimationFrame(draw);
+
+  if(window.ResizeObserver&&!stage.dataset.uro){ stage.dataset.uro="1";
+    new window.ResizeObserver(()=>fit()).observe(stage); }
+  if(stage.dataset.ubound) return; stage.dataset.ubound="1";
+  uniBindControls(stage,cv);
+}
+/* The reticle and the speed read-out. Deliberately tiny — it is a HUD, not a dashboard. */
+function uniHUD(ctx,W,H){
+  if(!uniFly) return;
+  const cx=W/2, cy=H*0.5;
+  ctx.strokeStyle="rgba(180,196,255,.34)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,13,0,7); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx-22,cy); ctx.lineTo(cx-16,cy); ctx.moveTo(cx+16,cy); ctx.lineTo(cx+22,cy);
+  ctx.moveTo(cx,cy-22); ctx.lineTo(cx,cy-16); ctx.moveTo(cx,cy+16); ctx.lineTo(cx,cy+22);
+  ctx.stroke();
+  const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
+  ctx.font="600 10px ui-monospace,SFMono-Regular,Menlo,monospace";
+  ctx.textAlign="left"; ctx.fillStyle="rgba(180,196,255,.62)";
+  ctx.fillText(Math.round(sp*6)+" ly/s",14,H-14);
+  if(uniStatus){ ctx.textAlign="center"; ctx.fillStyle="rgba(214,224,255,.75)";
+    ctx.fillText(uniStatus,W/2,H-14); }
+}
+/* One step of flight. Held keys accelerate along the camera's own axes; nothing is instant and
+   nothing is unbounded — the damping is what makes it feel like a craft rather than a cursor. */
+const UNI_ACC=1.5, UNI_DAMP=0.90, UNI_MAXV=46, UNI_TURN=0.030;
+function uniStep(f,reduce){
+  const k=uniKeys;
+  const has=(...a)=>a.some(x=>k.has(x));
+  let turnY=0, turnP=0;
+  if(uniFly){
+    if(has("arrowleft")) turnY-=UNI_TURN;
+    if(has("arrowright")) turnY+=UNI_TURN;
+    if(has("arrowup")) turnP+=UNI_TURN*0.72;
+    if(has("arrowdown")) turnP-=UNI_TURN*0.72;
+    uniCam.yaw+=turnY*f;
+    uniCam.pitch=Math.max(-1.35,Math.min(1.35,uniCam.pitch+turnP*f));
+    const boost=has("shift")?2.4:1;
+    const fwd=(has("w")?1:0)-(has("s")?1:0);
+    const strafe=(has("d")?1:0)-(has("a")?1:0);
+    const lift=(has(" ")?1:0)-(has("c")?1:0);
+    const cy=Math.cos(uniCam.yaw), sy=Math.sin(uniCam.yaw), cp=Math.cos(uniCam.pitch);
+    if(fwd){ uniVel.x+=sy*cp*UNI_ACC*fwd*boost*f; uniVel.z+=cy*cp*UNI_ACC*fwd*boost*f;
+             uniVel.y+=Math.sin(uniCam.pitch)*UNI_ACC*fwd*boost*f; }
+    if(strafe){ uniVel.x+=cy*UNI_ACC*strafe*boost*f; uniVel.z+=-sy*UNI_ACC*strafe*boost*f; }
+    if(lift) uniVel.y+=UNI_ACC*lift*boost*f;
+  }
+  // smoothed turn rate drives the ship's bank
+  uniLook.yaw+=((turnY)-uniLook.yaw)*0.15;
+  uniLook.pitch+=((turnP)-uniLook.pitch)*0.15;
+  const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
+  if(sp>UNI_MAXV){ const s=UNI_MAXV/sp; uniVel.x*=s; uniVel.y*=s; uniVel.z*=s; }
+  uniCam.x+=uniVel.x*f; uniCam.y+=uniVel.y*f; uniCam.z+=uniVel.z*f;
+  const d=Math.pow(UNI_DAMP,f);
+  uniVel.x*=d; uniVel.y*=d; uniVel.z*=d;
+  // easing toward something you selected
+  if(uniGoto){
+    const e=0.055*f;
+    uniCam.x+=(uniGoto.x-uniCam.x)*e;
+    uniCam.y+=(uniGoto.y-uniCam.y)*e;
+    uniCam.z+=(uniGoto.z-uniCam.z)*e;
+    if(uniGoto.look){
+      const n=uniGoto.look;
+      const dx=n.ux-uniCam.x, dy=n.uy-uniCam.y, dz=n.uz-uniCam.z;
+      const wantYaw=Math.atan2(dx,dz);
+      const wantPitch=Math.atan2(dy,Math.hypot(dx,dz));
+      let dyaw=wantYaw-uniCam.yaw;
+      while(dyaw>Math.PI) dyaw-=Math.PI*2; while(dyaw<-Math.PI) dyaw+=Math.PI*2;
+      uniCam.yaw+=dyaw*e*1.6;
+      uniCam.pitch+=(wantPitch-uniCam.pitch)*e*1.6;
+    }
+    if(Math.hypot(uniGoto.x-uniCam.x,uniGoto.y-uniCam.y,uniGoto.z-uniCam.z)<6) uniGoto=null;
+  }
+  /* DRIFT is the default, and it is why this is still a tool: with nobody flying it, the galaxy
+     turns slowly in front of you the way the globe spins, so arriving at Insights shows you the
+     map rather than a cockpit you have to learn. */
+  if(!uniFly&&!uniGoto&&!reduce&&sp<0.6){
+    uniDrift+=0.00022*f;
+    const rad=2600, h=1850;
+    uniCam.x=Math.sin(uniDrift)*rad;
+    uniCam.z=-Math.cos(uniDrift)*rad;
+    uniCam.y=h+Math.sin(uniDrift*1.7)*150;
+    uniCam.yaw=-uniDrift;
+    uniCam.pitch=-0.60+Math.sin(uniDrift*2.1)*0.04;
+  }
+}
+/* ---- picking --------------------------------------------------------------------------------- */
+/* Only what is IN FRONT of the camera (z > UNI_NEAR — see the convention note), sized to the dot's
+   own drawn radius, and among everything under the finger the nearest wins. */
+function uniPick(pt){
+  const g=globeG; if(!g) return null;
+  let best=null, bd=1e9;
+  g.nodes.forEach(n=>{
+    if(!n._on||n._sx===undefined) return;
+    if(n._vz<=UNI_NEAR) return;
+    const d=Math.hypot(n._sx-pt.x,n._sy-pt.y);
+    const tol=Math.max(11,(n._r||3)+9);
+    if(d<=tol&&n._vz<bd){ bd=n._vz; best=n; }
+  });
+  return best;
+}
+function uniBindControls(stage,cv){
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  let drag=false, moved=false, lx=0, ly=0;
+  stage.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".gl-panel")||e.target.closest(".uni-hud")) return;
+    drag=true; moved=false; lx=e.clientX; ly=e.clientY;
+    uniGoto=null;
+    stage.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener("pointermove",e=>{
+    if(!drag){
+      if(e.pointerType==="touch") return;
+      const p=pos(e), n=uniPick(p);
+      const key=n?n.key:null;
+      if(key!==uniHover){ uniHover=key; stage.style.cursor=key?"pointer":(uniFly?"crosshair":"grab"); }
+      uniHoverXY=key?p:null;
+      globeTip(key,p);
+      return;
+    }
+    const dx=e.clientX-lx, dy=e.clientY-ly;
+    if(Math.abs(dx)+Math.abs(dy)>4) moved=true;
+    uniCam.yaw+=dx*0.0045;
+    uniCam.pitch=Math.max(-1.35,Math.min(1.35,uniCam.pitch-dy*0.0045));
+    uniLook.yaw=dx*0.0045; uniLook.pitch=-dy*0.0045;
+    lx=e.clientX; ly=e.clientY;
+  });
+  const end=e=>{
+    if(drag&&!moved){
+      const n=uniPick(pos(e));
+      if(n){ globeSelect(n.key); uniSetRipple(n.key); uniFlyTo(n); }
+      else { globeSelect(null); uniSetRipple(null); }
+    }
+    drag=false;
+  };
+  stage.addEventListener("pointerup",end);
+  stage.addEventListener("pointercancel",end);
+  stage.addEventListener("pointerleave",()=>{ uniHover=null; uniHoverXY=null; globeTip(null); });
+  stage.addEventListener("dblclick",e=>{
+    if(e.target.closest(".gl-panel")) return;
+    const n=uniPick(pos(e)); if(n) openEnt(n.t,n.id);
+  });
+  // the wheel is thrust, not zoom: there is no zoom in here, only how fast you are going
+  stage.addEventListener("wheel",e=>{
+    e.preventDefault();
+    const cy=Math.cos(uniCam.yaw), sy=Math.sin(uniCam.yaw), cp=Math.cos(uniCam.pitch);
+    const k=e.deltaY>0?-1:1;
+    uniVel.x+=sy*cp*3.2*k; uniVel.z+=cy*cp*3.2*k; uniVel.y+=Math.sin(uniCam.pitch)*3.2*k;
+    uniGoto=null;
+  },{passive:false});
+}
+/* Keys are captured only while flying, and never while you are typing in the find box — a global
+   WASD listener that ate a search query would be its own bug report. */
+function uniKeyDown(e){
+  if(!uniOn||view!=="globe") return;
+  const t=e.target;
+  if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.isContentEditable)) return;
+  const k=e.key.length===1?e.key.toLowerCase():e.key.toLowerCase();
+  if(k==="escape"){ if(uniFly){ uniSetFly(false); e.preventDefault(); } return; }
+  if(!uniFly) return;
+  if(["w","a","s","d","c"," ","arrowup","arrowdown","arrowleft","arrowright","shift"].includes(k)){
+    uniKeys.add(k); e.preventDefault();
+  }
+}
+function uniKeyUp(e){
+  const k=e.key.length===1?e.key.toLowerCase():e.key.toLowerCase();
+  uniKeys.delete(k);
+  if(k==="shift") uniKeys.delete("shift");
+}
+function uniSetFly(on){
+  uniFly=!!on;
+  uniKeys.clear();
+  uniStatus=uniFly?"WASD move · arrows turn · space/C up-down · shift boost · esc to stop":"";
+  if(uniFly){ uniGoto=null; uniDrift=0; }
+  const stage=document.getElementById("glStage");
+  if(stage) stage.style.cursor=uniFly?"crosshair":"grab";
+  const btn=document.querySelector('[data-act="uni-fly"]');
+  if(btn){ btn.classList.toggle("on",uniFly); btn.textContent=uniFly?"✓ Flying":"✈ Fly"; }
+  const hint=document.getElementById("glHint");
+  if(hint) hint.textContent=uniHint();
+}
+function uniHint(){
+  return uniFly
+    ? "W A S D to move · arrow keys to turn · space and C for up and down · shift to boost · Esc to stop flying"
+    : "Drag to look around · scroll to move · click a point to fly to it · double-click to open it";
+}
+function uniFullscreen(){
+  const stage=document.getElementById("glStage"); if(!stage) return;
+  const d=document;
+  if(d.fullscreenElement||d.webkitFullscreenElement){
+    (d.exitFullscreen||d.webkitExitFullscreen||function(){}).call(d);
+    return;
+  }
+  const req=stage.requestFullscreen||stage.webkitRequestFullscreen;
+  if(!req){ toast("This browser won't give the map the whole screen.","warn"); return; }
+  try{ req.call(stage); }catch(err){ toast("Couldn't go fullscreen here.","warn"); }
+}
+/* ---- the header controls --------------------------------------------------------------------- */
+function uniSwitchHTML(){
+  return `<div class="uni-switch" role="group" aria-label="Map style">
+      <button class="uni-sw${uniOn?"":" on"}" data-act="uni-globe" aria-pressed="${uniOn?"false":"true"}">Globe</button>
+      <button class="uni-sw${uniOn?" on":""}" data-act="uni-universe" aria-pressed="${uniOn?"true":"false"}">Universe</button>
+      <i class="uni-knob${uniOn?" r":""}" aria-hidden="true"></i>
+    </div>`;
+}
+function uniBarHTML(){
+  if(!uniOn) return "";
+  return `<div class="uni-bar">
+      <button class="btn ghost sm${uniFly?" on":""}" data-act="uni-fly">${uniFly?"✓ Flying":"✈ Fly"}</button>
+      <button class="btn ghost sm" data-act="uni-full">⛶ Fullscreen</button>
+      <button class="btn ghost sm" data-act="uni-home">Recentre</button>
+      <span class="uni-ships">${UNI_SHIPS.map(([id,name,note])=>
+        `<button class="uni-ship${uniShip===id?" on":""}" data-uniship="${esc(id)}" title="${esc(note)}"
+          aria-pressed="${uniShip===id?"true":"false"}">${esc(name)}</button>`).join("")}</span>
+    </div>`;
+}
+function uniSetMode(on){
+  if(uniOn===!!on) return;
+  uniOn=!!on;
+  devPrefs.uniMode=uniOn; saveDev();
+  if(uniRAF){ cancelAnimationFrame(uniRAF); uniRAF=0; }
+  if(globeRAF){ cancelAnimationFrame(globeRAF); globeRAF=0; }
+  if(uniOn){ uniHome(); uniIntroAt=0; uniSetFly(false); }
+  render();
+}
+function uniSetShip(id){
+  if(!UNI_SHIPS.some(s=>s[0]===id)) return;
+  uniShip=id; devPrefs.uniShip=id; saveDev();
+  document.querySelectorAll("[data-uniship]").forEach(el=>{
+    const on=el.dataset.uniship===id;
+    el.classList.toggle("on",on); el.setAttribute("aria-pressed",on?"true":"false");
+  });
+  if(!uniFly) uniSetFly(true);
 }
 /* ============================ WORK VIEW (90-day mode / My Company) ============================ */
 const WORK_TABS=[["overview","Overview"],["people","People"],["org","Departments"],["projects","Projects"],["problems","Problems"],["knowledge","Knowledge"],["timeline","Timeline"],["ask","Ask"]];
@@ -11832,7 +12676,7 @@ async function pullContactInto(){
 document.addEventListener("click",e=>{
   // a synthesised click, or one landing on a text node, has no closest() — bail rather than throw
   if(!e.target||typeof e.target.closest!=="function") return;
-  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glonly],[data-glinkpair],[data-dupmerge],[data-dupswap],[data-dupskip],[data-dupconv]");
+  const t=e.target.closest("[data-view],[data-act],[data-open],[data-sort],[data-tab],[data-rating] .s,[data-del-round],[data-edit-round],[data-del-person],[data-edit-person],[data-research],[data-research-co],[data-rs-delexp],[data-rs-deledu],[data-gen],[data-gen-ty],[data-gen-hero],[data-followup],[data-task-done],[data-thanked],[data-story-edit],[data-story-del],[data-q-edit],[data-q-del],[data-ask],[data-copy],[data-stageadd],[data-stagedel],[data-stagemove],[data-tile],[data-pickfile],[data-clearfile],[data-ics],[data-gcal],[data-cal-edit],[data-cal-del],[data-dljd],[data-sc-rate],[data-sc-delcrit],[data-calmode],[data-calnav],[data-calday],[data-wtab],[data-wop],[data-ent],[data-entadd],[data-entedit],[data-entdel],[data-qstat],[data-cite],[data-rev],[data-report],[data-report-regen],[data-whoq],[data-whoabout],[data-wask],[data-capedit],[data-capreex],[data-mergewith],[data-mergeinto],[data-mpprep],[data-mp],[data-range],[data-op],[data-askopt],[data-og],[data-setdept],[data-pickdept],[data-newdept],[data-setmgr],[data-pickmgr],[data-workswithpick],[data-workswith],[data-ogmode],[data-ogdept],[data-convert],[data-convto],[data-teamadd],[data-newadd],[data-newcancel],[data-addent],[data-ogtool],[data-pickperson],[data-setemporg],[data-groqmodel],[data-pickmodel],[data-toast-act],[data-lfclear],[data-lfsort],[data-objday],[data-dash],[data-dig],[data-qtcap],[data-mode],[data-capshotdel],[data-shotview],[data-spshotdel],[data-mfacode],[data-mfaon],[data-mfaoff],[data-objdone],[data-askload],[data-askdel],[data-capcrop],[data-spcrop],[data-crh],[data-setme],[data-notme],[data-mgpick],[data-glsel],[data-glonly],[data-glinkpair],[data-dupmerge],[data-dupswap],[data-dupskip],[data-dupconv],[data-uniship]");
   if(!t) return;
   // The drawer is hidden with a class, not removed, so its buttons outlive the record they act on —
   // a stale tap during the close animation, or a sync that deletes the role while it's open, used to
@@ -11885,7 +12729,12 @@ document.addEventListener("click",e=>{
   if(act==="globe-reset"){ globeCam={yaw:0.6,pitch:-0.22,zoom:1}; globeSelect(null); return; }
   if(act==="globe-spin"){ globeSpin=!globeSpin; t.textContent=globeSpin?"Pause":"Spin"; t.classList.toggle("on",globeSpin); return; }
   if(act==="globe-suggest"){ globeSuggest=!globeSuggest; t.classList.toggle("on",globeSuggest); return; }
-  if(act==="globe-clear"){ globeSelect(null); return; }
+  if(act==="globe-clear"){ globeSelect(null); if(uniOn) uniSetRipple(null); return; }
+  if(act==="uni-globe"){ uniSetMode(false); return; }
+  if(act==="uni-universe"){ uniSetMode(true); return; }
+  if(act==="uni-fly"){ uniSetFly(!uniFly); return; }
+  if(act==="uni-full"){ uniFullscreen(); return; }
+  if(act==="uni-home"){ uniHome(); globeSelect(null); uniSetRipple(null); return; }
   if(act==="dupes"){ openDupes(); return; }
   if(act==="globe-color"){ globeColor=globeColor==="dept"?"type":"dept"; render(); return; }
   if(act==="globe-mine"){ globeMine=!globeMine; globeSelect(null); render(); return; }
@@ -12295,8 +13144,10 @@ document.addEventListener("click",e=>{
   }
   if(t.dataset.dupconv){ const [ty,id]=t.dataset.dupconv.split("|"); closeEditor(); openConvertPicker(ty,id); return; }
   if(t.dataset.glsel){ globeSelect(t.dataset.glsel); globeSpin=false;
+    if(uniOn){ uniSetRipple(t.dataset.glsel); const n=globeG&&globeG.byKey[t.dataset.glsel]; if(n) uniFlyTo(n); }
     const st=document.getElementById("glStage"); if(st) st.scrollIntoView({block:"center",behavior:"smooth"});
     const b=document.querySelector('[data-act="globe-spin"]'); if(b) b.textContent="Spin"; return; }
+  if(t.dataset.uniship){ uniSetShip(t.dataset.uniship); return; }
   if(t.dataset.glonly!==undefined){ const ty=t.dataset.glonly;
     if(globeOnly.has(ty)) globeOnly.delete(ty); else globeOnly.add(ty);
     globeFiltersChanged(); globeChrome(); return; }
@@ -13796,6 +14647,13 @@ adoptSyncedAI();   // a key already in the vault from another device works on th
 // the first time they sign into a second account the old data would look unowned and follow them.
 if(signedIn()&&!localOwner()) setLocalOwner(session.uid);
 readInviteLink();  // an invite link configures the project before anything asks for it
+uniPrefsLoad();    // which map this device was last looking at, and which craft it picked
+// Flight keys are global because the canvas cannot hold focus while you drag it, but uniKeyDown
+// bails unless you are actually on the map AND flying, and never while a field has focus.
+document.addEventListener("keydown",uniKeyDown);
+document.addEventListener("keyup",uniKeyUp);
+window.addEventListener("blur",()=>uniKeys.clear());   // alt-tab must not leave the throttle open
+document.addEventListener("fullscreenchange",()=>{ if(uniOn&&view==="globe") setTimeout(()=>{ const s=document.getElementById("glStage"); if(s) s.dispatchEvent(new Event("resize")); },60); });
 render();
 renderLockGate();  // if the vault is sealed, nothing is readable until it is opened
 renderAuthGate();  // signed out? this is the first thing you see

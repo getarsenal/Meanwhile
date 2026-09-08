@@ -1156,6 +1156,25 @@ and what a future change should not regress:
   including IndexedDB attachment bytes; free AI keys sync and paid ones never enter the document;
   a half-typed form survives a backdrop tap or Escape.
 
+**Three ways a suite goes stale, all of which cost a session each.** A red suite is more often an
+out-of-date test than a broken app, so check what the app actually does now before "fixing" it:
+- **The sign-in gate blocks real clicks.** Since `DEFAULT_PROJECT` was filled in, a fresh browser
+  context opens on `#authGate`, which intercepts every Playwright `.click()` — thirteen suites went
+  red at once and none of them was about the gate. Any suite that is not testing the login screen
+  needs `await p.addInitScript(() => localStorage.setItem('meanwhile_device_v1',
+  JSON.stringify({localOnly:true})))` right after `newPage()`. Suites driving the app through
+  `page.evaluate` never noticed, which is why the failures looked unrelated to each other.
+- **A card that moved is not a card that went away.** The v70 consolidation put `paceCard`,
+  `growthCard`, `coverageCard` and `changedCard` inside `openMapHealth()`, and reordered the
+  overview so today's block sits *above* the week tiles. Five suites were still looking for
+  `.pace` / `.wov-grow` / `.wov-crow` / `[data-range]` on the page itself. Open the modal first.
+  Watch for the **vacuous pass** this creates: `at('.wov-grow')` returns `-1` when the chart isn't
+  there, and `-1 < tiles` is true, so an ordering assertion kept passing for the wrong reason.
+- **Don't assert on short strings against base64.** `lock.mjs` checked the sealed vault didn't
+  contain `"Dana"` — four characters over a 64-symbol alphabet is roughly a 0.3% false failure per
+  run, and it duly failed once in a sweep and passed eight times after. Markers must be long enough
+  that chance cannot produce them, or the check should be structural.
+
 Day to day, verify in a real browser via the preview tools:
 1. Serve the folder and open it (a `.claude/launch.json` with a static server already exists in
    the local setup; on the web sandbox just open `index.html`).

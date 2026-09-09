@@ -925,6 +925,15 @@ running the length of each wire and a little jitter across it so it reads as a c
 dot on a rail. **The same hop map dims everything else**, so the highlight and the animation agree
 by construction rather than by two lists kept in step.
 
+**The switch must not move when you press it.** `.gl-acts` is right-aligned, so the globe-only
+controls (*Recentre*, *Pause*) dropping out in universe mode slid everything left of them — the
+switch included — **171px to the right**, and 32px down at 1280: you used a control and it jumped
+out from under the pointer. Two things pin it: `.gl-acts` takes a **fixed flex basis**, so the
+title/actions split no longer depends on how many buttons the current mode happens to have, and the
+switch takes `margin-right:auto`, which parks it at the left of the row and lets the gap absorb the
+difference. `uni.mjs` measures its box in both modes at six widths and requires both coordinates to
+be identical.
+
 **The switch costs a phone a row of header, and that matters.** At 320px the globe header was
 already four rows of controls; adding a fifth drifted the last one down into the fixed FABs and
 `mob.mjs` caught it. Under 560px the switch shrinks and shares its row with the find box, which

@@ -753,7 +753,13 @@ tbody td{padding:12px 14px;vertical-align:middle}
 .gl-sub{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.5}
 /* flex:1 1 auto + min-width:0, NOT 0 0 auto — a row that cannot shrink never lets its own
    flex-wrap kick in, so five buttons walked straight off a 320px screen. */
-.gl-acts{display:flex;gap:7px;flex-wrap:wrap;flex:1 1 auto;min-width:0;justify-content:flex-end}
+/* The actions are right-aligned, so dropping the globe-only buttons in universe mode used to slide
+   everything left of them 171px to the right — the map switch included, which is the one control
+   that must not move when you use it. Two things pin it: a FIXED flex basis, so the title/actions
+   split no longer depends on how many buttons the current mode has, and an auto right margin on the
+   switch, which parks it at the left of the row and lets the gap absorb the difference instead. */
+.gl-acts{display:flex;gap:7px;flex-wrap:wrap;flex:1 1 340px;min-width:0;justify-content:flex-end}
+.gl-acts .uni-switch{margin-right:auto}
 .gl-acts .btn.on{box-shadow:inset 0 0 0 1px var(--accent2);color:var(--accent2)}
 .gl-stage{position:relative;width:100%;height:min(62vh,560px);min-height:300px;border-radius:18px;
   overflow:hidden;background:radial-gradient(120% 100% at 50% 0%,#171a2b 0%,#0c0e15 60%,#08090d 100%);
@@ -1803,7 +1809,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v81 · 2026-09-09";
+const BUILD = "v82 · 2026-09-09";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];

@@ -1803,7 +1803,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v80 · 2026-09-08";
+const BUILD = "v81 · 2026-09-09";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -5956,12 +5956,61 @@ function globeSelect(key){
    that backwards there once made every click select from the hemisphere behind you. So the two
    never share a field: the globe writes `_z`, the universe writes `_vz`, and nothing reads both. */
 
-const UNI_CORE=190, UNI_DISC=1150, UNI_THICK=210;   // the galaxy: inner clearance, radius, how flat
+const UNI_CORE=360, UNI_DISC=1250, UNI_THICK=210;   // the galaxy: inner clearance, radius, how flat
+const UNI_ARMS=2, UNI_SWEEP=Math.PI*1.15;          // spiral arms, and how far each one winds round
+const UNI_RIM=UNI_DISC*1.16;                       // one tidy radius for things joined to nothing
 const UNI_TEAM_R=52, UNI_MOON_R=15, UNI_BELT_R=118; // orbit radii: teams round a star, people round
                                                     // a team, single-department records further out
 const UNI_NEAR=14, UNI_FOV=900;                     // near plane, and focal length in pixels
 const UNI_FAR=5200;                                 // past this a point is not worth drawing
+/* ---- the baked craft --------------------------------------------------------------------------
+   Connor supplied a low-poly .glb. The file itself is never loaded: a glTF is a binary container
+   that needs a parser and a 3D renderer to draw, which would mean three.js or hand-rolled WebGL and
+   a dependency this app does not take — and 364KB of it was a texture that flat shading does not
+   need anyway. So the geometry was extracted once, offline: welded to 142 vertices and 280
+   triangles, quantised to integer thousandths, and baked in below at about 4KB. It draws through
+   the same canvas the rest of the map uses.
+   Axes were swapped on the way in so the mesh matches the renderer: +x across the wings, +y up,
+   +z along the nose. */
+const SHIP_V=[162,23,-299,143,58,-299,150,45,-282,155,36,-282,145,-116,-299,75,-116,-299,67,-135,-362,153,-135,-362,162,23,-92,162,23,33,162,-81,33,162,-65,-92,58,-92,-92,58,-81,115,0,-81,115,0,-92,-92,36,106,115,0,106,115,0,23,308,36,23,308,58,60,-92,0,60,-92,162,-81,-299,58,-81,-299,0,-81,-299,58,23,-299,58,23,-92,77,58,-119,77,58,-299,0,23,-299,162,-92,-92,58,23,115,77,-62,101,77,5,101,75,-116,-119,58,-26,280,58,-87,244,0,-87,244,36,-92,372,0,-92,372,36,-41,401,143,58,-119,47,-92,-362,145,-116,-119,173,-92,-362,0,-41,401,173,34,-362,150,77,-362,70,77,-362,47,34,-362,136,-93,-283,148,-67,-283,72,-67,-283,84,-93,-283,148,9,-283,134,35,-283,86,35,-283,72,9,-283,331,-108,-58,331,-116,-154,500,-140,-215,500,-135,-148,264,-108,-367,500,-135,-327,331,-97,-154,500,-129,-215,152,37,-134,322,140,-401,325,135,-401,325,135,-311,77,-62,62,77,5,62,143,-62,47,143,5,47,143,-62,8,143,5,8,-162,23,-299,-155,36,-282,-150,45,-282,-143,58,-299,-145,-116,-299,-153,-135,-362,-67,-135,-362,-75,-116,-299,-162,23,-92,-162,-65,-92,-162,-81,33,-162,23,33,-58,-92,-92,-58,-81,115,-36,106,115,-36,23,308,-58,60,-92,-162,-81,-299,-58,-81,-299,-58,23,-299,-77,58,-299,-77,58,-119,-58,23,-92,-162,-92,-92,-58,23,115,-77,5,101,-77,-62,101,-75,-116,-119,-58,-26,280,-58,-87,244,-36,-92,372,-36,-41,401,-143,58,-119,-47,-92,-362,-145,-116,-119,-173,-92,-362,-150,77,-362,-173,34,-362,-70,77,-362,-47,34,-362,-148,-67,-283,-136,-93,-283,-84,-93,-283,-72,-67,-283,-134,35,-283,-148,9,-283,-86,35,-283,-72,9,-283,-331,-108,-58,-500,-135,-148,-500,-140,-215,-331,-116,-154,-500,-135,-327,-264,-108,-367,-331,-97,-154,-500,-129,-215,-152,37,-134,-325,135,-401,-322,140,-401,-325,135,-311,-77,5,62,-77,-62,62,-143,-62,47,-143,5,47,-143,-62,8,-143,5,8];
+const SHIP_T=[26,25,20,35,19,40,57,53,52,51,50,53,55,54,51,57,56,55,57,51,53,57,55,51,41,8,66,68,67,69,98,92,95,104,107,91,123,120,122,116,121,120,118,117,116,123,119,118,123,116,120,123,118,116,108,132,84,133,135,134,0,1,2,0,2,3,4,5,6,4,6,7,8,9,10,8,10,11,12,13,14,12,14,15,16,17,18,16,18,19,16,20,21,16,21,17,0,8,11,0,11,22,23,12,15,23,15,24,25,26,27,25,27,28,29,25,23,29,23,24,30,10,13,30,13,12,31,13,32,31,32,33,9,8,26,9,26,31,12,23,5,12,5,34,31,16,19,31,19,35,16,31,26,16,26,20,13,31,35,13,35,36,14,13,36,14,36,37,37,36,38,37,38,39,36,35,40,36,40,38,25,29,21,25,21,20,26,8,41,26,41,27,41,1,28,41,28,27,5,23,42,5,42,6,4,43,34,4,34,5,30,12,34,30,34,43,22,4,7,22,7,44,22,30,43,22,43,4,19,18,45,19,45,40,45,39,38,45,38,40,1,0,46,1,46,47,28,1,47,28,47,48,25,28,48,25,48,49,23,25,49,23,49,42,0,22,44,0,44,46,44,7,50,44,50,51,6,42,52,6,52,53,7,6,53,7,53,50,47,46,54,47,54,55,48,47,55,48,55,56,49,48,56,49,56,57,46,44,51,46,51,54,42,49,57,42,57,52,58,59,60,58,60,61,59,62,63,59,63,60,64,58,61,64,61,65,62,64,65,62,65,63,60,63,65,60,65,61,8,0,3,8,3,66,3,2,67,3,67,68,66,3,68,66,68,69,1,41,66,1,66,2,10,30,59,10,59,58,30,22,62,30,62,59,11,10,58,11,58,64,22,11,64,22,64,62,33,32,70,33,70,71,13,10,72,13,72,32,10,9,73,10,73,72,9,31,33,9,33,73,32,72,74,32,74,70,72,73,75,72,75,74,73,33,71,73,71,75,75,71,70,75,70,74,2,66,69,2,69,67,76,77,78,76,78,79,80,81,82,80,82,83,84,85,86,84,86,87,88,15,14,88,14,89,90,91,18,90,18,17,90,17,21,90,21,92,76,93,85,76,85,84,94,24,15,94,15,88,95,96,97,95,97,98,29,24,94,29,94,95,99,88,89,99,89,86,100,101,102,100,102,89,87,100,98,87,98,84,88,103,83,88,83,94,100,104,91,100,91,90,90,92,98,90,98,100,89,105,104,89,104,100,14,37,105,14,105,89,37,39,106,37,106,105,105,106,107,105,107,104,95,92,21,95,21,29,98,97,108,98,108,84,108,97,96,108,96,79,83,82,109,83,109,94,80,83,103,80,103,110,99,110,103,99,103,88,93,111,81,93,81,80,93,80,110,93,110,99,91,107,45,91,45,18,45,107,106,45,106,39,79,112,113,79,113,76,96,114,112,96,112,79,95,115,114,95,114,96,94,109,115,94,115,95,76,113,111,76,111,93,111,116,117,111,117,81,82,118,119,82,119,109,81,117,118,81,118,82,112,120,121,112,121,113,114,122,120,114,120,112,115,123,122,115,122,114,113,121,116,113,116,111,109,119,123,109,123,115,124,125,126,124,126,127,127,126,128,127,128,129,130,131,125,130,125,124,129,128,131,129,131,130,126,125,131,126,131,128,84,132,77,84,77,76,77,133,134,77,134,78,132,135,133,132,133,77,79,78,132,79,132,108,86,124,127,86,127,99,99,127,129,99,129,93,85,130,124,85,124,86,93,129,130,93,130,85,101,136,137,101,137,102,89,102,138,89,138,86,86,138,139,86,139,87,87,139,101,87,101,100,102,137,140,102,140,138,138,140,141,138,141,139,139,141,136,139,136,101,141,140,137,141,137,136,78,134,135,78,135,132];
+/* Flat-shaded, back-face culled, painter's algorithm. 280 triangles with roughly half facing away
+   is ~140 fills a frame, which canvas 2D does comfortably; the texture is thrown away and the
+   lighting does the work instead. */
+function uniDrawMesh(ctx,cx,cy,scale,rx,ry,rz,col){
+  const cX=Math.cos(rx), sX=Math.sin(rx), cY=Math.cos(ry), sY=Math.sin(ry), cZ=Math.cos(rz), sZ=Math.sin(rz);
+  const n=SHIP_V.length/3, P=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    let x=SHIP_V[i*3]/1000, y=SHIP_V[i*3+1]/1000, z=SHIP_V[i*3+2]/1000;
+    let t=y*cX-z*sX; z=y*sX+z*cX; y=t;      // pitch
+    t=x*cY+z*sY;     z=-x*sY+z*cY; x=t;      // yaw
+    t=x*cZ-y*sZ;     y=x*sZ+y*cZ; x=t;       // roll (the bank)
+    P[i*3]=x*scale; P[i*3+1]=y*scale; P[i*3+2]=z*scale;
+  }
+  const tris=[];
+  for(let i=0;i<SHIP_T.length;i+=3){
+    const a=SHIP_T[i]*3, b=SHIP_T[i+1]*3, c=SHIP_T[i+2]*3;
+    const ax=P[a],ay=P[a+1],az=P[a+2], bx=P[b],by=P[b+1],bz=P[b+2], dx=P[c],dy=P[c+1],dz=P[c+2];
+    const ux=bx-ax, uy=by-ay, uz=bz-az, vx=dx-ax, vy=dy-ay, vz=dz-az;
+    const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+    if(nz<=0) continue;                       // facing away from us
+    const len=Math.hypot(nx,ny,nz)||1;
+    // one fixed light from over your left shoulder, so the hull reads as solid
+    const lit=Math.max(0,(nx*-0.42+ny*0.62+nz*0.66)/len);
+    tris.push({z:(az+bz+dz)/3, ax,ay,bx,by,dx,dy, l:0.24+0.76*lit});
+  }
+  tris.sort((p,q)=>p.z-q.z);                  // far first
+  const base=String(col||"#c8d2f2").replace("#","");
+  const R=parseInt(base.slice(0,2),16), G=parseInt(base.slice(2,4),16), B=parseInt(base.slice(4,6),16);
+  tris.forEach(t=>{
+    ctx.fillStyle=`rgb(${Math.round(R*t.l)},${Math.round(G*t.l)},${Math.round(B*t.l)})`;
+    ctx.beginPath();
+    ctx.moveTo(cx+t.ax,cy-t.ay); ctx.lineTo(cx+t.bx,cy-t.by); ctx.lineTo(cx+t.dx,cy-t.dy);
+    ctx.closePath(); ctx.fill();
+  });
+}
 const UNI_SHIPS=[
+  ["voyager","Voyager","The low-poly craft you brought. Real geometry, flat-shaded."],
   ["skiff","Solar skiff","A little boat under a bright sail. Slow to turn, lovely to look at."],
   ["dart","Dart","All engine and no cargo. Turns on the spot."],
   ["hauler","Hauler","Blunt, twin-engined, unhurried. You are not in a rush."],
@@ -5969,8 +6018,8 @@ const UNI_SHIPS=[
 ];
 let uniOn=false;            // universe instead of the classic globe
 let uniFly=false;           // flight controls engaged (otherwise it drifts on its own)
-let uniShip="skiff";
-let uniCam={x:0,y:1850,z:-2500,yaw:0,pitch:-0.60};
+let uniShip="voyager";
+let uniCam={x:0,y:1750,z:-2600,yaw:0,pitch:-0.58};
 let uniVel={x:0,y:0,z:0};
 let uniLook={yaw:0,pitch:0};        // smoothed turn rate, which is what banks the ship
 let uniKeys=new Set();
@@ -5998,6 +6047,12 @@ function uniRand(s,salt){
 function uniLayout(g){
   const GOLD=Math.PI*(3-Math.sqrt(5));
   const set=(n,x,y,z)=>{ n.ux=x; n.uy=y; n.uz=z; };
+  /* START FROM NOTHING. Several placements below deliberately skip a node that already has a
+     position — that is how the nested-department passes and the orphan passes avoid trampling each
+     other WITHIN one run. Across runs it made the layout non-deterministic: a nested department
+     kept the position the rim clamp had already pulled it back to, so on the second run its teams
+     and their people were laid out around a different point and eight nodes quietly moved. */
+  g.nodes.forEach(n=>{ n.ux=n.uy=n.uz=undefined; n.uWay=false; n.uDrift=false; });
   const depts=g.nodes.filter(n=>n.t==="department");
   const deptById={}; depts.forEach(d=>deptById[d.id]=d);
 
@@ -6017,12 +6072,21 @@ function uniLayout(g){
      radius that grows with the square root of its index so the inner ones do not pile up. A NESTED
      department (FP&A inside Finance) does not get its own place in the disc; it orbits its parent,
      which is what the nesting means. */
+  /* SPIRAL ARMS, not a scatter. A golden-angle spread puts the stars at evenly-spaced bearings,
+     which is tidy and reads as nothing — a galaxy is legible because its stars lie along arms
+     sweeping out of a bright core. Departments are dealt round `UNI_ARMS` logarithmic arms in
+     order, so neighbours in the list end up on different arms and each arm sweeps outward. */
   const isRoot=d=>!(d.rec.parentId&&deptById[d.rec.parentId]);
   const roots=depts.filter(isRoot), kids=depts.filter(d=>!isRoot(d));
+  const perArm=Math.max(1,Math.ceil(roots.length/UNI_ARMS));
   roots.forEach((d,i)=>{
-    const a=i*GOLD, f=roots.length>1?i/(roots.length-1):0;
-    const rad=UNI_CORE+Math.pow(f,0.62)*(UNI_DISC-UNI_CORE);
-    set(d, Math.cos(a)*rad, (uniRand(d.id,"y")-0.5)*UNI_THICK, Math.sin(a)*rad);
+    const arm=i%UNI_ARMS, step=Math.floor(i/UNI_ARMS);
+    const f=perArm>1?step/(perArm-1):0;                    // 0 at the core, 1 at the rim
+    const rad=UNI_CORE+Math.pow(f,0.72)*(UNI_DISC-UNI_CORE);
+    const a=(arm/UNI_ARMS)*Math.PI*2 + f*UNI_SWEEP + (uniRand(d.id,"a")-0.5)*0.30;
+    // the disc bulges at the middle and thins toward the rim, the way a real one does
+    const thick=UNI_THICK*(1-0.55*f);
+    set(d, Math.cos(a)*rad, (uniRand(d.id,"y")-0.5)*thick, Math.sin(a)*rad);
   });
   // children after roots, and re-run so a department nested two deep still finds its parent placed
   for(let pass=0;pass<3;pass++) kids.forEach((d,i)=>{
@@ -6031,7 +6095,7 @@ function uniLayout(g){
     set(d, p.ux+Math.cos(a)*300, p.uy+(uniRand(d.id,"y")-0.5)*120, p.uz+Math.sin(a)*300);
   });
   depts.forEach((d,i)=>{ if(d.ux===undefined){          // an orphaned parentId still needs a home
-    const a=i*GOLD; set(d, Math.cos(a)*UNI_DISC*1.1, (uniRand(d.id,"y")-0.5)*UNI_THICK, Math.sin(a)*UNI_DISC*1.1); } });
+    const a=i*GOLD; set(d, Math.cos(a)*UNI_RIM, (uniRand(d.id,"y")-0.5)*UNI_THICK*0.5, Math.sin(a)*UNI_RIM); } });
 
   /* teams orbit their department, spread evenly round it and tilted a little so the system is not
      a flat dinner plate seen edge-on from the disc. */
@@ -6044,7 +6108,7 @@ function uniLayout(g){
       const tilt=(uniRand(t.id,"tilt")-0.5)*0.7;
       const bx=Math.cos(a)*rad, bz=Math.sin(a)*rad;
       if(star) set(t, star.ux+bx, star.uy+bz*Math.sin(tilt)+18, star.uz+bz*Math.cos(tilt));
-      else set(t, Math.cos(a)*UNI_DISC*1.25, (uniRand(t.id,"y")-0.5)*UNI_THICK, Math.sin(a)*UNI_DISC*1.25);
+      else set(t, Math.cos(a)*UNI_RIM, (uniRand(t.id,"y")-0.5)*UNI_THICK*0.5, Math.sin(a)*UNI_RIM);
     });
   });
 
@@ -6060,11 +6124,7 @@ function uniLayout(g){
     const {host,list}=byHost[k];
     list.forEach((p,i)=>{
       const a=(i/Math.max(1,list.length))*Math.PI*2+uniRand(k,"p");
-      if(!host){                                   // nobody's moon: a slow outer halo
-        const rad=UNI_DISC*1.45+uniRand(p.id,"r")*260;
-        set(p, Math.cos(a)*rad, (uniRand(p.id,"y")-0.5)*UNI_THICK*1.6, Math.sin(a)*rad);
-        return;
-      }
+      if(!host){ p.uDrift=true; return; }   // no team AND no department: settled in pass two below
       const onTeam=host.t==="team";
       const rad=(onTeam?UNI_MOON_R:UNI_TEAM_R*0.62)*(1+Math.floor(i/8)*0.5)+(onTeam?0:14);
       const lift=(uniRand(p.id,"l")-0.5)*(onTeam?14:34);
@@ -6093,23 +6153,76 @@ function uniLayout(g){
     if(list.length>=2){                              // WAYPOINT — out in the dark between them
       let x=0,y=0,z=0;
       list.forEach(id=>{ const d=deptById[id]; x+=d.ux; y+=d.uy; z+=d.uz; });
+      x/=list.length; y/=list.length; z/=list.length;
       const j=uniRand(n.id,"w");
-      set(n, x/list.length+(j-0.5)*150, y/list.length+(uniRand(n.id,"wy")-0.5)*120+70,
-             z/list.length+(uniRand(n.id,"wz")-0.5)*150);
+      x+=(j-0.5)*150; z+=(uniRand(n.id,"wz")-0.5)*150; y+=(uniRand(n.id,"wy")-0.5)*120+70;
+      /* Two departments on OPPOSITE arms average out to the middle of the galaxy — which is the
+         corporate core, not the gap between them, and it read as clutter piling up in the bulge.
+         Push anything that lands inside the core clearance back out along its own bearing, so it
+         still sits between the things it joins without being swallowed by the centre. */
+      const r=Math.hypot(x,z);
+      if(r<UNI_CORE*1.15){
+        const a=r>1?Math.atan2(z,x):uniRand(n.id,"wa")*Math.PI*2, out=UNI_CORE*1.15;
+        x=Math.cos(a)*out; z=Math.sin(a)*out;
+      }
+      set(n, x, y, z);
       n.uWay=true;
       return;
     }
     const star=list.length===1?deptById[list[0]]:null;
-    if(!star){                                       // knows nobody: the far halo
-      const a=uniRand(n.id,"a")*Math.PI*2, rad=UNI_DISC*1.6+uniRand(n.id,"r")*380;
-      set(n, Math.cos(a)*rad, (uniRand(n.id,"y")-0.5)*UNI_THICK*2, Math.sin(a)*rad);
-      return;
-    }
+    if(!star){ n.uDrift=true; return; }              // settled in pass two below
     const i=(beltAt[star.id]=(beltAt[star.id]||0)+1)-1;   // BELT — orbiting the one that owns it
     const a=i*GOLD+uniRand(star.id,"b"), rad=UNI_BELT_R*(1+Math.floor(i/10)*0.42);
     set(n, star.ux+Math.cos(a)*rad, star.uy+(uniRand(n.id,"y")-0.5)*46, star.uz+Math.sin(a)*rad);
   });
-  g.nodes.forEach(n=>{ if(n.ux===undefined) set(n,0,0,0); });
+  /* PASS TWO — where the "why is that WAY out there" complaint came from. Anything with no
+     department was previously thrown to 1.45–1.6× the disc radius at a random bearing, which is
+     both far away and arbitrary: two records with nothing in common ended up as distant neighbours
+     for no reason, and the map looked like it had been shaken.
+     Now a thing with no department of its own is placed **where its connections are** — the mean
+     position of whatever it touches that has already been placed, nudged off that point so it does
+     not sit inside them. Only something genuinely connected to nothing goes to the RIM, and the rim
+     is a tidy ring at one radius rather than a random distance, so it reads as the edge of the map
+     rather than as debris. Two passes, because a settled node can then anchor the next one. */
+  const drift=g.nodes.filter(n=>n.uDrift);
+  for(let pass=0;pass<2&&drift.length;pass++){
+    drift.forEach(n=>{
+      if(n.ux!==undefined) return;
+      const nb=[...(g.ins&&g.ins.nb?(g.ins.nb[n.key]||[]):[])]
+        .map(k=>g.byKey[k]).filter(m=>m&&m.ux!==undefined);
+      if(!nb.length) return;
+      // ONE anchor, not the mean of them all. Averaging looks reasonable and is wrong: a
+      // well-connected orphan averages out to the centre of mass of the whole galaxy — the middle —
+      // so every one of them piled into a single clump in the core. Sit just off the strongest
+      // neighbour instead, which is what "near what it is connected to" actually means.
+      const host=nb.sort((x,y)=>(y.deg||0)-(x.deg||0))[0];
+      // the core is the corporate stack and wants clear space around it, so anything that hangs off
+      // an org sits in a shell outside it rather than inside the bulge
+      const a=uniRand(n.id,"o")*Math.PI*2,
+            off=(host.t==="org"?150:30)+uniRand(n.id,"or")*(host.t==="org"?90:34);
+      set(n, host.ux+Math.cos(a)*off, host.uy+(uniRand(n.id,"oy")-0.5)*30, host.uz+Math.sin(a)*off);
+    });
+  }
+  // the rim: connected to nothing at all, so it belongs at the edge — evenly, not at random
+  const rim=g.nodes.filter(n=>n.ux===undefined);
+  rim.forEach((n,i)=>{
+    const a=i*GOLD;
+    set(n, Math.cos(a)*UNI_RIM, (uniRand(n.id,"y")-0.5)*UNI_THICK*0.45, Math.sin(a)*UNI_RIM);
+  });
+  /* ONE HARD BOUND, applied last. Every rule above is local — a team orbits its department, a
+     nested department orbits its parent, an orphan sits beside its anchor — and local rules
+     compose into surprises: a department nested inside one already at the rim ends up outside the
+     galaxy, and so does its teams' people. A map with no edge is exactly the "why is that WAY out
+     there" complaint, so the galaxy simply has one: past the rim, a point is pulled back onto it,
+     keeping its bearing and its height. */
+  g.nodes.forEach(n=>{
+    if(n.ux===undefined) return;
+    const r=Math.hypot(n.ux,n.uz);
+    if(r>UNI_RIM){ const k=UNI_RIM/r; n.ux*=k; n.uz*=k; }
+    const lift=UNI_THICK*1.1;
+    if(n.uy>lift) n.uy=lift; else if(n.uy<-lift) n.uy=-lift;
+  });
+  g.nodes.forEach(n=>{ delete n.uDrift; if(n.ux===undefined) set(n,0,0,0); });
 }
 /* Built and cached against the same signature the globe uses, so flipping between the two modes
    never re-lays either of them out and the map stays exactly where you left it. */
@@ -6127,9 +6240,21 @@ function uniView(p,c){
   const y=dy*cp-z1*sp, z=dy*sp+z1*cp;
   return {x,y,z};                                   // z > 0 is IN FRONT — see the note above
 }
+const UNI_HOME={x:0,y:1750,z:-2600,yaw:0,pitch:-0.58};
 function uniHome(){
-  uniCam={x:0,y:1850,z:-2500,yaw:0,pitch:-0.60};
+  uniCam={...UNI_HOME};
   uniVel={x:0,y:0,z:0}; uniGoto=null; uniDrift=0;
+}
+/* RECENTRE. Snapping the camera back is disorienting once you have been flying — you lose all
+   sense of where you had got to. So this flies: the same easing a selection uses, aimed at the
+   overlook the map opens on, with the nose swinging round to the core on the way. Cutting the
+   throttle first is what stops your existing momentum fighting the ease all the way home. */
+function uniFlyHome(){
+  uniVel={x:0,y:0,z:0};
+  uniDrift=0;
+  uniGoto={x:UNI_HOME.x,y:UNI_HOME.y,z:UNI_HOME.z,look:{ux:0,uy:0,uz:0}};
+  uniStatus="Returning to the overlook…";
+  setTimeout(()=>{ if(uniStatus==="Returning to the overlook…") uniStatus=uniFly?"WASD move · arrows turn · space/C up-down · shift boost · esc to stop":""; },2600);
 }
 /* Fly to a node: stop short of it along the line the camera is already on, so arriving does not
    put you inside the star. */
@@ -6176,6 +6301,61 @@ function uniStarSprite(col){
   uniGlowCache.set(col,c);
   return c;
 }
+/* ---- bodies -----------------------------------------------------------------------------------
+   A flat disc of colour is a dot, not a planet. These are lit spheres — but a `createRadialGradient`
+   per body per frame is the exact thing that took the globe from 60fps to 20, so each one is baked
+   ONCE per colour into a 128px sprite and then just drawn at whatever size it needs. Cache keyed by
+   colour + kind; the palette is small (department colours and record-type colours), so it is bounded.
+
+   The light comes from the upper left in screen space and does not move, which is what makes a
+   sphere read as a sphere: a bright limb, a terminator, and a little bounce on the dark side so it
+   does not look like a bitten biscuit. */
+const uniBodyCache=new Map();
+const UNI_BODY_PX=128;
+function uniBody(col,kind){
+  const key=kind+"|"+col;
+  let c=uniBodyCache.get(key);
+  if(c) return c;
+  const S=UNI_BODY_PX, R=S/2-2;
+  c=document.createElement("canvas"); c.width=c.height=S;
+  const g=c.getContext("2d");
+  const cx=S/2, cy=S/2;
+  if(kind==="star"){
+    // a star is mostly light: white core, colour falling away to nothing
+    const gr=g.createRadialGradient(cx,cy,0,cx,cy,R);
+    gr.addColorStop(0,"rgba(255,255,255,1)");
+    gr.addColorStop(0.22,globeRGBA(col,1));
+    gr.addColorStop(0.55,globeRGBA(col,0.55));
+    gr.addColorStop(1,globeRGBA(col,0));
+    g.fillStyle=gr; g.beginPath(); g.arc(cx,cy,R,0,7); g.fill();
+    uniBodyCache.set(key,c); return c;
+  }
+  // a planet: lit sphere, offset highlight, dark terminator
+  const lx=cx-R*0.38, ly=cy-R*0.38;
+  const gr=g.createRadialGradient(lx,ly,R*0.05,cx,cy,R);
+  gr.addColorStop(0,globeRGBA(col,1));
+  gr.addColorStop(0.42,globeRGBA(col,0.92));
+  gr.addColorStop(0.80,globeRGBA(col,0.42));
+  gr.addColorStop(1,globeRGBA(col,0.14));
+  g.fillStyle=gr; g.beginPath(); g.arc(cx,cy,R,0,7); g.fill();
+  // banding, clipped to the disc — a plain ball reads as a bubble, a banded one reads as a world
+  g.save(); g.beginPath(); g.arc(cx,cy,R,0,7); g.clip();
+  g.globalAlpha=0.10; g.fillStyle="#000";
+  for(let i=0;i<3;i++){ const y=cy-R*0.5+i*R*0.44;
+    g.beginPath(); g.ellipse(cx,y,R,R*0.10,0,0,7); g.fill(); }
+  g.globalAlpha=1; g.restore();
+  // a thin rim light on the sunward edge, and the specular
+  g.strokeStyle="rgba(255,255,255,.30)"; g.lineWidth=S*0.014;
+  g.beginPath(); g.arc(cx,cy,R-S*0.007,Math.PI*1.05,Math.PI*1.75); g.stroke();
+  const sp=g.createRadialGradient(lx,ly,0,lx,ly,R*0.42);
+  sp.addColorStop(0,"rgba(255,255,255,.45)"); sp.addColorStop(1,"rgba(255,255,255,0)");
+  g.fillStyle=sp; g.beginPath(); g.arc(lx,ly,R*0.42,0,7); g.fill();
+  uniBodyCache.set(key,c); return c;
+}
+/* Which departments' planets wear rings. Deterministic from the id, so a given team always has one
+   — a ring that came and went between renders would be noise. */
+function uniHasRing(n){ return n.t==="team" && uniRand(n.id,"ring")>0.62; }
+
 /* A star IS a department, so in the universe a department and its team both take that department's
    colour — which is what makes one solar system tell itself apart from the next. People already
    worked this way in `globeNodeColor`; records keep their type colour, and the "By department"
@@ -6202,6 +6382,14 @@ function uniDrawShip(ctx,W,H,now){
   const glow=(x,y,r,c,a)=>{ const s=uniStarSprite(c); ctx.globalAlpha=a; ctx.drawImage(s,x-r,y-r,r*2,r*2); ctx.globalAlpha=1; };
   const hull="rgba(226,232,252,.98)", edge="rgba(150,164,214,.95)";
   ctx.lineJoin="round";
+  if(uniShip==="voyager"){
+    // seen from behind and a little above, banking into the turn
+    glow(0,2,34,"#7e8ed8",0.18);
+    uniDrawMesh(ctx,0,-6,44,-0.28,Math.PI,0,"#e2e9ff");
+    glow(0,26,24,"#8fb6ff",0.28+0.6*thr);
+    ctx.restore();
+    return;
+  }
   if(uniShip==="skiff"){
     // a little boat under a bright sail — the one the whole look is borrowed from
     ctx.fillStyle=hull; ctx.beginPath();
@@ -6435,8 +6623,8 @@ function armUniverse(){
     proj.forEach(n=>{
       const on=lit(n);
       const s=n._s;
-      const big=n.t==="department"?11:n.t==="org"?9:n.t==="team"?5.6:n.t==="person"?3.4:3.0;
-      let r=big*s*1.7;
+      const big=n.t==="department"?11:n.t==="org"?9:n.t==="team"?6.4:n.t==="person"?3.9:3.2;
+      let r=big*s*2.7;
       r=Math.max(0.55,Math.min(58,r));
       const col=uniNodeColor(n);
       const dist=Math.max(0,Math.min(1,1-n._vz/UNI_FAR));
@@ -6448,16 +6636,39 @@ function armUniverse(){
       }
       if(a<=0.02) return;
       // stars and waypoints carry a corona; a moon is just a point of light
-      if((n.t==="department"||n.t==="org"||n.uWay||n.deg>3)&&on){
+      const isStar=n.t==="department"||n.t==="org";
+      if((isStar||n.uWay||n.deg>3)&&on){
         const sprite=uniStarSprite(col), R2=Math.min(190,r*(n.t==="department"?4.2:n.t==="org"?3.6:2.6));
         ctx.globalAlpha=Math.min(1,(n.t==="department"?0.30:n.t==="org"?0.26:0.15)*a);
         ctx.drawImage(sprite,n._sx-R2,n._sy-R2,R2*2,R2*2);
         ctx.globalAlpha=1;
       }
-      ctx.fillStyle=globeRGBA(col,Math.min(1,a+0.12));
-      ctx.beginPath(); ctx.arc(n._sx,n._sy,r,0,7); ctx.fill();
-      if(on&&r>2){ ctx.fillStyle=`rgba(255,255,255,${0.30+0.45*dist})`;
-        ctx.beginPath(); ctx.arc(n._sx,n._sy,r*0.44,0,7); ctx.fill(); }
+      /* THE BODY ITSELF. Under about a pixel and a half a sprite is a blurry smudge and a plain
+         dot is crisper and cheaper, so tiny things stay dots — which is most of the map when you
+         are standing off looking at the whole galaxy. Everything you have flown close enough to
+         actually see gets the lit sphere. */
+      if(r<1.6){
+        ctx.fillStyle=globeRGBA(col,Math.min(1,a+0.12));
+        ctx.beginPath(); ctx.arc(n._sx,n._sy,r,0,7); ctx.fill();
+      } else {
+        // a ring goes UNDER its planet's far half and over the near half, which is what sells it
+        const ring=uniHasRing(n)&&r>3.4;
+        if(ring){
+          ctx.save(); ctx.globalAlpha=a*0.55;
+          ctx.strokeStyle=globeRGBA(col,0.9); ctx.lineWidth=Math.max(0.8,r*0.13);
+          ctx.beginPath(); ctx.ellipse(n._sx,n._sy,r*2.1,r*0.62,-0.42,0,7); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.globalAlpha=Math.min(1,a);
+        const sp=uniBody(col,isStar?"star":"planet");
+        ctx.drawImage(sp,n._sx-r,n._sy-r,r*2,r*2);
+        if(ring){   // the near half of the ring, drawn over the body
+          ctx.globalAlpha=a*0.55;
+          ctx.strokeStyle=globeRGBA(col,0.95); ctx.lineWidth=Math.max(0.8,r*0.13);
+          ctx.beginPath(); ctx.ellipse(n._sx,n._sy,r*2.1,r*0.62,-0.42,0.30,Math.PI-0.30); ctx.stroke();
+        }
+        ctx.globalAlpha=1;
+      }
       if(n.key===globeSel||n.key===uniHover||n.id===g.me){
         ctx.strokeStyle=n.key===globeSel?"#fff":n.key===uniHover?"rgba(255,255,255,.72)":"#ffd479";
         ctx.lineWidth=n.key===globeSel?1.9:1.4;
@@ -6577,12 +6788,12 @@ function uniStep(f,reduce){
      map rather than a cockpit you have to learn. */
   if(!uniFly&&!uniGoto&&!reduce&&sp<0.6){
     uniDrift+=0.00022*f;
-    const rad=2600, h=1850;
+    const rad=2600, h=1750;
     uniCam.x=Math.sin(uniDrift)*rad;
     uniCam.z=-Math.cos(uniDrift)*rad;
     uniCam.y=h+Math.sin(uniDrift*1.7)*150;
     uniCam.yaw=-uniDrift;
-    uniCam.pitch=-0.60+Math.sin(uniDrift*2.1)*0.04;
+    uniCam.pitch=-0.58+Math.sin(uniDrift*2.1)*0.04;
   }
 }
 /* ---- picking --------------------------------------------------------------------------------- */
@@ -6709,7 +6920,7 @@ function uniBarHTML(){
   return `<div class="uni-bar">
       <button class="btn ghost sm${uniFly?" on":""}" data-act="uni-fly">${uniFly?"✓ Flying":"✈ Fly"}</button>
       <button class="btn ghost sm" data-act="uni-full">⛶ Fullscreen</button>
-      <button class="btn ghost sm" data-act="uni-home">Recentre</button>
+      <button class="btn ghost sm" data-act="uni-home" title="Fly back to the overlook">⌖ Recentre</button>
       <span class="uni-ships">${UNI_SHIPS.map(([id,name,note])=>
         `<button class="uni-ship${uniShip===id?" on":""}" data-uniship="${esc(id)}" title="${esc(note)}"
           aria-pressed="${uniShip===id?"true":"false"}">${esc(name)}</button>`).join("")}</span>
@@ -12739,7 +12950,7 @@ document.addEventListener("click",e=>{
   if(act==="uni-universe"){ uniSetMode(true); return; }
   if(act==="uni-fly"){ uniSetFly(!uniFly); return; }
   if(act==="uni-full"){ uniFullscreen(); return; }
-  if(act==="uni-home"){ uniHome(); globeSelect(null); uniSetRipple(null); return; }
+  if(act==="uni-home"){ uniFlyHome(); globeSelect(null); uniSetRipple(null); return; }
   if(act==="dupes"){ openDupes(); return; }
   if(act==="globe-color"){ globeColor=globeColor==="dept"?"type":"dept"; render(); return; }
   if(act==="globe-mine"){ globeMine=!globeMine; globeSelect(null); render(); return; }

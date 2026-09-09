@@ -834,6 +834,55 @@ The globe is still the faster tool; the universe is the one that makes the *shap
 legible — a department you have barely been inside is visibly a dim star a long way off, and work
 that crosses two departments visibly hangs in the dark between two suns.
 
+**The galaxy is BOUNDED and organised, which took a rewrite.** The first version placed departments
+on a golden-angle spread and threw anything with no department out to 1.45–1.6× the disc radius at a
+random bearing — so a third of the map sat far away for no reason anyone could read, which was the
+first thing Connor said about it. What replaced it:
+- **Spiral arms** (`UNI_ARMS`, `UNI_SWEEP`). Departments are dealt round two logarithmic arms in
+  order, so each arm sweeps out of the core; the disc bulges in the middle and thins to the rim.
+  An even golden-angle spread is tidy and reads as nothing — a galaxy is legible because of arms.
+- **An orphan sits beside its anchor, not in the void.** Anything with no department is placed just
+  off the single neighbour it is most connected to. It must be ONE anchor: averaging every
+  neighbour's position sounds more principled and is wrong, because a well-connected orphan averages
+  out to the centre of mass of the whole galaxy — the middle — and they all piled into one clump in
+  the core the first time.
+- **The rim** (`UNI_RIM`) is one radius. Only something connected to nothing at all goes there, and
+  it goes evenly, so it reads as the edge of the map rather than debris.
+- **One hard bound, applied last.** Every rule above is local, and local rules compose into
+  surprises — a department nested inside one already at the rim lands outside the galaxy, and its
+  teams' people follow it. So past the rim a point is pulled back onto it, keeping its bearing.
+- **`uniLayout` clears every position before it starts.** Several passes deliberately skip a node
+  that already has one, which is how they avoid trampling each other within a run; across runs it
+  made the layout non-deterministic, because a nested department kept the position the rim clamp had
+  pulled it to and its teams were then laid out around a different point. Eight nodes moved quietly.
+- **`UNI_CORE` has to be wider than a star's own belt.** At 190 the innermost department's belt swung
+  through the origin and dropped records into the corporate core; a waypoint spanning two departments
+  on *opposite* arms averages to the origin for the same reason and is pushed back out along its own
+  bearing. Both read as clutter in the bulge rather than as anything meaningful.
+
+**Bodies are baked sprites, not shapes** (`uniBody`, `uniHasRing`). A flat disc of colour is a dot;
+these are lit spheres with a terminator, banding, a rim light and a specular — but a
+`createRadialGradient` per body per frame is exactly what took the globe from 60fps to 20, so each
+is rendered ONCE per colour+kind into a 128px sprite and then drawn at whatever size it needs. Under
+about 1.6px a sprite is a blurry smudge and a plain dot is crisper *and* cheaper, so distant things
+stay dots and only what you have flown close to gets the sphere. Some teams wear rings, drawn in two
+halves so the far side passes behind the planet.
+
+**The craft is Connor's own model, converted rather than loaded** (`SHIP_V`/`SHIP_T`/`uniDrawMesh`).
+He supplied a low-poly `.glb`. The file is never fetched: a glTF is a binary container needing a
+parser and a 3D renderer to draw, which means three.js or hand-rolled WebGL and a dependency this
+app does not take — and 364KB of it was a texture flat shading does not need. So the geometry was
+extracted offline, welded to 142 vertices / 280 triangles, quantised to integer thousandths and
+baked in at ~4KB, with the axes swapped to +x across the wings, +y up, +z down the nose. It draws
+back-face culled and painter-sorted with one fixed light; roughly half the triangles face away, so
+it is ~140 fills a frame. **If another model is ever supplied, do the same thing** — extract, weld,
+quantise, bake. Do not add a loader.
+
+**Recentre flies, it does not snap** (`uniFlyHome`). Cutting the camera back to the overlook is
+disorienting once you have been flying — you lose where you had got to. It reuses the easing a
+selection already uses and swings the nose round to the core on the way. It zeroes the velocity
+first, or your existing momentum fights the ease the whole way home.
+
 **The astronomy is read off your own records, never decorated on.** `uniLayout(g)`:
 - the **core** is the corporate stack (`org`), stacked in y by how far up `parentId` goes;
 - a **star** is a department, on a golden-angle spiral through the disc (`UNI_CORE`→`UNI_DISC`) —

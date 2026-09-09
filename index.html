@@ -1809,7 +1809,7 @@ const ROUND_TYPES = ["Recruiter screen","Phone / HM","Technical","Take-home","Sy
    Plain arrays on state.work — same storage, sync, export and backup as the rest. */
 /* Bumped with sw.js CACHE. Shown in Settings because "I don't see the change" has twice turned
    out to be a stale cached file, and there was no way to tell from inside the app. */
-const BUILD = "v82 · 2026-09-09";
+const BUILD = "v83 · 2026-09-09";
 const WORK_LISTS = ["captures","bites","projects","problems","orgs","departments","teams","systems","processes","decisions","questions","infos","links","milestones","reports","asks","objectives","dupskips","answered"];
 const PROJECT_STATUS = ["Idea","Active","Blocked","Complete","Cancelled","Unknown"];
 const PROBLEM_STATUS = ["Discovered","Investigating","Solved","Recurring","Accepted"];
@@ -2412,7 +2412,7 @@ function askChoice(o){
       const x=(o.options||[])[+b.dataset.i]; kill(x?x.id:null);
     },true);
     document.addEventListener("keydown",onKey,true);
-    document.body.appendChild(wrap);
+    uiRoot().appendChild(wrap);
     const first=wrap.querySelector(".choice-opt"); if(first) first.focus();
   });
 }
@@ -6028,13 +6028,13 @@ let uniShip="voyager";
 let uniCam={x:0,y:1750,z:-2600,yaw:0,pitch:-0.58};
 let uniVel={x:0,y:0,z:0};
 let uniLook={yaw:0,pitch:0};        // smoothed turn rate, which is what banks the ship
+let uniRate={yaw:0,pitch:0};        // the rate the ship is ACTUALLY turning at — eased, never instant
 let uniKeys=new Set();
 let uniRAF=0, uniIntroAt=0, uniSig="", uniDrift=0;
 let uniRipple=null;         // {from, t0} — the electric pulse running out along the strands
 let uniHops=null;           // hop count from the selected node, for the pulse and the highlight
 let uniGoto=null;           // {x,y,z} the camera is easing toward after a selection
 let uniHover=null, uniHoverXY=null;
-let uniStatus="";           // one line of HUD text, set by whatever just happened
 
 function uniPrefsLoad(){
   uniOn=!!devPrefs.uniMode;
@@ -6249,7 +6249,7 @@ function uniView(p,c){
 const UNI_HOME={x:0,y:1750,z:-2600,yaw:0,pitch:-0.58};
 function uniHome(){
   uniCam={...UNI_HOME};
-  uniVel={x:0,y:0,z:0}; uniGoto=null; uniDrift=0;
+  uniVel={x:0,y:0,z:0}; uniRate={yaw:0,pitch:0}; uniGoto=null; uniDrift=0;
 }
 /* RECENTRE. Snapping the camera back is disorienting once you have been flying — you lose all
    sense of where you had got to. So this flies: the same easing a selection uses, aimed at the
@@ -6259,8 +6259,9 @@ function uniFlyHome(){
   uniVel={x:0,y:0,z:0};
   uniDrift=0;
   uniGoto={x:UNI_HOME.x,y:UNI_HOME.y,z:UNI_HOME.z,look:{ux:0,uy:0,uz:0}};
-  uniStatus="Returning to the overlook…";
-  setTimeout(()=>{ if(uniStatus==="Returning to the overlook…") uniStatus=uniFly?"WASD move · arrows turn · space/C up-down · shift boost · esc to stop":""; },2600);
+  const hint=document.getElementById("glHint");
+  if(hint){ hint.textContent="Returning to the overlook…";
+    setTimeout(()=>{ const h=document.getElementById("glHint"); if(h&&h.textContent==="Returning to the overlook…") h.textContent=uniHint(); },2600); }
 }
 /* Fly to a node: stop short of it along the line the camera is already on, so arriving does not
    put you inside the star. */
@@ -6569,6 +6570,8 @@ function armUniverse(){
     // how far the charge has travelled, in hops
     const pulse=uniRipple?(now-uniRipple.t0)/UNI_HOP_MS:-1;
 
+    uniSky(ctx,cam,W,H,born);      // the bulge and the gas, behind everything
+
     /* ---- strands, far first ---- */
     const arcs=[];
     g.edges.forEach(e=>{
@@ -6711,8 +6714,11 @@ function armUniverse(){
       ctx.fillText(txt,n._sx,y+11);
     });
 
+    if(sel&&g.byKey[sel]) uniReticle(ctx,g.byKey[sel],now);
+    uniWarp(ctx,W,H);
     uniDrawShip(ctx,W,H,now);
     uniHUD(ctx,W,H);
+    uniRadar(ctx,W,H,cam);
     uniRAF=requestAnimationFrame(draw);
   };
   uniRAF=requestAnimationFrame(draw);
@@ -6723,6 +6729,114 @@ function armUniverse(){
   uniBindControls(stage,cv);
 }
 /* The reticle and the speed read-out. Deliberately tiny — it is a HUD, not a dashboard. */
+/* ---- five things that make it feel like somewhere rather than a scatter plot ----------------- */
+/* One projection helper, so the scenery uses exactly the same camera as the nodes do. */
+function uniProj(x,y,z,cam,W,H){
+  const v=uniView({ux:x,uy:y,uz:z},cam);
+  if(v.z<=UNI_NEAR) return null;
+  const s=UNI_FOV/v.z;
+  return {sx:W/2+v.x*s, sy:H/2-v.y*s, s, z:v.z};
+}
+/* 1 + 2. THE ROOM IT ALL HANGS IN. A galaxy is not points on black — it has a lit bulge at the
+   middle and cold gas along the arms, and without them the map reads as a scatter plot however
+   well the points are placed. Both are world-space so they sit correctly as you fly past, and both
+   are the cached glow sprite rather than a live gradient. Positions are fixed constants, not
+   random, so the sky does not reshuffle between frames. */
+const UNI_NEBULA=[
+  [ 620,  -60,  480, "#5a4b9e", 980, .16],
+  [-780,   40, -320, "#2f6a8c", 1120, .14],
+  [ 120,   90, -900, "#7a4770", 900, .12],
+  [-420,  -80,  820, "#3f5aa8", 1040, .13],
+  [ 980,   30, -640, "#4a3d86", 820, .11],
+];
+function uniSky(ctx,cam,W,H,born){
+  const items=[];
+  UNI_NEBULA.forEach(([x,y,z,col,r,a])=>{
+    const p=uniProj(x,y,z,cam,W,H); if(!p) return;
+    items.push({p,col,r:r*p.s,a});
+  });
+  const core=uniProj(0,0,0,cam,W,H);
+  if(core) items.push({p:core,col:"#c8b9ff",r:UNI_CORE*1.5*core.s,a:.30,core:true});
+  items.sort((m,n)=>n.p.z-m.p.z);        // far first
+  items.forEach(it=>{
+    const R=Math.min(2600,it.r); if(R<8) return;
+    ctx.globalAlpha=it.a*born;
+    ctx.drawImage(uniStarSprite(it.col),it.p.sx-R,it.p.sy-R,R*2,R*2);
+    if(it.core){                          // a hot little heart inside the bulge
+      const r2=Math.min(400,R*0.28);
+      ctx.globalAlpha=Math.min(1,.5*born);
+      ctx.drawImage(uniStarSprite("#ffffff"),it.p.sx-r2,it.p.sy-r2,r2*2,r2*2);
+    }
+  });
+  ctx.globalAlpha=1;
+}
+/* 3. SPEED YOU CAN SEE. Above a walking pace, short streaks pull out of the middle of the frame —
+   the one cue that tells you how fast you are actually going without reading the number. The
+   angles are fixed, so they do not shimmer; only their length and brightness follow the throttle. */
+const UNI_STREAKS=Array.from({length:64},(_,i)=>[
+  (i*2.39996)%(Math.PI*2), 0.18+((i*37)%100)/100*0.82]);
+function uniWarp(ctx,W,H){
+  const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
+  if(sp<7) return;
+  const k=Math.min(1,(sp-7)/(UNI_MAXV-7));
+  const cx=W/2, cy=H/2, R=Math.hypot(W,H)/2;
+  ctx.lineCap="round";
+  UNI_STREAKS.forEach(([ang,rad])=>{
+    const d0=R*rad*0.35, d1=d0+R*rad*k*0.42;
+    const c=Math.cos(ang), s2=Math.sin(ang);
+    ctx.strokeStyle=`rgba(198,214,255,${0.05+0.30*k*rad})`;
+    ctx.lineWidth=0.7+1.1*k;
+    ctx.beginPath(); ctx.moveTo(cx+c*d0,cy+s2*d0); ctx.lineTo(cx+c*d1,cy+s2*d1); ctx.stroke();
+  });
+}
+/* 4. THE THING YOU PICKED IS OBVIOUS. A white outline the same weight as a hover ring is not
+   enough once forty bodies are on screen; this is a slowly turning bracket, drawn round the
+   selection at its own size, so your eye goes straight back to it after a turn. */
+function uniReticle(ctx,n,now){
+  if(!n||!n._on||n._sx===undefined) return;
+  const r=Math.max(11,(n._r||4)+9);
+  const a=now/1400;
+  ctx.save(); ctx.translate(n._sx,n._sy); ctx.rotate(a);
+  ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=1.3;
+  for(let i=0;i<4;i++){
+    const th=i*Math.PI/2;
+    ctx.beginPath(); ctx.arc(0,0,r,th+0.28,th+Math.PI/2-0.28); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle="rgba(180,200,255,.30)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(n._sx,n._sy,r*1.7,0,7); ctx.stroke();
+}
+/* 5. WHERE AM I. Flying is disorienting by design, and the honest fix is not a bigger Recentre
+   button — it is knowing where you are before you need it. A top-down radar of the galactic plane:
+   every department as its own coloured star, the rim as a ring, and you as a wedge pointing the way
+   you face. Small enough to ignore, which is the point. */
+function uniRadar(ctx,W,H,cam){
+  const g=globeG; if(!g) return;
+  const S=Math.min(96,Math.max(64,Math.round(Math.min(W,H)*0.16)));
+  const pad=14, ox=W-pad-S, oy=H-pad-S, cx=ox+S/2, cy=oy+S/2, R=S/2-4;
+  const k=R/(UNI_RIM*1.02);
+  ctx.save();
+  ctx.fillStyle="rgba(8,10,18,.62)";
+  ctx.beginPath(); ctx.arc(cx,cy,R+4,0,7); ctx.fill();
+  ctx.strokeStyle="rgba(150,166,225,.28)"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+  ctx.strokeStyle="rgba(150,166,225,.13)";
+  ctx.beginPath(); ctx.arc(cx,cy,R*0.5,0,7); ctx.stroke();
+  g.nodes.forEach(n=>{
+    if(n.t!=="department"||n.ux===undefined) return;
+    ctx.fillStyle=globeRGBA(uniNodeColor(n),n.key===globeSel?1:.72);
+    const rr=n.key===globeSel?2.6:1.7;
+    ctx.beginPath(); ctx.arc(cx+n.ux*k,cy+n.uz*k,rr,0,7); ctx.fill();
+  });
+  // you, pointing where you are pointing
+  const px=cx+Math.max(-R,Math.min(R,cam.x*k)), py=cy+Math.max(-R,Math.min(R,cam.z*k));
+  ctx.save(); ctx.translate(px,py); ctx.rotate(-cam.yaw);
+  ctx.fillStyle="rgba(255,255,255,.95)";
+  ctx.beginPath(); ctx.moveTo(0,-5.5); ctx.lineTo(3.4,4); ctx.lineTo(0,2.2); ctx.lineTo(-3.4,4);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+}
 function uniHUD(ctx,W,H){
   if(!uniFly) return;
   const cx=W/2, cy=H*0.5;
@@ -6732,16 +6846,26 @@ function uniHUD(ctx,W,H){
   ctx.moveTo(cx-22,cy); ctx.lineTo(cx-16,cy); ctx.moveTo(cx+16,cy); ctx.lineTo(cx+22,cy);
   ctx.moveTo(cx,cy-22); ctx.lineTo(cx,cy-16); ctx.moveTo(cx,cy+16); ctx.lineTo(cx,cy+22);
   ctx.stroke();
+  /* The speed used to sit bottom-LEFT and the controls line was painted bottom-CENTRE on the
+     canvas — directly on top of `.gl-hint`, which is a DOM element saying the same thing in the
+     same place. Two captions in one strip read as garbage. The hint owns the bottom of the frame
+     now; the canvas keeps only the readout, moved to the top-left where nothing else lives. */
   const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
   ctx.font="600 10px ui-monospace,SFMono-Regular,Menlo,monospace";
   ctx.textAlign="left"; ctx.fillStyle="rgba(180,196,255,.62)";
-  ctx.fillText(Math.round(sp*6)+" ly/s",14,H-14);
-  if(uniStatus){ ctx.textAlign="center"; ctx.fillStyle="rgba(214,224,255,.75)";
-    ctx.fillText(uniStatus,W/2,H-14); }
+  ctx.fillText(Math.round(sp*6)+" ly/s",14,20);
 }
 /* One step of flight. Held keys accelerate along the camera's own axes; nothing is instant and
    nothing is unbounded — the damping is what makes it feel like a craft rather than a cursor. */
-const UNI_ACC=1.5, UNI_DAMP=0.90, UNI_MAXV=46, UNI_TURN=0.030;
+/* A starship has mass. The first version applied the turn rate the instant a key went down and
+   dropped it the instant it came up, which is how a cursor moves, not how anything with inertia
+   moves — it read as jerky however small the rate was. So a held key now sets a TARGET rate and the
+   actual rate eases toward it (`UNI_TURN_ACC`), then eases back to zero when you let go
+   (`UNI_TURN_DRAG`). Thrust got the same treatment from the other side: `UNI_DAMP` was heavy enough
+   that letting off the throttle stopped you almost at once, so it now glides and the cap does the
+   limiting instead. */
+const UNI_ACC=1.15, UNI_DAMP=0.972, UNI_MAXV=46, UNI_TURN=0.034;
+const UNI_TURN_ACC=0.11, UNI_TURN_DRAG=0.90;
 function uniStep(f,reduce){
   const k=uniKeys;
   const has=(...a)=>a.some(x=>k.has(x));
@@ -6751,8 +6875,6 @@ function uniStep(f,reduce){
     if(has("arrowright")) turnY+=UNI_TURN;
     if(has("arrowup")) turnP+=UNI_TURN*0.72;
     if(has("arrowdown")) turnP-=UNI_TURN*0.72;
-    uniCam.yaw+=turnY*f;
-    uniCam.pitch=Math.max(-1.35,Math.min(1.35,uniCam.pitch+turnP*f));
     const boost=has("shift")?2.4:1;
     const fwd=(has("w")?1:0)-(has("s")?1:0);
     const strafe=(has("d")?1:0)-(has("a")?1:0);
@@ -6763,9 +6885,20 @@ function uniStep(f,reduce){
     if(strafe){ uniVel.x+=cy*UNI_ACC*strafe*boost*f; uniVel.z+=-sy*UNI_ACC*strafe*boost*f; }
     if(lift) uniVel.y+=UNI_ACC*lift*boost*f;
   }
-  // smoothed turn rate drives the ship's bank
-  uniLook.yaw+=((turnY)-uniLook.yaw)*0.15;
-  uniLook.pitch+=((turnP)-uniLook.pitch)*0.15;
+  /* the rate eases toward what you asked for and coasts back down when you stop asking — this is
+     the whole difference between "jerky" and "a ship" */
+  const acc=1-Math.pow(1-UNI_TURN_ACC,f);
+  uniRate.yaw   += (turnY-uniRate.yaw)*acc;
+  uniRate.pitch += (turnP-uniRate.pitch)*acc;
+  if(!turnY)  uniRate.yaw   *= Math.pow(UNI_TURN_DRAG,f);
+  if(!turnP)  uniRate.pitch *= Math.pow(UNI_TURN_DRAG,f);
+  if(Math.abs(uniRate.yaw)<1e-5)   uniRate.yaw=0;
+  if(Math.abs(uniRate.pitch)<1e-5) uniRate.pitch=0;
+  uniCam.yaw += uniRate.yaw*f;
+  uniCam.pitch = Math.max(-1.35,Math.min(1.35,uniCam.pitch+uniRate.pitch*f));
+  // the ship banks off the rate it is ACTUALLY turning at, not the key you are holding
+  uniLook.yaw+=(uniRate.yaw-uniLook.yaw)*0.15;
+  uniLook.pitch+=(uniRate.pitch-uniLook.pitch)*0.15;
   const sp=Math.hypot(uniVel.x,uniVel.y,uniVel.z);
   if(sp>UNI_MAXV){ const s=UNI_MAXV/sp; uniVel.x*=s; uniVel.y*=s; uniVel.z*=s; }
   uniCam.x+=uniVel.x*f; uniCam.y+=uniVel.y*f; uniCam.z+=uniVel.z*f;
@@ -6840,7 +6973,7 @@ function uniBindControls(stage,cv){
     if(Math.abs(dx)+Math.abs(dy)>4) moved=true;
     uniCam.yaw+=dx*0.0045;
     uniCam.pitch=Math.max(-1.35,Math.min(1.35,uniCam.pitch-dy*0.0045));
-    uniLook.yaw=dx*0.0045; uniLook.pitch=-dy*0.0045;
+    uniRate.yaw=dx*0.0045*0.5; uniRate.pitch=-dy*0.0045*0.5;
     lx=e.clientX; ly=e.clientY;
   });
   const end=e=>{
@@ -6888,7 +7021,7 @@ function uniKeyUp(e){
 function uniSetFly(on){
   uniFly=!!on;
   uniKeys.clear();
-  uniStatus=uniFly?"WASD move · arrows turn · space/C up-down · shift boost · esc to stop":"";
+  uniRate={yaw:0,pitch:0};
   if(uniFly){ uniGoto=null; uniDrift=0; }
   const stage=document.getElementById("glStage");
   if(stage) stage.style.cursor=uniFly?"crosshair":"grab";
@@ -6901,6 +7034,36 @@ function uniHint(){
   return uniFly
     ? "W A S D to move · arrow keys to turn · space and C for up and down · shift to boost · Esc to stop flying"
     : "Drag to look around · scroll to move · click a point to fly to it · double-click to open it";
+}
+/* FULLSCREEN HIDES EVERYTHING THAT IS NOT INSIDE THE FULLSCREEN ELEMENT. `#glStage` goes
+   fullscreen, but the editor modal, the toast and the choice dialog are children of <body>, so
+   opening a record from the map did nothing you could see — the modal really was open, three
+   layers behind a black screen. Rather than yanking you out of fullscreen to read a record, the
+   overlays are MOVED INTO the stage while it is fullscreen and put back when it exits. They are
+   `position:fixed`, so they still lay out against the viewport; only their ancestry changes. */
+const UNI_FS_OVERLAYS=["editorOverlay","toast","drawer","overlay"];
+/* Where a NEW overlay should be born. Anything created while the map is fullscreen has to be a
+   child of the fullscreen element or it renders behind a black screen, and the adopt pass below
+   only moves what already existed. */
+function uiRoot(){
+  const full=document.fullscreenElement||document.webkitFullscreenElement;
+  return (full&&full.id==="glStage")?full:document.body;
+}
+let uniFsHome=null;
+function uniFsAdopt(){
+  const stage=document.getElementById("glStage");
+  const full=document.fullscreenElement||document.webkitFullscreenElement;
+  if(full===stage&&stage){
+    if(uniFsHome) return;
+    uniFsHome=[];
+    UNI_FS_OVERLAYS.forEach(id=>{ const el=document.getElementById(id);
+      if(el&&el.parentNode){ uniFsHome.push([el,el.parentNode,el.nextSibling]); stage.appendChild(el); } });
+    stage.classList.add("uni-fs");
+  } else if(uniFsHome){
+    uniFsHome.forEach(([el,parent,next])=>{ try{ parent.insertBefore(el,next); }catch(e){ document.body.appendChild(el); } });
+    uniFsHome=null;
+    if(stage) stage.classList.remove("uni-fs");
+  }
 }
 function uniFullscreen(){
   const stage=document.getElementById("glStage"); if(!stage) return;
@@ -11125,7 +11288,10 @@ function openEditor(html){
   // (the X button) and bottom reachable instead of clipped off-screen on mobile.
   editorEl=el(`<div class="overlay show" id="editorOverlay" style="z-index:150;display:flex;justify-content:center;overflow:auto;-webkit-overflow-scrolling:touch;padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))">
     <div class="card" style="width:min(540px,100%);margin:auto;padding:22px">${html}</div></div>`);
-  document.body.appendChild(editorEl);
+  /* `uiRoot()`, not `document.body`. The overlay is built fresh every time it opens, so when the
+     map is fullscreen a modal appended to the body renders behind a black screen — opening a record
+     from the map looked like nothing happened at all. */
+  uiRoot().appendChild(editorEl);
   // A stray tap on the backdrop used to bin whatever you'd typed. Now it only closes when there's
   // nothing to lose; if there is, it asks. The ✕ and Cancel buttons still close outright.
   editorEl.addEventListener("click",e=>{ if(e.target===editorEl) tryCloseEditor(); });
@@ -14875,7 +15041,10 @@ uniPrefsLoad();    // which map this device was last looking at, and which craft
 document.addEventListener("keydown",uniKeyDown);
 document.addEventListener("keyup",uniKeyUp);
 window.addEventListener("blur",()=>uniKeys.clear());   // alt-tab must not leave the throttle open
-document.addEventListener("fullscreenchange",()=>{ if(uniOn&&view==="globe") setTimeout(()=>{ const s=document.getElementById("glStage"); if(s) s.dispatchEvent(new Event("resize")); },60); });
+["fullscreenchange","webkitfullscreenchange"].forEach(ev=>document.addEventListener(ev,()=>{
+  uniFsAdopt();
+  if(uniOn&&view==="globe") setTimeout(()=>{ const s=document.getElementById("glStage"); if(s) s.dispatchEvent(new Event("resize")); },60);
+}));
 render();
 renderLockGate();  // if the vault is sealed, nothing is readable until it is opened
 renderAuthGate();  // signed out? this is the first thing you see

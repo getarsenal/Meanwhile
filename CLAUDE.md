@@ -925,6 +925,43 @@ running the length of each wire and a little jitter across it so it reads as a c
 dot on a rail. **The same hop map dims everything else**, so the highlight and the animation agree
 by construction rather than by two lists kept in step.
 
+**A starship has mass** (`uniRate`, `UNI_TURN_ACC`/`UNI_TURN_DRAG`). The first version applied the
+full turn rate the instant a key went down and dropped it the instant it came up — that is how a
+cursor moves, and it read as jerky however small the rate was. A held key now sets a *target* rate
+and the actual rate eases toward it, then coasts back to zero when you let go; the ship banks off
+the rate it is **actually** turning at rather than off the key you are holding. `UNI_DAMP` went the
+other way (0.90 → 0.972) so the throttle glides instead of braking, with `UNI_MAXV` doing the
+limiting. The suite checks the shape rather than a magic number: one frame of a held key must
+deliver well under the settled rate, letting go must still move you, and it must eventually stop.
+
+**FULLSCREEN HIDES EVERYTHING THAT IS NOT INSIDE THE FULLSCREEN ELEMENT.** `#glStage` goes
+fullscreen, so opening a record from the map did *nothing you could see* — the modal really was
+open, three layers behind a black screen. `openEditor` builds `#editorOverlay` fresh every time, so
+adopting existing overlays on `fullscreenchange` was not enough on its own: **`uiRoot()`** returns
+the fullscreen element when it is our stage and `document.body` otherwise, and both `openEditor` and
+`askChoice` mount into it. `uniFsAdopt()` additionally moves the pre-existing furniture (toast,
+drawer, overlay) in on the way in and puts it back on the way out. They are `position:fixed`, so
+only their ancestry changes, not their layout. The test does what Connor did: fake the fullscreen
+element, `openEnt`, and assert the overlay is inside the stage.
+
+**One caption at the bottom, not two.** `uniHUD` painted the controls line bottom-centre on the
+canvas, directly over `.gl-hint` — a DOM element saying the same thing in the same place — so the
+strip read as garbage. The hint owns the bottom of the frame; the canvas keeps only the speed
+readout, moved to the top-left. `uniStatus` is gone entirely rather than left set to `""`, and
+"Returning to the overlook…" writes to the hint like everything else.
+
+**The scenery** (`uniSky`, `uniWarp`, `uniReticle`, `uniRadar`, `uniProj`). A galaxy is not points on
+black: `uniSky` draws a lit core bulge and five fixed nebula clouds in world space, so they sit
+correctly as you fly past — fixed constants, never random, or the sky reshuffles every frame.
+`uniWarp` pulls streaks out of the centre above a walking pace, which is the only cue that tells you
+how fast you are going without reading the number. `uniReticle` puts a slowly turning bracket round
+the selection, because a white outline the same weight as a hover ring is not enough at forty
+bodies. `uniRadar` is a top-down plan of the galactic plane in the corner with every department as
+its own coloured star and you as a wedge pointing where you face — the honest fix for "where am I"
+is knowing before you need to, not a bigger Recentre button. All of it goes through `uniProj`, which
+is `uniView` plus the same divide the nodes use, so the scenery and the map can never disagree about
+where the camera is.
+
 **The switch must not move when you press it.** `.gl-acts` is right-aligned, so the globe-only
 controls (*Recentre*, *Pause*) dropping out in universe mode slid everything left of them — the
 switch included — **171px to the right**, and 32px down at 1280: you used a control and it jumped
